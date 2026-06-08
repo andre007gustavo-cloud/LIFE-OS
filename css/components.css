@@ -1,0 +1,126 @@
+/* ===================== COMPONENTS: buttons, forms, badges, modals, cards ===================== */
+
+/* ===== Cards & grid ===== */
+.card{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);padding:16px;margin-bottom:12px;
+}
+.card-title{
+  font-size:12px;font-weight:600;color:var(--text2);
+  text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;
+}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:600px){.grid3{grid-template-columns:1fr 1fr}}
+
+/* ===== Stats ===== */
+.stat{
+  background:var(--bg3);border-radius:var(--radius-sm);
+  padding:14px;text-align:center;
+}
+.stat-val{font-size:24px;font-weight:700;color:var(--text)}
+.stat-label{font-size:11px;color:var(--text3);margin-top:2px}
+.stat.green .stat-val{color:var(--green)}
+.stat.red .stat-val{color:var(--red)}
+.stat.amber .stat-val{color:var(--amber)}
+.stat.purple .stat-val{color:var(--accent2)}
+
+/* ===== Buttons ===== */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 16px;border-radius:var(--radius-sm);
+  border:none;cursor:pointer;font-size:13px;font-weight:600;
+  transition:all .15s;
+}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent2)}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text2)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--text)}
+.btn-sm{padding:5px 10px;font-size:12px}
+
+.icon-btn{
+  background:none;border:none;color:var(--text3);
+  cursor:pointer;padding:4px;border-radius:4px;
+  font-size:15px;transition:color .15s;flex-shrink:0;
+}
+.icon-btn:hover{color:var(--text)}
+
+/* ===== Forms ===== */
+.form-group{margin-bottom:12px}
+.form-label{
+  font-size:12px;color:var(--text2);margin-bottom:4px;
+  display:block;font-weight:500;
+}
+.form-input,.form-select,.form-textarea{
+  width:100%;background:var(--bg3);border:1px solid var(--border);
+  border-radius:var(--radius-sm);color:var(--text);
+  padding:9px 12px;font-size:14px;outline:none;
+  transition:border .15s;font-family:inherit;
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent)}
+.form-select option{background:var(--bg3)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-textarea{resize:vertical;min-height:70px}
+
+/* ===== Modal / overlay ===== */
+.overlay{
+  display:none;position:fixed;inset:0;
+  background:#00000080;z-index:300;
+  align-items:flex-end;justify-content:center;
+}
+.overlay.open{display:flex}
+.modal{
+  background:var(--bg2);
+  border-radius:var(--radius) var(--radius) 0 0;
+  padding:20px;width:100%;max-width:520px;
+  max-height:88vh;overflow-y:auto;
+  animation:slideUp .2s ease;
+}
+@keyframes slideUp{
+  from{transform:translateY(40px);opacity:0}
+  to{transform:translateY(0);opacity:1}
+}
+.modal-title{
+  font-size:16px;font-weight:700;margin-bottom:16px;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.modal-close{
+  background:none;border:none;color:var(--text3);
+  cursor:pointer;font-size:20px;
+}
+
+/* ===== Badges ===== */
+.badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500}
+.badge.alta{background:#f8717122;color:var(--red)}
+.badge.media{background:#fbbf2422;color:var(--amber)}
+.badge.baixa{background:#4ade8022;color:var(--green)}
+.badge.nenhuma{background:var(--bg4);color:var(--text3)}
+.badge.area{background:var(--acc-dim);color:var(--accent2)}
+.badge.time{background:#60a5fa22;color:var(--blue)}
+
+/* ===== Filter chips ===== */
+.filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.filter-chip{
+  padding:5px 12px;border-radius:20px;
+  border:1px solid var(--border);background:transparent;
+  color:var(--text2);cursor:pointer;font-size:12px;font-weight:500;
+  transition:all .15s;white-space:nowrap;
+}
+.filter-chip:hover{border-color:var(--accent);color:var(--text)}
+.filter-chip.active{background:var(--acc-dim);border-color:var(--accent);color:var(--accent2)}
+
+/* ===== Tabs ===== */
+.tab-row{display:flex;gap:4px;margin-bottom:16px}
+.tab-btn{
+  padding:6px 14px;border-radius:var(--radius-sm);
+  border:1px solid var(--border);background:transparent;
+  color:var(--text2);cursor:pointer;font-size:13px;font-weight:500;
+  transition:all .15s;
+}
+.tab-btn.active{background:var(--acc-dim);border-color:var(--accent);color:var(--accent2)}
+
+/* ===== Pills ===== */
+.proj-pill{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:11px;padding:3px 8px;border-radius:20px;
+  background:var(--bg4);color:var(--text2);margin:2px;
+}

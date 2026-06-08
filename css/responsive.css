@@ -1,0 +1,169 @@
+/* ===================== RESPONSIVE: tablet → small mobile ===================== */
+
+/* ===== Tablet (≤900px) ===== */
+@media(max-width:900px){
+  #app{max-width:100%}
+  :root{--sidebar-w:200px;--detail-w:280px}
+  .grid3{grid-template-columns:1fr 1fr}
+  .proj-sidebar{width:200px;min-width:200px}
+}
+
+/* ===== Large mobile (≤768px) ===== */
+@media(max-width:768px){
+  :root{--sidebar-w:0px;--detail-w:100%}
+
+  /* Nav → bottom bar */
+  nav{
+    position:fixed;bottom:0;top:auto;left:0;right:0;
+    padding:6px 0 max(6px,env(safe-area-inset-bottom));
+    background:var(--bg2);border-top:1px solid var(--border);
+    border-bottom:none;
+    display:flex;justify-content:space-around;align-items:center;
+    gap:0;flex-wrap:nowrap;z-index:150;
+  }
+  .logo{display:none}
+  .nav-btn{
+    flex-direction:column;gap:2px;padding:4px 6px;
+    font-size:10px;border-radius:8px;min-width:52px;
+    align-items:center;justify-content:center;
+  }
+  .nav-btn i{font-size:20px}
+  .nav-btn[style*="margin-left:auto"]{margin-left:0!important}
+
+  /* View padding for bottom nav */
+  .view.active,.view.active.padded{padding-bottom:80px!important}
+  #view-tasks.active,#view-calendar.active,#view-areas.active{
+    height:calc(100vh - 0px);padding-bottom:0!important;
+  }
+  .tt-content{padding-bottom:80px}
+  .day-scroll{padding-bottom:80px}
+  .proj-tab-content{padding-bottom:80px}
+
+  /* FAB repositioned */
+  #fab{bottom:76px;right:16px;width:46px;height:46px;font-size:20px}
+
+  /* Tasks — hide sidebar */
+  .tt-sidebar{display:none}
+  .tt-main{width:100%}
+  .tt-mobile-menu{display:flex!important}
+
+  /* Detail panel → full screen */
+  .tt-detail{
+    position:fixed;inset:0 0 64px 0;
+    width:100%!important;min-width:100%!important;
+    z-index:200;border:none;
+    box-shadow:-4px 0 20px #00000044;
+  }
+  .tt-detail.closed{display:none}
+
+  /* Calendar day layout — stack */
+  .day-layout{flex-direction:column}
+  .day-mini-cal{
+    width:100%;min-width:unset;border-right:none;
+    border-bottom:1px solid var(--border);padding:10px;
+  }
+  .mini-grid{grid-template-columns:repeat(7,1fr)}
+  .day-scroll{flex:1}
+
+  /* Calendar week — 4 cols */
+  .week-grid{grid-template-columns:repeat(4,1fr);gap:3px}
+
+  /* Month chip font */
+  .month-chip,.month-span{font-size:10px}
+  .month-day{min-height:70px}
+
+  /* Finance grid */
+  .grid3{grid-template-columns:1fr 1fr}
+
+  /* Projects — stack */
+  .proj-layout{flex-direction:column}
+  .proj-sidebar{
+    width:100%!important;min-width:100%!important;
+    height:auto;max-height:220px;border-right:none;
+    border-bottom:1px solid var(--border);
+  }
+  #proj-list{max-height:120px}
+  .proj-sidebar-section{display:none}
+  .proj-workspace{flex:1;min-height:0}
+
+  /* Modals fullscreen */
+  .modal{
+    border-radius:0;max-height:100vh;height:100vh;
+    padding:16px 16px max(16px,env(safe-area-inset-bottom));
+  }
+  .overlay{align-items:flex-start}
+  .note-modal{
+    width:100%!important;max-width:100%!important;
+    max-height:100vh;border-radius:0;height:100vh;
+  }
+
+  .form-row{grid-template-columns:1fr}
+
+  .grid3{grid-template-columns:1fr 1fr}
+  .section-title{font-size:16px}
+
+  /* Task actions always visible */
+  .tt-task-actions{opacity:1}
+
+  .cal-filter-panel{padding:10px}
+}
+
+/* ===== Small mobile (≤480px) ===== */
+@media(max-width:480px){
+  :root{--sidebar-w:0px;--detail-w:100%}
+
+  .grid3{grid-template-columns:1fr}
+  .proj-overview-grid{grid-template-columns:1fr}
+
+  .nav-btn span.nav-label{display:none}
+  .nav-btn{min-width:40px;padding:4px}
+  .nav-btn i{font-size:22px}
+
+  .week-grid{grid-template-columns:repeat(3,1fr)}
+
+  .month-day{min-height:56px;padding:2px 1px}
+  .month-day-name{font-size:9px;padding:4px 0}
+  .day-num{font-size:11px}
+  .month-chip,.month-span{font-size:9px;padding:1px 3px}
+
+  .cal-header{flex-wrap:wrap;gap:6px}
+  .cal-title{font-size:14px}
+
+  .tt-main-header{
+    flex-direction:column;align-items:flex-start;
+    gap:8px;padding:12px 14px 0;
+  }
+  .tt-main-title{font-size:17px}
+
+  .tt-quick-meta{gap:4px}
+  .tt-meta-btn{font-size:11px;padding:3px 7px}
+
+  .tt-task{padding:8px 10px;gap:8px}
+  .tt-task-name{font-size:13px}
+  .tt-task-sub{font-size:10px}
+
+  .tt-detail-body{padding:12px}
+  .tt-detail-row-label{width:70px;font-size:11px}
+
+  .note-toolbar{gap:2px;padding:6px 0}
+  .note-tb-btn{padding:3px 5px;font-size:12px}
+
+  .file-grid{grid-template-columns:repeat(2,1fr)}
+
+  .proj-tabs{overflow-x:auto;flex-wrap:nowrap;padding:0 12px}
+  .proj-tab{white-space:nowrap;padding:8px 12px;font-size:12px}
+
+  .proj-ws-title-row{flex-wrap:wrap}
+  .proj-ws-name{font-size:16px}
+  .proj-ws-meta{gap:6px}
+  .proj-meta-chip{font-size:11px;padding:2px 8px}
+}
+
+/* ===== Very small (≤360px) ===== */
+@media(max-width:360px){
+  .nav-btn{min-width:34px}
+  .cal-tabs{gap:2px}
+  .cal-tab{padding:5px 8px;font-size:12px}
+  .btn-sm{padding:4px 8px;font-size:11px}
+  .month-day{min-height:48px}
+}

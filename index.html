@@ -1,2882 +1,562 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Life OS — Organização Pessoal</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#0f0f13;--bg2:#16161d;--bg3:#1e1e28;--bg4:#25252f;
-  --accent:#7c6fff;--accent2:#a78bfa;--acc-dim:#7c6fff22;
-  --text:#f0eeff;--text2:#9992c0;--text3:#5a5478;
-  --green:#4ade80;--red:#f87171;--amber:#fbbf24;--blue:#60a5fa;--pink:#f472b6;
-  --border:#2a2836;--radius:12px;--radius-sm:8px;
-  --sidebar-w:220px;--detail-w:320px;
-}
-body.light{
-  --bg:#f0f0f5;--bg2:#ffffff;--bg3:#f5f5fa;--bg4:#eaeaf2;
-  --text:#1a1a2e;--text2:#555577;--text3:#9999bb;
-  --border:#dddde8;--acc-dim:#7c6fff18;
-}
-body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5}
-#app{min-height:100vh;max-width:1100px;margin:0 auto;display:flex;flex-direction:column}
-
-/* NAV */
-nav{display:flex;gap:4px;padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;left:0;right:0;flex-wrap:wrap;align-items:center;z-index:150}
-.nav-btn{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--radius-sm);border:none;background:transparent;color:var(--text2);cursor:pointer;font-size:13px;font-weight:500;transition:all .15s}
-.nav-btn:hover{background:var(--bg3);color:var(--text)}
-.nav-btn.active{background:var(--acc-dim);color:var(--accent2)}
-.logo{font-size:16px;font-weight:700;color:var(--accent2);padding:7px 12px;letter-spacing:-0.5px;margin-right:8px}
-
-/* VIEWS */
-.view{display:none;animation:fadeIn .2s ease}
-.view.active{display:block}
-@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-.padded{padding:20px 16px}
-
-/* CARDS / GRID */
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
-.card-title{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
-.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-@media(max-width:600px){.grid3{grid-template-columns:1fr 1fr}}
-.stat{background:var(--bg3);border-radius:var(--radius-sm);padding:14px;text-align:center}
-.stat-val{font-size:24px;font-weight:700;color:var(--text)}
-.stat-label{font-size:11px;color:var(--text3);margin-top:2px}
-.stat.green .stat-val{color:var(--green)}
-.stat.red .stat-val{color:var(--red)}
-.stat.amber .stat-val{color:var(--amber)}
-.stat.purple .stat-val{color:var(--accent2)}
-
-/* BUTTONS */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s}
-.btn-primary{background:var(--accent);color:#fff}
-.btn-primary:hover{background:var(--accent2)}
-.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text2)}
-.btn-ghost:hover{border-color:var(--accent);color:var(--text)}
-.btn-sm{padding:5px 10px;font-size:12px}
-.icon-btn{background:none;border:none;color:var(--text3);cursor:pointer;padding:4px;border-radius:4px;font-size:15px;transition:color .15s;flex-shrink:0}
-.icon-btn:hover{color:var(--text)}
-
-/* FORMS */
-.form-group{margin-bottom:12px}
-.form-label{font-size:12px;color:var(--text2);margin-bottom:4px;display:block;font-weight:500}
-.form-input,.form-select,.form-textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:9px 12px;font-size:14px;outline:none;transition:border .15s;font-family:inherit}
-.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent)}
-.form-select option{background:var(--bg3)}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.form-textarea{resize:vertical;min-height:70px}
-
-/* MODAL */
-.overlay{display:none;position:fixed;inset:0;background:#00000080;z-index:300;align-items:flex-end;justify-content:center}
-.overlay.open{display:flex}
-.modal{background:var(--bg2);border-radius:var(--radius) var(--radius) 0 0;padding:20px;width:100%;max-width:520px;max-height:88vh;overflow-y:auto;animation:slideUp .2s ease}
-@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
-.modal-title{font-size:16px;font-weight:700;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
-.modal-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:20px}
-
-/* BADGES */
-.badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500}
-.badge.alta{background:#f8717122;color:var(--red)}
-.badge.media{background:#fbbf2422;color:var(--amber)}
-.badge.baixa{background:#4ade8022;color:var(--green)}
-.badge.nenhuma{background:var(--bg4);color:var(--text3)}
-.badge.area{background:var(--acc-dim);color:var(--accent2)}
-.badge.time{background:#60a5fa22;color:var(--blue)}
-
-/* FILTER CHIPS */
-.filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
-.filter-chip{padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:12px;font-weight:500;transition:all .15s;white-space:nowrap}
-.filter-chip:hover{border-color:var(--accent);color:var(--text)}
-.filter-chip.active{background:var(--acc-dim);border-color:var(--accent);color:var(--accent2)}
-
-/* MISC */
-.divider{border:none;border-top:1px solid var(--border);margin:16px 0}
-.text-muted{color:var(--text3);font-size:13px}
-.empty{text-align:center;padding:40px 20px;color:var(--text3)}
-.empty i{font-size:40px;margin-bottom:10px;display:block}
-.section-title{font-size:18px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
-.section-sub{font-size:13px;color:var(--text3);font-weight:400}
-.tab-row{display:flex;gap:4px;margin-bottom:16px}
-.tab-btn{padding:6px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:13px;font-weight:500;transition:all .15s}
-.tab-btn.active{background:var(--acc-dim);border-color:var(--accent);color:var(--accent2)}
-.progress-bar{height:4px;background:var(--bg4);border-radius:2px;overflow:hidden}
-.progress-fill{height:100%;background:var(--accent);transition:width .5s}
-.progress-text{font-size:11px;color:var(--text3);margin-top:3px}
-.proj-pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;border-radius:20px;background:var(--bg4);color:var(--text2);margin:2px}
-.fw6{font-weight:600}
-.mt8{margin-top:8px}
-
-/* FAB */
-#fab{position:fixed;bottom:24px;right:24px;width:52px;height:52px;border-radius:50%;background:var(--accent);border:none;color:#fff;font-size:24px;cursor:pointer;box-shadow:0 4px 20px #7c6fff44;display:flex;align-items:center;justify-content:center;z-index:200;transition:all .2s}
-#fab:hover{transform:scale(1.1);background:var(--accent2)}
-
-/* ===== TICKTICK TASK LAYOUT ===== */
-#view-tasks{display:none}
-#view-tasks.active{display:flex;height:calc(100vh - 53px);overflow:hidden}
-#view-calendar.active{display:flex!important;flex-direction:column;height:calc(100vh - 53px);overflow:hidden;padding:20px 16px}
-
-.tt-sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
-.tt-sidebar-search{padding:12px;border-bottom:1px solid var(--border);position:relative}
-.tt-sidebar-search i{position:absolute;left:20px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;pointer-events:none}
-.tt-sidebar-search input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:7px 10px 7px 30px;font-size:13px;outline:none}
-.tt-sidebar-search input:focus{border-color:var(--accent)}
-.tt-sidebar-section{padding:8px 0}
-.tt-sidebar-label{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.8px;padding:6px 14px 4px;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center}
-.tt-list-item{display:flex;align-items:center;gap:8px;padding:8px 14px;cursor:pointer;font-size:13px;color:var(--text2);transition:all .12s;border-radius:0;position:relative}
-.tt-list-item:hover{background:var(--bg3);color:var(--text)}
-.tt-list-item.active{background:var(--acc-dim);color:var(--accent2);font-weight:600}
-.tt-list-item i{font-size:15px;flex-shrink:0}
-.tt-list-item span.tt-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tt-count{font-size:11px;background:var(--bg4);color:var(--text3);border-radius:10px;padding:1px 6px;margin-left:auto;flex-shrink:0}
-.tt-list-item.active .tt-count{background:var(--accent);color:#fff}
-.tt-area-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.tt-proj-item{display:flex;align-items:center;gap:8px;padding:6px 14px 6px 30px;cursor:pointer;font-size:12px;color:var(--text2);transition:all .12s}
-.tt-proj-item:hover{background:var(--bg3);color:var(--text)}
-.tt-proj-item.active{color:var(--accent2);font-weight:600}
-
-.tt-main{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;background:var(--bg)}
-.tt-main-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 0;flex-shrink:0;flex-wrap:wrap;gap:8px}
-.tt-main-title{font-size:20px;font-weight:700}
-.tt-main-count{font-size:13px;color:var(--text3);background:var(--bg3);border-radius:10px;padding:2px 8px}
-.tt-sort-select{background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:var(--radius-sm);padding:5px 8px;font-size:12px;outline:none;cursor:pointer}
-.tt-content{flex:1;overflow-y:auto;padding:12px 20px}
-
-/* Quick Add */
-.tt-quick-bar{margin-bottom:12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:all .2s}
-.tt-quick-trigger{display:flex;align-items:center;gap:8px;padding:11px 14px;cursor:pointer;color:var(--text3);font-size:13px;transition:background .15s}
-.tt-quick-trigger:hover{background:var(--bg3)}
-.tt-quick-trigger i{font-size:16px;color:var(--accent)}
-.tt-quick-form{padding:12px 14px;border-top:1px solid var(--border);display:none}
-.tt-quick-form.open{display:block}
-.tt-quick-input{width:100%;background:transparent;border:none;color:var(--text);font-size:15px;outline:none;font-family:inherit;margin-bottom:10px}
-.tt-quick-meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
-.tt-meta-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:12px;transition:all .12s}
-.tt-meta-btn:hover{border-color:var(--accent);color:var(--accent2)}
-.tt-meta-btn.active{border-color:var(--accent);color:var(--accent2);background:var(--acc-dim)}
-
-/* Task Items */
-.tt-section-header{font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;padding:12px 0 6px;display:flex;align-items:center;gap:8px}
-.tt-section-header::after{content:'';flex:1;height:1px;background:var(--border)}
-.tt-task{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);background:var(--bg2);border:1px solid var(--border);margin-bottom:5px;cursor:pointer;transition:all .15s;position:relative}
-.tt-task:hover{border-color:var(--accent2);background:var(--bg3)}
-.tt-task.active-detail{border-color:var(--accent);background:var(--acc-dim)}
-.tt-task.done-task{opacity:.5}
-.tt-task.done-task .tt-task-name{text-decoration:line-through;color:var(--text3)}
-.tt-check{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;margin-top:1px}
-.tt-check:hover{border-color:var(--accent)}
-.tt-check.checked{background:var(--accent);border-color:var(--accent)}
-.tt-pri-flag{font-size:13px;cursor:pointer;flex-shrink:0;margin-top:1px;transition:transform .15s}
-.tt-pri-flag:hover{transform:scale(1.2)}
-.tt-task-body{flex:1;min-width:0}
-.tt-task-name{font-size:14px;font-weight:500;margin-bottom:3px}
-.tt-task-sub{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--text3)}
-.tt-task-sub .dot{width:3px;height:3px;border-radius:50%;background:var(--text3)}
-.tt-task-actions{display:flex;gap:2px;opacity:0;transition:opacity .15s;flex-shrink:0}
-.tt-task:hover .tt-task-actions{opacity:1}
-.subtask-bar{display:flex;align-items:center;gap:4px;margin-top:4px}
-.subtask-mini{font-size:11px;color:var(--text3)}
-.subtask-prog{height:3px;background:var(--border);border-radius:2px;flex:1;overflow:hidden}
-.subtask-prog-fill{height:100%;background:var(--accent);border-radius:2px}
-.tag-chip{font-size:11px;padding:1px 7px;border-radius:10px;border:1px solid var(--border);color:var(--text3)}
-
-/* ===== DETAIL PANEL ===== */
-.tt-detail{width:var(--detail-w);min-width:var(--detail-w);background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;transition:width .2s}
-.tt-detail.closed{width:0;min-width:0;border:none;overflow:hidden}
-.tt-detail-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
-.tt-detail-title{font-size:14px;font-weight:600;color:var(--text2)}
-.tt-detail-body{flex:1;overflow-y:auto;padding:16px}
-.tt-detail-name{font-size:17px;font-weight:700;margin-bottom:16px;line-height:1.4;outline:none;cursor:text;border-radius:6px;padding:4px;transition:background .15s}
-.tt-detail-name:hover{background:var(--bg3)}
-.tt-detail-name:focus{background:var(--bg3);outline:none}
-.tt-detail-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;border-radius:var(--radius-sm);padding-left:4px;padding-right:4px}
-.tt-detail-row:hover{background:var(--bg3)}
-.tt-detail-row i{font-size:16px;color:var(--text3);width:20px;flex-shrink:0}
-.tt-detail-row-label{font-size:12px;color:var(--text3);width:90px;flex-shrink:0}
-.tt-detail-row-val{flex:1;font-size:13px;color:var(--text)}
-.tt-detail-row input,.tt-detail-row select{flex:1;background:transparent;border:none;color:var(--text);font-size:13px;outline:none;font-family:inherit;cursor:pointer}
-.tt-detail-row select option{background:var(--bg3)}
-.detail-section-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px}
-.detail-notes{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:10px;font-size:13px;outline:none;font-family:inherit;resize:vertical;min-height:80px;line-height:1.5}
-.detail-notes:focus{border-color:var(--accent)}
-
-/* Subtasks in detail */
-.subtask-item{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)}
-.subtask-check{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
-.subtask-check.done{background:var(--accent);border-color:var(--accent)}
-.subtask-name{flex:1;font-size:13px;outline:none;background:transparent;border:none;color:var(--text);font-family:inherit}
-.subtask-name.done-sub{text-decoration:line-through;color:var(--text3)}
-.subtask-del{opacity:0;transition:opacity .15s}
-.subtask-item:hover .subtask-del{opacity:1}
-.subtask-add{display:flex;align-items:center;gap:8px;padding:7px 0;cursor:pointer;color:var(--text3);font-size:13px;transition:color .15s}
-.subtask-add:hover{color:var(--accent)}
-
-/* Tags in detail */
-.tag-input-wrap{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
-.tag-item{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:12px;font-size:12px;background:var(--acc-dim);color:var(--accent2);border:1px solid var(--accent)44}
-.tag-item button{background:none;border:none;color:var(--accent2);cursor:pointer;font-size:12px;line-height:1;padding:0}
-.tag-new-input{border:none;background:transparent;color:var(--text);font-size:12px;outline:none;min-width:80px;font-family:inherit}
-
-/* Recurrence */
-.rec-select{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm);padding:5px 8px;font-size:12px;outline:none;cursor:pointer;width:100%}
-
-/* Pomodoro */
-.pomo-bar{background:var(--bg3);border-radius:var(--radius);padding:14px;margin-top:12px}
-.pomo-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;display:flex;align-items:center;gap:6px}
-.pomo-display{font-size:36px;font-weight:700;text-align:center;color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:2px;margin:8px 0}
-.pomo-display.work{color:var(--accent2)}
-.pomo-display.break{color:var(--green)}
-.pomo-controls{display:flex;justify-content:center;gap:8px}
-.pomo-btn{padding:7px 18px;border-radius:var(--radius-sm);border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s}
-.pomo-start{background:var(--accent);color:#fff}
-.pomo-start:hover{background:var(--accent2)}
-.pomo-stop{background:var(--bg4);color:var(--text2)}
-.pomo-stop:hover{background:var(--border)}
-.pomo-mode{display:flex;gap:6px;justify-content:center;margin-bottom:8px}
-.pomo-mode-btn{padding:3px 12px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;font-size:11px;transition:all .12s}
-.pomo-mode-btn.active{background:var(--acc-dim);border-color:var(--accent);color:var(--accent2)}
-.pomo-dots{display:flex;justify-content:center;gap:4px;margin-top:8px}
-.pomo-dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:background .3s}
-.pomo-dot.done{background:var(--accent)}
-
-/* ===== CALENDAR ===== */
-#cal-body{flex:1;overflow:hidden;min-height:0}
-.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
-.cal-nav{background:none;border:1px solid var(--border);color:var(--text2);padding:6px 12px;border-radius:var(--radius-sm);cursor:pointer;transition:all .15s}
-.cal-nav:hover{border-color:var(--accent);color:var(--text)}
-.cal-title{font-size:16px;font-weight:600}
-.cal-tabs{display:flex;gap:4px;margin-bottom:12px}
-.cal-tab{padding:6px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:13px;font-weight:500;transition:all .15s}
-.cal-tab.active{background:var(--acc-dim);border-color:var(--accent);color:var(--accent2)}
-
-/* Month */
-.month-grid{display:grid;grid-template-columns:repeat(7,1fr);border-left:1px solid var(--border);border-top:1px solid var(--border)}
-.month-week-row{display:contents}
-.month-day-name{text-align:center;font-size:11px;color:var(--text3);padding:8px 0;font-weight:600;background:var(--bg2);border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
-.month-day{background:var(--bg2);border-right:1px solid var(--border);border-bottom:1px solid var(--border);min-height:110px;padding:2px;cursor:default;transition:background .15s;position:relative;overflow:hidden}
-.month-day:hover{background:var(--bg3)}
-.month-day.other-month{background:var(--bg);opacity:.65}
-.month-day.today .day-num-inner{background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center}
-.day-num{font-size:12px;font-weight:600;padding:2px 4px 1px;display:block}
-/* Span bar (multi-day event strip) */
-.month-span-layer{position:relative;min-height:20px}
-.span-placeholder{height:20px;margin-bottom:2px}
-.month-span{height:18px;border-radius:3px;font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;display:flex;align-items:center;padding:0 6px;margin-bottom:2px;transition:opacity .12s}
-.month-span:hover{opacity:.8}
-.month-span.span-left{border-radius:4px 0 0 4px;padding-left:6px}
-.month-span.span-right{border-radius:0 4px 4px 0}
-.month-span.span-alone{border-radius:4px}
-.month-span.span-mid{border-radius:0;padding-left:2px}
-/* Colors by area / priority */
-.month-span.col-alta,.month-chip.alta{background:#f8717133;color:var(--red)}
-.month-span.col-media,.month-chip.media{background:#7c6fff33;color:var(--accent2)}
-.month-span.col-baixa,.month-chip.baixa{background:#4ade8033;color:var(--green)}
-.month-span.col-nenhuma,.month-chip.nenhuma{background:var(--bg4);color:var(--text2)}
-/* Single-day chips */
-.month-chip{font-size:11px;padding:2px 5px;border-radius:3px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;display:block;font-weight:500;transition:opacity .1s}
-.month-chip:hover{opacity:.75}
-.month-more{font-size:10px;color:var(--text3);padding:1px 4px;cursor:pointer;display:block}
-.month-more:hover{color:var(--accent2)}
-
-/* Week */
-.week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-.week-col{background:var(--bg2);border-radius:var(--radius-sm);padding:8px;min-height:120px;border:1px solid var(--border)}
-.week-col-title{font-size:11px;color:var(--text3);font-weight:600;margin-bottom:6px;text-align:center}
-.week-col.today-col{border-color:var(--accent);background:var(--acc-dim)}
-.week-task-chip{font-size:11px;padding:3px 6px;border-radius:4px;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;font-weight:500}
-.week-task-chip.alta{background:#f8717122;color:var(--red)}
-.week-task-chip.media{background:#7c6fff22;color:var(--accent2)}
-.week-task-chip.baixa{background:#4ade8022;color:var(--green)}
-.week-task-chip.nenhuma{background:var(--bg4);color:var(--text3)}
-
-/* Day / Time-blocking — proportional heights */
-.day-allday{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:10px}
-.day-allday-title{font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600}
-.time-grid{position:relative;display:flex;flex-direction:column}
-.time-row{display:flex;gap:0;height:60px;border-bottom:1px solid var(--border)33;cursor:pointer;transition:background .1s;flex-shrink:0}
-.time-row:hover .time-slot-bg{background:var(--bg3)55}
-.time-label{font-size:11px;color:var(--text3);width:52px;flex-shrink:0;padding-top:4px;text-align:right;padding-right:10px;user-select:none;margin-top:-8px}
-.time-slot-bg{flex:1;position:relative;border-left:1px solid var(--border)66;transition:background .1s}
-/* Current time line */
-.time-now-line{position:absolute;left:52px;right:0;height:2px;background:var(--red);z-index:10;pointer-events:none}
-.time-now-dot{position:absolute;left:46px;width:10px;height:10px;border-radius:50%;background:var(--red);margin-top:-4px}
-/* Time blocks — absolutely positioned over the grid */
-.time-events-layer{position:absolute;top:0;left:52px;right:4px;pointer-events:none}
-.time-block{position:absolute;border-radius:var(--radius-sm);padding:4px 8px;cursor:pointer;border-left:3px solid;pointer-events:all;overflow:hidden;transition:opacity .15s;min-height:22px;box-sizing:border-box}
-.time-block:hover{opacity:.85;z-index:5}
-.time-block.alta{background:#f8717118;border-color:var(--red)}
-.time-block.media{background:#7c6fff18;border-color:var(--accent)}
-.time-block.baixa{background:#4ade8018;border-color:var(--green)}
-.time-block.nenhuma{background:var(--bg4);border-color:var(--text3)}
-.time-block-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.time-block-meta{font-size:11px;color:inherit;opacity:.75}
-.no-time-section{margin-top:10px;padding:10px 12px;background:var(--bg2);border-radius:var(--radius-sm);border:1px solid var(--border)}
-.no-time-title{font-size:11px;color:var(--text3);margin-bottom:8px;font-weight:600}
-
-/* Day view layout with mini calendar */
-.day-layout{display:flex;gap:0;height:100%}
-.day-mini-cal{width:220px;min-width:220px;padding:14px;border-right:1px solid var(--border);background:var(--bg2);overflow-y:auto;flex-shrink:0}
-.day-mini-cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.day-mini-cal-title{font-size:13px;font-weight:600}
-.day-mini-nav{background:none;border:none;color:var(--text3);cursor:pointer;padding:3px;border-radius:4px;font-size:14px}
-.day-mini-nav:hover{color:var(--text);background:var(--bg3)}
-.mini-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px}
-.mini-day-name{text-align:center;font-size:10px;color:var(--text3);padding:3px 0;font-weight:600}
-.mini-day{text-align:center;font-size:12px;padding:4px 2px;border-radius:50%;cursor:pointer;transition:all .12s;color:var(--text2);aspect-ratio:1;display:flex;align-items:center;justify-content:center;line-height:1}
-.mini-day:hover{background:var(--bg4);color:var(--text)}
-.mini-day.selected{background:var(--accent);color:#fff!important;font-weight:700}
-.mini-day.today-mini{color:var(--accent2);font-weight:700}
-.mini-day.has-tasks::after{content:'';display:block;width:4px;height:4px;border-radius:50%;background:var(--accent);margin:1px auto 0;position:absolute;bottom:2px}
-.mini-day-wrap{position:relative}
-.mini-day.other-m{color:var(--text3);opacity:.5}
-.day-scroll{flex:1;overflow-y:auto;padding:12px}
-
-/* Cal day popover */
-.cal-popover{position:fixed;z-index:500;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;width:300px;box-shadow:0 8px 32px #00000044;animation:fadeIn .15s ease}
-.cal-popover-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.cal-popover-date{font-size:13px;font-weight:600;color:var(--text2)}
-.cal-popover-close{background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px}
-.cal-popover-input{width:100%;background:transparent;border:none;color:var(--text);font-size:15px;outline:none;font-family:inherit;margin-bottom:10px;padding:4px 0;border-bottom:1px solid var(--border)}
-.cal-popover-input:focus{border-bottom-color:var(--accent)}
-.cal-popover-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
-.cal-popover-footer{display:flex;justify-content:flex-end;gap:6px}
-
-/* FINANCE */
-.fin-bar{height:8px;border-radius:4px;background:var(--bg4);overflow:hidden;margin-top:8px}
-.fin-bar-fill{height:100%;border-radius:4px;background:var(--accent);transition:width .5s}
-.fin-bar-fill.over{background:var(--red)}
-.fin-entry{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius-sm);background:var(--bg3);margin-bottom:6px;border:1px solid transparent;transition:border .15s}
-.fin-entry:hover{border-color:var(--border)}
-.fin-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
-.fin-info{flex:1}.fin-title{font-size:14px;font-weight:500}.fin-sub{font-size:11px;color:var(--text3)}
-.fin-amount{font-size:14px;font-weight:700}
-.cat-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius-sm);background:var(--bg3);margin-bottom:6px}
-.cat-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.cat-val.rec{color:var(--green)}.cat-val.desp{color:var(--red)}
-
-/* AREAS */
-.area-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;transition:border .15s}
-.area-card:hover{border-color:var(--accent)}
-.area-icon{width:36px;height:36px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:18px}
-
-/* ===== PROJECT WORKSPACE ===== */
-#view-areas.active{display:flex!important;height:calc(100vh - 53px);overflow:hidden}
-.proj-layout{display:flex;width:100%;height:100%;overflow:hidden}
-.proj-sidebar{width:260px;min-width:260px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
-.proj-sidebar-header{display:flex;align-items:center;justify-content:space-between;padding:14px 14px 8px;flex-shrink:0}
-.proj-sidebar-title{font-size:15px;font-weight:700}
-.proj-sidebar-search{padding:0 10px 8px;position:relative;flex-shrink:0}
-.proj-sidebar-search i{position:absolute;left:18px;top:50%;transform:translateY(-60%);color:var(--text3);font-size:13px;pointer-events:none}
-.proj-sidebar-search input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);padding:6px 10px 6px 28px;font-size:12px;outline:none}
-.proj-sidebar-search input:focus{border-color:var(--accent)}
-#proj-list{flex:1;overflow-y:auto;padding:0 6px}
-.proj-sidebar-section{padding:8px 14px 12px;border-top:1px solid var(--border);flex-shrink:0}
-.proj-sidebar-label{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center}
-.proj-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--radius-sm);cursor:pointer;transition:all .12s;margin-bottom:2px;border:1px solid transparent}
-.proj-item:hover{background:var(--bg3)}
-.proj-item.active{background:var(--acc-dim);border-color:var(--accent)22}
-.proj-item-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
-.proj-item-name{flex:1;font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.proj-item-count{font-size:10px;background:var(--bg4);color:var(--text3);border-radius:8px;padding:1px 5px;flex-shrink:0}
-.proj-status-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.area-pill{display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:var(--radius-sm);cursor:pointer;font-size:12px;color:var(--text2);transition:background .12s;margin-bottom:2px}
-.area-pill:hover{background:var(--bg3)}
-.area-pill-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-
-/* Workspace */
-.proj-workspace{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
-.proj-empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center}
-.proj-ws-header{padding:20px 24px 0;flex-shrink:0}
-.proj-ws-title-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-.proj-ws-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
-.proj-ws-name{font-size:20px;font-weight:700;flex:1;outline:none;background:transparent;border:none;color:var(--text);font-family:inherit;cursor:text}
-.proj-ws-name:focus{background:var(--bg3);border-radius:6px;padding:2px 6px}
-.proj-ws-meta{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
-.proj-meta-chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--text2);background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:3px 10px;cursor:pointer;transition:all .12s}
-.proj-meta-chip:hover{border-color:var(--accent);color:var(--text)}
-.proj-meta-chip select{background:transparent;border:none;color:inherit;font-size:12px;outline:none;cursor:pointer}
-.proj-tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);padding:0 24px}
-.proj-tab{padding:8px 16px;border:none;background:transparent;color:var(--text3);cursor:pointer;font-size:13px;font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;display:flex;align-items:center;gap:6px}
-.proj-tab:hover{color:var(--text)}
-.proj-tab.active{color:var(--accent2);border-bottom-color:var(--accent2)}
-.proj-tab-content{flex:1;overflow-y:auto;padding:20px 24px}
-
-/* Overview tab */
-.proj-overview-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
-@media(max-width:700px){.proj-overview-grid{grid-template-columns:1fr}}
-.proj-stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center}
-.proj-stat-val{font-size:28px;font-weight:700;color:var(--accent2)}
-.proj-stat-label{font-size:12px;color:var(--text3);margin-top:2px}
-
-/* Notes tab */
-.note-item{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;cursor:pointer;transition:border .15s}
-.note-item:hover{border-color:var(--accent)}
-.note-item-title{font-size:14px;font-weight:600;margin-bottom:4px}
-.note-item-preview{font-size:12px;color:var(--text3);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.note-item-date{font-size:11px;color:var(--text3);margin-top:6px}
-.note-item-imgs{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
-.note-item-thumb{width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--border)}
-/* Rich editor */
-.note-title-input{width:100%;background:transparent;border:none;border-bottom:2px solid var(--border);color:var(--text);font-size:18px;font-weight:700;outline:none;padding:6px 0;margin-bottom:0;font-family:inherit}
-.note-title-input:focus{border-bottom-color:var(--accent)}
-.note-toolbar{display:flex;gap:4px;padding:8px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center}
-.note-tb-btn{background:none;border:1px solid transparent;color:var(--text2);cursor:pointer;padding:4px 8px;border-radius:6px;font-size:13px;transition:all .12s;display:inline-flex;align-items:center;gap:4px}
-.note-tb-btn:hover{background:var(--bg3);border-color:var(--border);color:var(--text)}
-.note-tb-btn.active{background:var(--acc-dim);border-color:var(--accent);color:var(--accent2)}
-.note-tb-sep{width:1px;height:20px;background:var(--border);margin:0 2px}
-.note-editor-rich{flex:1;outline:none;font-size:14px;line-height:1.8;color:var(--text);padding:12px 4px;overflow-y:auto;min-height:200px;font-family:inherit}
-.note-editor-rich:empty::before{content:attr(data-placeholder);color:var(--text3);pointer-events:none}
-.note-editor-rich img{max-width:100%;border-radius:8px;margin:8px 0;display:inline-block;border:2px solid transparent;cursor:pointer;vertical-align:bottom;transition:border .15s}
-.note-editor-rich img:hover{border-color:var(--accent)44}
-.note-editor-rich img.img-selected{border-color:var(--accent)!important;border-radius:8px}
-/* Resize wrapper */
-.img-resize-wrap{display:inline-block;position:relative;margin:8px 0;line-height:0;vertical-align:bottom}
-.img-resize-wrap img{display:block;border-radius:8px;border:2px solid var(--accent);cursor:default}
-.resize-handle{position:absolute;width:10px;height:10px;background:var(--accent);border:2px solid #fff;border-radius:2px;z-index:10}
-.resize-handle.se{bottom:-5px;right:-5px;cursor:se-resize}
-.resize-handle.sw{bottom:-5px;left:-5px;cursor:sw-resize}
-.resize-handle.ne{top:-5px;right:-5px;cursor:ne-resize}
-.resize-handle.nw{top:-5px;left:-5px;cursor:nw-resize}
-.resize-handle.n{top:-5px;left:50%;transform:translateX(-50%);cursor:n-resize}
-.resize-handle.s{bottom:-5px;left:50%;transform:translateX(-50%);cursor:s-resize}
-.resize-handle.e{right:-5px;top:50%;transform:translateY(-50%);cursor:e-resize}
-.resize-handle.w{left:-5px;top:50%;transform:translateY(-50%);cursor:w-resize}
-.img-resize-toolbar{position:absolute;top:-34px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--border);border-radius:8px;display:flex;gap:2px;padding:3px 6px;white-space:nowrap;box-shadow:0 2px 8px #00000033;z-index:20}
-.img-resize-btn{background:none;border:none;color:var(--text2);cursor:pointer;padding:3px 7px;border-radius:5px;font-size:12px;transition:all .12s}
-.img-resize-btn:hover{background:var(--bg3);color:var(--text)}
-.img-resize-btn.active{background:var(--acc-dim);color:var(--accent2)}
-.note-editor-rich h1{font-size:20px;font-weight:700;margin:12px 0 4px}
-.note-editor-rich h2{font-size:16px;font-weight:600;margin:10px 0 4px}
-.note-editor-rich ul{padding-left:20px;margin:4px 0}
-.note-editor-rich ol{padding-left:20px;margin:4px 0}
-.note-editor-rich li{margin:2px 0}
-.note-editor-rich blockquote{border-left:3px solid var(--accent);padding-left:12px;color:var(--text2);margin:8px 0;font-style:italic}
-.note-editor-rich a{color:var(--accent2);text-decoration:underline}
-.note-img-wrap{position:relative;display:inline-block;margin:8px 0}
-.note-img-del{position:absolute;top:4px;right:4px;background:#00000088;border:none;border-radius:50%;color:#fff;cursor:pointer;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:12px;opacity:0;transition:opacity .15s}
-.note-img-wrap:hover .note-img-del{opacity:1}
-
-/* Files tab */
-.file-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:16px}
-.file-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center;cursor:pointer;transition:border .15s;position:relative}
-.file-card:hover{border-color:var(--accent)}
-.file-card-icon{font-size:32px;margin-bottom:8px}
-.file-card-name{font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.file-card-size{font-size:10px;color:var(--text3);margin-top:2px}
-.file-card-del{position:absolute;top:4px;right:4px;opacity:0;transition:opacity .15s}
-.file-card:hover .file-card-del{opacity:1}
-.file-drop-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:32px;text-align:center;color:var(--text3);cursor:pointer;transition:all .15s;margin-bottom:16px}
-.file-drop-zone:hover,.file-drop-zone.drag-over{border-color:var(--accent);color:var(--accent2);background:var(--acc-dim)}
-.file-drop-zone i{font-size:32px;display:block;margin-bottom:8px}
-
-/* Note overlay */
-.note-overlay{display:none;position:fixed;inset:0;background:#00000088;z-index:400;align-items:center;justify-content:center}
-.note-overlay.open{display:flex}
-.note-modal{background:var(--bg2);border-radius:var(--radius);padding:24px;width:90%;max-width:680px;max-height:85vh;display:flex;flex-direction:column;gap:12px}
-
-/* ===================== RESPONSIVE ===================== */
-
-/* Tablet (≤900px) */
-@media(max-width:900px){
-  #app{max-width:100%}
-  :root{--sidebar-w:200px;--detail-w:280px}
-  .grid3{grid-template-columns:1fr 1fr}
-  .proj-sidebar{width:200px;min-width:200px}
-}
-
-/* Large mobile / small tablet (≤768px) */
-@media(max-width:768px){
-  :root{--sidebar-w:0px;--detail-w:100%}
-
-  /* Nav → bottom bar */
-  nav{
-    position:fixed;bottom:0;top:auto;left:0;right:0;
-    padding:6px 0 max(6px,env(safe-area-inset-bottom));
-    background:var(--bg2);border-top:1px solid var(--border);border-bottom:none;
-    display:flex;justify-content:space-around;align-items:center;
-    gap:0;flex-wrap:nowrap;z-index:150;
-  }
-  .logo{display:none}
-  .nav-btn{flex-direction:column;gap:2px;padding:4px 6px;font-size:10px;border-radius:8px;
-    min-width:52px;align-items:center;justify-content:center}
-  .nav-btn i{font-size:20px}
-  .nav-btn[style*="margin-left:auto"]{margin-left:0!important}
-
-  /* Add bottom padding to all views so nav doesn't cover content */
-  .view.active,.view.active.padded{padding-bottom:80px!important}
-  #view-tasks.active,#view-calendar.active,#view-areas.active{
-    height:calc(100vh - 0px);padding-bottom:0!important
-  }
-  /* Inner scroll areas get the bottom padding instead */
-  .tt-content{padding-bottom:80px}
-  .day-scroll{padding-bottom:80px}
-  .proj-tab-content{padding-bottom:80px}
-
-  /* FAB repositioned above bottom nav */
-  #fab{bottom:76px;right:16px;width:46px;height:46px;font-size:20px}
-
-  /* Tasks — hide sidebar, full width main */
-  .tt-sidebar{display:none}
-  .tt-main{width:100%}
-  /* Show mobile sidebar toggle */
-  .tt-mobile-menu{display:flex!important}
-
-  /* Detail panel → full screen overlay */
-  .tt-detail{
-    position:fixed;inset:0 0 64px 0;
-    width:100%!important;min-width:100%!important;
-    z-index:200;border:none;
-    box-shadow:-4px 0 20px #00000044
-  }
-  .tt-detail.closed{display:none}
-
-  /* Calendar day layout — stack mini cal above */
-  .day-layout{flex-direction:column}
-  .day-mini-cal{width:100%;min-width:unset;border-right:none;border-bottom:1px solid var(--border);padding:10px}
-  .mini-grid{grid-template-columns:repeat(7,1fr)}
-  .day-scroll{flex:1}
-
-  /* Calendar week — 3 cols */
-  .week-grid{grid-template-columns:repeat(4,1fr);gap:3px}
-
-  /* Month chip font */
-  .month-chip,.month-span{font-size:10px}
-  .month-day{min-height:70px}
-
-  /* Finance grid */
-  .grid3{grid-template-columns:1fr 1fr}
-
-  /* Projects — stack layout */
-  .proj-layout{flex-direction:column}
-  .proj-sidebar{
-    width:100%!important;min-width:100%!important;
-    height:auto;max-height:220px;border-right:none;
-    border-bottom:1px solid var(--border)
-  }
-  #proj-list{max-height:120px}
-  .proj-sidebar-section{display:none}
-  .proj-workspace{flex:1;min-height:0}
-
-  /* Modals full screen */
-  .modal{border-radius:0;max-height:100vh;height:100vh;padding:16px 16px max(16px,env(safe-area-inset-bottom))}
-  .overlay{align-items:flex-start}
-  .note-modal{width:100%!important;max-width:100%!important;max-height:100vh;border-radius:0;height:100vh}
-
-  /* Forms */
-  .form-row{grid-template-columns:1fr}
-
-  /* Dashboard */
-  .grid3{grid-template-columns:1fr 1fr}
-  .section-title{font-size:16px}
-
-  /* Task actions always visible */
-  .tt-task-actions{opacity:1}
-
-  /* Cal filter */
-  .cal-filter-panel{padding:10px}
-}
-
-/* Small mobile (≤480px) */
-@media(max-width:480px){
-  :root{--sidebar-w:0px;--detail-w:100%}
-
-  .grid3{grid-template-columns:1fr}
-  .proj-overview-grid{grid-template-columns:1fr}
-
-  /* Nav labels hidden — icons only */
-  .nav-btn span.nav-label{display:none}
-  .nav-btn{min-width:40px;padding:4px}
-  .nav-btn i{font-size:22px}
-
-  /* Calendar week → show only 3 days */
-  .week-grid{grid-template-columns:repeat(3,1fr)}
-
-  /* Month smaller */
-  .month-day{min-height:56px;padding:2px 1px}
-  .month-day-name{font-size:9px;padding:4px 0}
-  .day-num{font-size:11px}
-  .month-chip,.month-span{font-size:9px;padding:1px 3px}
-
-  /* Cal header compact */
-  .cal-header{flex-wrap:wrap;gap:6px}
-  .cal-title{font-size:14px}
-
-  /* Main header stack */
-  .tt-main-header{flex-direction:column;align-items:flex-start;gap:8px;padding:12px 14px 0}
-  .tt-main-title{font-size:17px}
-
-  /* Quick add */
-  .tt-quick-meta{gap:4px}
-  .tt-meta-btn{font-size:11px;padding:3px 7px}
-
-  /* Task item compact */
-  .tt-task{padding:8px 10px;gap:8px}
-  .tt-task-name{font-size:13px}
-  .tt-task-sub{font-size:10px}
-
-  /* Detail panel */
-  .tt-detail-body{padding:12px}
-  .tt-detail-row-label{width:70px;font-size:11px}
-
-  /* Note toolbar wrap */
-  .note-toolbar{gap:2px;padding:6px 0}
-  .note-tb-btn{padding:3px 5px;font-size:12px}
-
-  /* File grid */
-  .file-grid{grid-template-columns:repeat(2,1fr)}
-
-  /* Proj tabs scroll */
-  .proj-tabs{overflow-x:auto;flex-wrap:nowrap;padding:0 12px}
-  .proj-tab{white-space:nowrap;padding:8px 12px;font-size:12px}
-
-  /* Proj workspace header */
-  .proj-ws-title-row{flex-wrap:wrap}
-  .proj-ws-name{font-size:16px}
-  .proj-ws-meta{gap:6px}
-  .proj-meta-chip{font-size:11px;padding:2px 8px}
-}
-
-/* Very small (≤360px) */
-@media(max-width:360px){
-  .nav-btn{min-width:34px}
-  .cal-tabs{gap:2px}
-  .cal-tab{padding:5px 8px;font-size:12px}
-  .btn-sm{padding:4px 8px;font-size:11px}
-  .month-day{min-height:48px}
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+  <title>Life OS</title>
+  <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/tasks.css">
+  <link rel="stylesheet" href="css/calendar-finance.css">
+  <link rel="stylesheet" href="css/projects.css">
+  <link rel="stylesheet" href="css/responsive.css">
 </head>
 <body>
+
 <div id="app">
 
-<!-- NAV -->
-<nav>
-  <span class="logo">⬡ Life OS</span>
-  <button class="nav-btn active" onclick="showView('dashboard')" id="nav-dashboard"><i class="ti ti-layout-dashboard"></i><span class="nav-label"> Início</span></button>
-  <button class="nav-btn" onclick="showView('tasks')" id="nav-tasks"><i class="ti ti-checklist"></i><span class="nav-label"> Tarefas</span></button>
-  <button class="nav-btn" onclick="showView('calendar')" id="nav-calendar"><i class="ti ti-calendar"></i><span class="nav-label"> Calendário</span></button>
-  <button class="nav-btn" onclick="showView('finance')" id="nav-finance"><i class="ti ti-wallet"></i><span class="nav-label"> Finanças</span></button>
-  <button class="nav-btn" onclick="showView('areas')" id="nav-areas"><i class="ti ti-briefcase"></i><span class="nav-label"> Projetos</span></button>
-  <button class="nav-btn" onclick="toggleTheme()" style="margin-left:auto" title="Tema"><i class="ti ti-sun" id="theme-icon"></i></button>
-</nav>
+  <!-- ========== NAV ========== -->
+  <nav>
+    <div class="logo">LIFE OS</div>
+    <button class="nav-btn active" id="nav-dashboard" onclick="showView('dashboard')">
+      <i class="ti ti-layout-dashboard"></i><span class="nav-label">Painel</span>
+    </button>
+    <button class="nav-btn" id="nav-tasks" onclick="showView('tasks')">
+      <i class="ti ti-checklist"></i><span class="nav-label">Tarefas</span>
+    </button>
+    <button class="nav-btn" id="nav-calendar" onclick="showView('calendar')">
+      <i class="ti ti-calendar"></i><span class="nav-label">Calendário</span>
+    </button>
+    <button class="nav-btn" id="nav-finance" onclick="showView('finance')">
+      <i class="ti ti-coin"></i><span class="nav-label">Finanças</span>
+    </button>
+    <button class="nav-btn" id="nav-areas" onclick="showView('areas')">
+      <i class="ti ti-briefcase"></i><span class="nav-label">Projetos</span>
+    </button>
+    <button class="nav-btn" onclick="toggleTheme()" style="margin-left:auto" title="Alternar tema">
+      <i class="ti ti-sun" id="theme-icon"></i>
+    </button>
+  </nav>
 
-<!-- MOBILE SIDEBAR OVERLAY (tasks) -->
-<div id="mobile-sidebar-overlay" style="display:none;position:fixed;inset:0;background:#00000060;z-index:180" onclick="closeMobileSidebar()"></div>
-<div id="mobile-sidebar-panel" style="display:none;position:fixed;top:0;left:0;bottom:64px;width:260px;z-index:190;transform:translateX(-100%);transition:transform .25s ease">
-</div>
-
-<!-- DASHBOARD -->
-<div class="view active padded" id="view-dashboard">
-  <div class="section-title">Bom dia! 👋 <span class="section-sub" id="dash-date"></span></div>
-  <div class="grid3" id="dash-stats" style="margin-bottom:16px"></div>
-  <div class="card">
-    <div class="card-title"><i class="ti ti-clock"></i> Agenda de hoje</div>
-    <div id="dash-today"></div>
-  </div>
-  <div class="card">
-    <div class="card-title"><i class="ti ti-list"></i> Sem horário — hoje</div>
-    <div id="dash-notime"></div>
-  </div>
-  <div class="card">
-    <div class="card-title"><i class="ti ti-flame"></i> Alta prioridade</div>
-    <div id="dash-high"></div>
-  </div>
-</div>
-
-<!-- TASKS (TickTick Layout) -->
-<div class="view" id="view-tasks">
-  <!-- SIDEBAR -->
-  <div class="tt-sidebar">
-    <div class="tt-sidebar-search">
-      <i class="ti ti-search"></i>
-      <input id="tt-search" placeholder="Buscar tarefas..." oninput="ttFilterAndRender()">
+  <!-- ========== DASHBOARD VIEW ========== -->
+  <div class="view active padded" id="view-dashboard">
+    <div class="section-title">
+      <span>Olá! 👋</span>
+      <span class="section-sub" id="dash-date"></span>
     </div>
-    <div class="tt-sidebar-section">
-      <div class="tt-sidebar-label">Inteligentes</div>
-      <div class="tt-list-item active" id="ttl-hoje" onclick="ttSetList('hoje')">
-        <i class="ti ti-sun" style="color:var(--amber)"></i><span class="tt-label">Hoje</span><span class="tt-count" id="ttc-hoje"></span>
-      </div>
-      <div class="tt-list-item" id="ttl-amanha" onclick="ttSetList('amanha')">
-        <i class="ti ti-calendar-due" style="color:var(--blue)"></i><span class="tt-label">Amanhã</span><span class="tt-count" id="ttc-amanha"></span>
-      </div>
-      <div class="tt-list-item" id="ttl-semana" onclick="ttSetList('semana')">
-        <i class="ti ti-calendar-week" style="color:var(--accent2)"></i><span class="tt-label">Próximos 7 dias</span><span class="tt-count" id="ttc-semana"></span>
-      </div>
-      <div class="tt-list-item" id="ttl-todas" onclick="ttSetList('todas')">
-        <i class="ti ti-inbox" style="color:var(--text2)"></i><span class="tt-label">Todas</span><span class="tt-count" id="ttc-todas"></span>
-      </div>
-      <div class="tt-list-item" id="ttl-alta" onclick="ttSetList('alta')">
-        <i class="ti ti-flag" style="color:var(--red)"></i><span class="tt-label">Alta prioridade</span><span class="tt-count" id="ttc-alta"></span>
-      </div>
-      <div class="tt-list-item" id="ttl-semdata" onclick="ttSetList('semdata')">
-        <i class="ti ti-calendar-off" style="color:var(--text3)"></i><span class="tt-label">Sem data</span><span class="tt-count" id="ttc-semdata"></span>
-      </div>
-      <div class="tt-list-item" id="ttl-concluidas" onclick="ttSetList('concluidas')">
-        <i class="ti ti-circle-check" style="color:var(--green)"></i><span class="tt-label">Concluídas</span><span class="tt-count" id="ttc-concluidas"></span>
-      </div>
+    <div class="grid3" id="dash-stats"></div>
+
+    <div class="card">
+      <div class="card-title">⏰ Hoje com horário</div>
+      <div id="dash-today"></div>
     </div>
-    <div class="tt-sidebar-section">
-      <div class="tt-sidebar-label">Listas <button class="icon-btn" onclick="openAreaModal()" title="Nova área" style="margin-left:auto"><i class="ti ti-plus"></i></button></div>
-      <div id="tt-area-list"></div>
+
+    <div class="card">
+      <div class="card-title">📋 Pendentes de hoje (sem horário)</div>
+      <div id="dash-notime"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔴 Alta prioridade</div>
+      <div id="dash-high"></div>
     </div>
   </div>
 
-  <!-- MAIN -->
-  <div class="tt-main">
-    <div class="tt-main-header">
-      <div style="display:flex;align-items:center;gap:10px">
-        <button class="icon-btn tt-mobile-menu" id="tt-mobile-menu-btn" onclick="openMobileSidebar()" style="display:none" title="Listas"><i class="ti ti-menu-2"></i></button>
-        <span class="tt-main-title" id="tt-main-title">Hoje</span>
-        <span class="tt-main-count" id="tt-main-count"></span>
+  <!-- ========== TASKS VIEW (TickTick layout) ========== -->
+  <div class="view" id="view-tasks">
+
+    <!-- Mobile overlay -->
+    <div id="mobile-sidebar-overlay" onclick="closeMobileSidebar()"
+         style="display:none;position:fixed;inset:0;background:#00000088;z-index:201"></div>
+    <div id="mobile-sidebar-panel"
+         style="display:none;position:fixed;top:0;left:0;bottom:0;width:280px;background:var(--bg2);z-index:202;transform:translateX(-100%);transition:transform .25s ease;box-shadow:2px 0 16px #00000055"></div>
+
+    <!-- Sidebar -->
+    <div class="tt-sidebar">
+      <div class="tt-sidebar-search">
+        <i class="ti ti-search"></i>
+        <input type="text" id="tt-search" placeholder="Buscar..." oninput="TasksView.filterAndRender()">
       </div>
-      <div style="display:flex;gap:6px;align-items:center">
-        <select class="tt-sort-select" id="tt-sort" onchange="ttFilterAndRender()">
-          <option value="priority">Prioridade</option>
-          <option value="date">Data</option>
-          <option value="name">Nome</option>
-        </select>
-        <button class="btn btn-primary btn-sm" onclick="ttOpenQuick()"><i class="ti ti-plus"></i> Adicionar</button>
-      </div>
-    </div>
-    <div class="tt-content">
-      <!-- Quick Add -->
-      <div class="tt-quick-bar">
-        <div class="tt-quick-trigger" id="tt-quick-trigger" onclick="ttOpenQuick()">
-          <i class="ti ti-plus"></i> Adicionar tarefa...
+
+      <div class="tt-sidebar-section">
+        <div class="tt-sidebar-label">Listas Inteligentes</div>
+        <div class="tt-list-item active" id="ttl-hoje" onclick="ttSetList('hoje')">
+          <i class="ti ti-sun"></i><span class="tt-label">Hoje</span><span class="tt-count" id="ttc-hoje"></span>
         </div>
-        <div class="tt-quick-form" id="tt-quick-form">
-          <input class="tt-quick-input" id="tt-quick-input" placeholder="Nome da tarefa..." onkeydown="ttQuickKey(event)" autofocus>
-          <div class="tt-quick-meta">
-            <button class="tt-meta-btn" id="ttq-date-btn" onclick="document.getElementById('ttq-date').showPicker&&document.getElementById('ttq-date').showPicker();document.getElementById('ttq-date').click()">
-              <i class="ti ti-calendar"></i><span id="ttq-date-label">Data</span>
-            </button>
-            <input type="date" id="ttq-date" style="position:absolute;opacity:0;pointer-events:none" onchange="ttqUpdateDate()">
-            <button class="tt-meta-btn" id="ttq-pri-btn" onclick="ttqCyclePriority()">
-              <i class="ti ti-flag" id="ttq-pri-icon"></i><span id="ttq-pri-label">Prioridade</span>
-            </button>
-            <select class="tt-meta-btn" id="ttq-area" style="border:1px solid var(--border)"></select>
-            <div style="margin-left:auto;display:flex;gap:6px">
-              <button class="btn btn-ghost btn-sm" onclick="ttCloseQuick()">Cancelar</button>
-              <button class="btn btn-primary btn-sm" onclick="ttQuickSave()"><i class="ti ti-check"></i> Salvar</button>
+        <div class="tt-list-item" id="ttl-amanha" onclick="ttSetList('amanha')">
+          <i class="ti ti-arrow-right"></i><span class="tt-label">Amanhã</span><span class="tt-count" id="ttc-amanha"></span>
+        </div>
+        <div class="tt-list-item" id="ttl-semana" onclick="ttSetList('semana')">
+          <i class="ti ti-calendar"></i><span class="tt-label">Próximos 7 dias</span><span class="tt-count" id="ttc-semana"></span>
+        </div>
+        <div class="tt-list-item" id="ttl-todas" onclick="ttSetList('todas')">
+          <i class="ti ti-list"></i><span class="tt-label">Todas</span><span class="tt-count" id="ttc-todas"></span>
+        </div>
+        <div class="tt-list-item" id="ttl-alta" onclick="ttSetList('alta')">
+          <i class="ti ti-flag"></i><span class="tt-label">Alta prioridade</span><span class="tt-count" id="ttc-alta"></span>
+        </div>
+        <div class="tt-list-item" id="ttl-semdata" onclick="ttSetList('semdata')">
+          <i class="ti ti-calendar-off"></i><span class="tt-label">Sem data</span><span class="tt-count" id="ttc-semdata"></span>
+        </div>
+        <div class="tt-list-item" id="ttl-concluidas" onclick="ttSetList('concluidas')">
+          <i class="ti ti-check"></i><span class="tt-label">Concluídas</span><span class="tt-count" id="ttc-concluidas"></span>
+        </div>
+      </div>
+
+      <div class="tt-sidebar-section" style="border-top:1px solid var(--border);padding-top:8px">
+        <div class="tt-sidebar-label">Áreas
+          <button class="icon-btn" onclick="openAreaModal()" style="padding:0"><i class="ti ti-plus" style="font-size:13px"></i></button>
+        </div>
+        <div id="tt-area-list"></div>
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="tt-main">
+      <div class="tt-main-header">
+        <button class="icon-btn" id="tt-mobile-menu-btn" onclick="openMobileSidebar()"
+                style="display:none;font-size:20px;padding:6px"
+                title="Menu"><i class="ti ti-menu-2"></i></button>
+        <div>
+          <div class="tt-main-title" id="tt-main-title">Hoje</div>
+          <div class="tt-main-count" id="tt-main-count"></div>
+        </div>
+        <select class="tt-sort-select" id="tt-sort" onchange="TasksView.filterAndRender()">
+          <option value="priority">Por prioridade</option>
+          <option value="date">Por data</option>
+          <option value="name">Por nome</option>
+        </select>
+      </div>
+
+      <div class="tt-content">
+        <!-- Quick add bar -->
+        <div class="tt-quick-bar">
+          <div class="tt-quick-trigger" onclick="ttOpenQuick()">
+            <i class="ti ti-plus"></i> Adicionar tarefa
+          </div>
+          <div class="tt-quick-form" id="tt-quick-form">
+            <input class="tt-quick-input" id="tt-quick-input" placeholder="O que precisa ser feito?" onkeydown="ttQuickKey(event)">
+            <div class="tt-quick-meta">
+              <button class="tt-meta-btn" id="ttq-pri-btn" onclick="ttqCyclePriority()">
+                <i class="ti ti-flag" id="ttq-pri-icon"></i> <span id="ttq-pri-label">Prioridade</span>
+              </button>
+              <button class="tt-meta-btn" id="ttq-date-btn">
+                <i class="ti ti-calendar"></i> <span id="ttq-date-label">Data</span>
+                <input type="date" id="ttq-date" onchange="ttqUpdateDate()" style="position:absolute;width:1px;height:1px;opacity:0;border:none" tabindex="-1">
+              </button>
+              <select class="tt-meta-btn" id="ttq-area" style="cursor:pointer"></select>
+              <button class="tt-meta-btn" onclick="ttCloseQuick()">Cancelar</button>
+              <button class="tt-meta-btn" style="background:var(--accent);color:#fff;border-color:var(--accent)" onclick="ttQuickSave()">
+                <i class="ti ti-check"></i> Adicionar
+              </button>
             </div>
           </div>
         </div>
+
+        <!-- Task list -->
+        <div id="tt-task-list"></div>
       </div>
-      <div id="tt-task-list"></div>
+    </div>
+
+    <!-- Detail panel -->
+    <div class="tt-detail closed" id="tt-detail-panel">
+      <div class="tt-detail-header">
+        <div class="tt-detail-title">Detalhes</div>
+        <button class="icon-btn" onclick="ttCloseDetail()"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="tt-detail-body" id="tt-detail-body"></div>
     </div>
   </div>
 
-  <!-- DETAIL PANEL -->
-  <div class="tt-detail closed" id="tt-detail">
-    <div class="tt-detail-header">
-      <span class="tt-detail-title">Detalhes</span>
-      <div style="display:flex;gap:4px">
-        <button class="icon-btn" onclick="ttDupTask()" title="Duplicar"><i class="ti ti-copy"></i></button>
-        <button class="icon-btn" onclick="ttDeleteFromDetail()" title="Excluir" style="color:var(--red)"><i class="ti ti-trash"></i></button>
-        <button class="icon-btn" onclick="ttCloseDetail()" title="Fechar"><i class="ti ti-x"></i></button>
+  <!-- ========== CALENDAR VIEW ========== -->
+  <div class="view" id="view-calendar">
+    <div class="cal-header">
+      <button class="cal-nav" onclick="calNavigate(-1)"><i class="ti ti-chevron-left"></i></button>
+      <div class="cal-title" id="cal-title"></div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="cal-nav" onclick="calGoToday()" style="font-size:12px">Hoje</button>
+        <button class="cal-nav" onclick="toggleCalFilter()" style="position:relative">
+          <i class="ti ti-filter"></i>
+          <span id="cal-filter-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--accent);color:#fff;font-size:9px;width:14px;height:14px;border-radius:7px;line-height:14px"></span>
+        </button>
+        <button class="cal-nav" onclick="calNavigate(1)"><i class="ti ti-chevron-right"></i></button>
       </div>
     </div>
-    <div class="tt-detail-body" id="tt-detail-body"></div>
+
+    <div class="cal-tabs">
+      <button class="cal-tab" id="cal-tab-day" onclick="setCalView('day')">Dia</button>
+      <button class="cal-tab" id="cal-tab-week" onclick="setCalView('week')">Semana</button>
+      <button class="cal-tab active" id="cal-tab-month" onclick="setCalView('month')">Mês</button>
+    </div>
+
+    <div id="cal-filter-panel" class="card" style="display:none;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div class="card-title" style="margin:0">Filtros</div>
+        <button class="btn btn-ghost btn-sm" onclick="clearCalFilters()">Limpar</button>
+      </div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Áreas:</div>
+      <div class="filter-bar" id="cal-filter-areas" style="margin-bottom:10px"></div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Projeto:</div>
+      <select class="form-select" id="cal-filter-proj" onchange="setCalProjFilter(this.value)"></select>
+    </div>
+
+    <div id="cal-body"></div>
+  </div>
+
+  <!-- ========== FINANCE VIEW ========== -->
+  <div class="view padded" id="view-finance">
+    <div class="section-title">
+      <span>💰 Finanças</span>
+      <button class="btn btn-primary btn-sm" onclick="openFinModal()">
+        <i class="ti ti-plus"></i> Novo
+      </button>
+    </div>
+    <div class="tab-row">
+      <button class="tab-btn fin-tab active" data-tab="resumo" onclick="setFinTab('resumo')">Resumo</button>
+      <button class="tab-btn fin-tab" data-tab="lancamentos" onclick="setFinTab('lancamentos')">Lançamentos</button>
+      <button class="tab-btn fin-tab" data-tab="categorias" onclick="setFinTab('categorias')">Categorias</button>
+    </div>
+    <div id="fin-content"></div>
+  </div>
+
+  <!-- ========== AREAS / PROJECTS VIEW ========== -->
+  <div class="view" id="view-areas">
+    <div class="proj-layout">
+
+      <div class="proj-sidebar">
+        <div class="proj-sidebar-header">
+          <div class="proj-sidebar-title">Projetos</div>
+          <button class="btn btn-primary btn-sm" onclick="openNewProjectModal()" style="padding:4px 10px">
+            <i class="ti ti-plus"></i> Novo
+          </button>
+        </div>
+        <div class="proj-sidebar-search">
+          <i class="ti ti-search"></i>
+          <input type="text" id="proj-search" placeholder="Buscar projeto..." oninput="searchProjects()">
+        </div>
+        <div id="proj-list"></div>
+
+        <div class="proj-sidebar-section">
+          <div class="proj-sidebar-label">
+            ÁREAS
+            <button class="icon-btn" onclick="openAreaModal()" style="margin-left:auto;padding:0">
+              <i class="ti ti-plus" style="font-size:12px"></i>
+            </button>
+          </div>
+          <div id="area-pill-list"></div>
+        </div>
+      </div>
+
+      <div class="proj-workspace" id="proj-workspace">
+        <div class="proj-empty-state">
+          <i class="ti ti-briefcase" style="font-size:48px;color:var(--text3);display:block;margin-bottom:12px"></i>
+          <div style="font-size:16px;font-weight:600;color:var(--text2);margin-bottom:6px">Selecione um projeto</div>
+          <div style="font-size:13px;color:var(--text3)">ou crie um novo para começar</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ========== FAB ========== -->
+  <button id="fab" onclick="openTaskModal()" title="Nova Tarefa"><i class="ti ti-plus"></i></button>
+
+</div><!-- /#app -->
+
+<!-- ========== MODAL: TASK ========== -->
+<div class="overlay" id="task-modal">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="task-modal-title">Nova Tarefa</span>
+      <button class="modal-close" onclick="closeModal('task-modal')">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nome</label>
+      <input class="form-input" id="t-name" placeholder="O que precisa ser feito?">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Prioridade</label>
+        <select class="form-select" id="t-priority">
+          <option value="nenhuma">⚪ Nenhuma</option>
+          <option value="alta">🔴 Alta</option>
+          <option value="media">🟡 Média</option>
+          <option value="baixa">🟢 Baixa</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select class="form-select" id="t-status">
+          <option value="afazer">⏳ A fazer</option>
+          <option value="emprogresso">🔄 Em progresso</option>
+          <option value="concluida">✅ Concluída</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Data início</label>
+        <input class="form-input" type="date" id="t-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Data fim (opcional)</label>
+        <input class="form-input" type="date" id="t-dateend">
+      </div>
+    </div>
+    <div id="t-time-fields">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Hora início</label>
+          <input class="form-input" type="time" id="t-start">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Hora fim</label>
+          <input class="form-input" type="time" id="t-end">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Duração</label>
+        <input class="form-input" type="text" id="t-duration" placeholder="Calculada automaticamente" readonly>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Recorrência</label>
+        <select class="form-select" id="t-recurrence">
+          <option value="">Nenhuma</option>
+          <option value="daily">Diária</option>
+          <option value="weekly">Semanal</option>
+          <option value="monthly">Mensal</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Estimativa</label>
+        <input class="form-input" type="text" id="t-estimate" placeholder="ex: 30min, 2h">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Área</label>
+        <select class="form-select" id="t-area" onchange="updateProjectSelect()"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Projeto</label>
+        <select class="form-select" id="t-project"></select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tags (separadas por vírgula)</label>
+      <input class="form-input" id="t-tags" placeholder="ex: urgente, casa, trabalho">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notas</label>
+      <textarea class="form-textarea" id="t-notes"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal('task-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveTask()">Salvar</button>
+    </div>
   </div>
 </div>
 
-<!-- CALENDAR -->
-<div class="view" id="view-calendar">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-    <div class="cal-tabs" style="margin-bottom:0">
-      <button class="cal-tab active" onclick="setCalView('day')" id="cal-tab-day">Dia</button>
-      <button class="cal-tab" onclick="setCalView('week')" id="cal-tab-week">Semana</button>
-      <button class="cal-tab" onclick="setCalView('month')" id="cal-tab-month">Mês</button>
+<!-- ========== MODAL: AREA ========== -->
+<div class="overlay" id="area-modal">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="area-modal-title">Nova Área</span>
+      <button class="modal-close" onclick="closeModal('area-modal')">×</button>
     </div>
-    <button class="btn btn-ghost btn-sm" onclick="toggleCalFilter()" id="cal-filter-btn">
-      <i class="ti ti-filter"></i> Filtrar <span id="cal-filter-badge" style="display:none;background:var(--accent);color:#fff;border-radius:20px;padding:0 6px;font-size:11px;margin-left:2px"></span>
-    </button>
-  </div>
-  <div id="cal-filter-panel" style="display:none" class="cal-filter-panel">
-    <div style="font-size:12px;color:var(--text2);font-weight:600;margin-bottom:8px">Área</div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px" id="cal-area-chips"></div>
-    <div id="cal-proj-wrap" style="display:none">
-      <div style="font-size:12px;color:var(--text2);font-weight:600;margin-bottom:8px">Projeto</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px" id="cal-proj-chips"></div>
-    </div>
-    <div style="margin-top:10px;display:flex;justify-content:flex-end">
-      <button class="btn btn-ghost btn-sm" onclick="clearCalFilters()"><i class="ti ti-x"></i> Limpar</button>
-    </div>
-  </div>
-  <div class="cal-header">
-    <button class="cal-nav" onclick="calNavigate(-1)"><i class="ti ti-chevron-left"></i></button>
-    <span class="cal-title" id="cal-title"></span>
-    <div style="display:flex;gap:6px">
-      <button class="cal-nav" onclick="calGoToday()">Hoje</button>
-      <button class="cal-nav" onclick="calNavigate(1)"><i class="ti ti-chevron-right"></i></button>
-    </div>
-  </div>
-  <div id="cal-body"></div>
-</div>
-
-<!-- FINANCE -->
-<div class="view padded" id="view-finance">
-  <div class="section-title">Finanças <button class="btn btn-primary btn-sm" onclick="openFinModal()"><i class="ti ti-plus"></i> Lançamento</button></div>
-  <div class="tab-row">
-    <button class="tab-btn active" onclick="setFinTab('resumo')" id="fin-tab-resumo">Resumo</button>
-    <button class="tab-btn" onclick="setFinTab('lancamentos')" id="fin-tab-lancamentos">Lançamentos</button>
-    <button class="tab-btn" onclick="setFinTab('categorias')" id="fin-tab-categorias">Categorias</button>
-  </div>
-  <div id="fin-body"></div>
-</div>
-
-<!-- PROJECTS -->
-<div class="view" id="view-areas">
-  <div class="proj-layout">
-    <!-- LEFT SIDEBAR: project list -->
-    <div class="proj-sidebar">
-      <div class="proj-sidebar-header">
-        <span class="proj-sidebar-title">Projetos</span>
-        <button class="icon-btn" onclick="openNewProjectModal()" title="Novo projeto"><i class="ti ti-plus"></i></button>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Nome</label>
+        <input class="form-input" id="a-name">
       </div>
-      <div class="proj-sidebar-search">
-        <i class="ti ti-search"></i>
-        <input id="proj-search" placeholder="Buscar projeto..." oninput="renderProjectList()">
-      </div>
-      <div id="proj-list"></div>
-      <div class="proj-sidebar-section">
-        <div class="proj-sidebar-label">Áreas <button class="icon-btn" onclick="openAreaModal()" style="margin-left:auto"><i class="ti ti-settings"></i></button></div>
-        <div id="area-pills-list"></div>
+      <div class="form-group">
+        <label class="form-label">Ícone (emoji)</label>
+        <input class="form-input" id="a-icon" placeholder="📁">
       </div>
     </div>
-    <!-- RIGHT WORKSPACE -->
-    <div class="proj-workspace" id="proj-workspace">
-      <div class="proj-empty-state">
-        <i class="ti ti-briefcase" style="font-size:48px;color:var(--text3);display:block;margin-bottom:12px"></i>
-        <div style="font-size:16px;font-weight:600;color:var(--text2);margin-bottom:6px">Selecione ou crie um projeto</div>
-        <div style="font-size:13px;color:var(--text3);margin-bottom:20px">Organize suas ideias, tarefas e arquivos em um só lugar</div>
-        <button class="btn btn-primary" onclick="openNewProjectModal()"><i class="ti ti-plus"></i> Novo Projeto</button>
-      </div>
+    <div class="form-group">
+      <label class="form-label">Cor</label>
+      <div id="color-picker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Projetos
+        <button class="btn btn-ghost btn-sm" onclick="addProjectField()" style="float:right">
+          <i class="ti ti-plus"></i> Adicionar
+        </button>
+      </label>
+      <div id="proj-fields"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal('area-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveArea()">Salvar</button>
     </div>
   </div>
 </div>
 
-<!-- NEW PROJECT MODAL -->
+<!-- ========== MODAL: FINANCE ========== -->
+<div class="overlay" id="fin-modal">
+  <div class="modal">
+    <div class="modal-title">
+      <span>Novo Lançamento</span>
+      <button class="modal-close" onclick="closeModal('fin-modal')">×</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="btn btn-ghost" id="fin-type-rec" onclick="setFinType('receita')" style="flex:1">
+        <i class="ti ti-trending-up"></i> Receita
+      </button>
+      <button class="btn btn-ghost" id="fin-type-desp" onclick="setFinType('despesa')" style="flex:1">
+        <i class="ti ti-trending-down"></i> Despesa
+      </button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Descrição</label>
+      <input class="form-input" id="f-desc">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Valor (R$)</label>
+        <input class="form-input" type="number" step="0.01" id="f-value">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Data</label>
+        <input class="form-input" type="date" id="f-date">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Categoria</label>
+      <select class="form-select" id="f-cat"></select>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal('fin-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveFinEntry()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL: NEW/EDIT PROJECT ========== -->
 <div class="overlay" id="new-proj-modal">
-<div class="modal">
-  <div class="modal-title"><span id="new-proj-modal-title">Novo Projeto</span><button class="modal-close" onclick="closeModal('new-proj-modal')"><i class="ti ti-x"></i></button></div>
-  <div class="form-row">
-    <div class="form-group"><label class="form-label">Nome do projeto *</label><input class="form-input" id="np-name" placeholder="Ex: Construção Casa"></div>
-    <div class="form-group"><label class="form-label">Ícone</label><input class="form-input" id="np-icon" placeholder="🏠" maxlength="2"></div>
-  </div>
-  <div class="form-group"><label class="form-label">Área</label><select class="form-select" id="np-area"></select></div>
-  <div class="form-group"><label class="form-label">Cor</label><div style="display:flex;gap:8px;flex-wrap:wrap" id="np-color-picker"></div></div>
-  <div class="form-row">
-    <div class="form-group"><label class="form-label">Status</label>
-      <select class="form-select" id="np-status">
-        <option value="ativo">🟢 Ativo</option>
-        <option value="pausado">⏸️ Pausado</option>
-        <option value="concluido">✅ Concluído</option>
-        <option value="planejamento">📋 Planejamento</option>
-      </select>
+  <div class="modal">
+    <div class="modal-title">
+      <span id="new-proj-modal-title">Novo Projeto</span>
+      <button class="modal-close" onclick="closeModal('new-proj-modal')">×</button>
     </div>
-    <div class="form-group"><label class="form-label">Data limite</label><input class="form-input" id="np-deadline" type="date"></div>
-  </div>
-  <div class="form-group"><label class="form-label">Descrição</label><textarea class="form-textarea" id="np-desc" placeholder="Descreva o objetivo do projeto..."></textarea></div>
-  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
-    <button class="btn btn-ghost" onclick="closeModal('new-proj-modal')">Cancelar</button>
-    <button class="btn btn-primary" onclick="saveNewProject()"><i class="ti ti-check"></i> Salvar</button>
-  </div>
-</div>
-</div>
-
-<!-- NOTE MODAL -->
-<div class="note-overlay" id="note-overlay" onclick="noteOverlayClick(event)">
-  <div class="note-modal" style="width:95%;max-width:780px;max-height:92vh">
-    <!-- Header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
-      <span style="font-size:14px;font-weight:600;color:var(--text2)">Nota</span>
-      <div style="display:flex;gap:6px">
-        <button class="btn btn-primary btn-sm" onclick="saveCurrentNote()"><i class="ti ti-check"></i> Salvar</button>
-        <button class="icon-btn" onclick="closeNoteOverlay()"><i class="ti ti-x"></i></button>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Nome</label>
+        <input class="form-input" id="np-name" placeholder="Ex: Lançar novo produto">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ícone (emoji)</label>
+        <input class="form-input" id="np-icon" placeholder="📁">
       </div>
     </div>
-    <!-- Title -->
+    <div class="form-group">
+      <label class="form-label">Cor</label>
+      <div id="np-color-picker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Área</label>
+        <select class="form-select" id="np-area"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <select class="form-select" id="np-status">
+          <option value="ativo">● Ativo</option>
+          <option value="pausado">● Pausado</option>
+          <option value="concluido">● Concluído</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Deadline (opcional)</label>
+      <input class="form-input" type="date" id="np-deadline">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Descrição</label>
+      <textarea class="form-textarea" id="np-desc" placeholder="Descreva o objetivo..."></textarea>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal('new-proj-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveNewProject()">Criar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== NOTE EDITOR OVERLAY ========== -->
+<div class="note-overlay" id="note-overlay" onclick="noteOverlayClick(event)">
+  <div class="note-modal">
     <input class="note-title-input" id="note-title-input" placeholder="Título da nota...">
-    <!-- Toolbar -->
-    <div class="note-toolbar" id="note-toolbar">
-      <button class="note-tb-btn" onclick="noteCmd('bold')" title="Negrito"><i class="ti ti-bold"></i></button>
+    <div class="note-toolbar">
+      <button class="note-tb-btn" onclick="noteCmd('bold')" title="Negrito (Ctrl+B)"><i class="ti ti-bold"></i></button>
       <button class="note-tb-btn" onclick="noteCmd('italic')" title="Itálico"><i class="ti ti-italic"></i></button>
       <button class="note-tb-btn" onclick="noteCmd('underline')" title="Sublinhado"><i class="ti ti-underline"></i></button>
+      <button class="note-tb-btn" onclick="noteCmd('strikeThrough')" title="Tachado"><i class="ti ti-strikethrough"></i></button>
       <div class="note-tb-sep"></div>
-      <button class="note-tb-btn" onclick="noteCmd('formatBlock','h1')" title="Título grande">H1</button>
-      <button class="note-tb-btn" onclick="noteCmd('formatBlock','h2')" title="Título médio">H2</button>
-      <button class="note-tb-btn" onclick="noteCmd('formatBlock','p')" title="Parágrafo"><i class="ti ti-text-size"></i></button>
+      <button class="note-tb-btn" onclick="noteCmd('formatBlock','H1')" title="Título"><i class="ti ti-h-1"></i></button>
+      <button class="note-tb-btn" onclick="noteCmd('formatBlock','H2')" title="Subtítulo"><i class="ti ti-h-2"></i></button>
+      <button class="note-tb-btn" onclick="noteCmd('formatBlock','P')" title="Parágrafo"><i class="ti ti-text-size"></i></button>
       <div class="note-tb-sep"></div>
       <button class="note-tb-btn" onclick="noteCmd('insertUnorderedList')" title="Lista"><i class="ti ti-list"></i></button>
       <button class="note-tb-btn" onclick="noteCmd('insertOrderedList')" title="Lista numerada"><i class="ti ti-list-numbers"></i></button>
-      <button class="note-tb-btn" onclick="noteCmd('formatBlock','blockquote')" title="Citação"><i class="ti ti-quote"></i></button>
+      <button class="note-tb-btn" onclick="noteCmd('formatBlock','BLOCKQUOTE')" title="Citação"><i class="ti ti-quote"></i></button>
       <div class="note-tb-sep"></div>
-      <button class="note-tb-btn" onclick="document.getElementById('note-img-input').click()" title="Inserir foto" style="color:var(--accent2)">
-        <i class="ti ti-photo"></i> Foto
-      </button>
+      <button class="note-tb-btn" onclick="document.getElementById('note-img-input').click()" title="Imagem"><i class="ti ti-photo"></i></button>
+      <button class="note-tb-btn" onclick="(()=>{const u=prompt('URL:');if(u)noteCmd('createLink',u)})()" title="Link"><i class="ti ti-link"></i></button>
       <input type="file" id="note-img-input" accept="image/*" multiple style="display:none" onchange="noteInsertImages(event)">
-      <div class="note-tb-sep"></div>
-      <button class="note-tb-btn" onclick="noteCmd('undo')" title="Desfazer"><i class="ti ti-arrow-back-up"></i></button>
-      <button class="note-tb-btn" onclick="noteCmd('redo')" title="Refazer"><i class="ti ti-arrow-forward-up"></i></button>
     </div>
-    <!-- Rich Editor -->
     <div class="note-editor-rich" id="note-editor-rich" contenteditable="true"
-      data-placeholder="Escreva suas anotações, ideias, medidas, planos..."
-      ondrop="noteHandleDrop(event)" ondragover="event.preventDefault()"
-      onpaste="noteHandlePaste(event)"></div>
+         data-placeholder="Comece a escrever..."
+         onpaste="noteHandlePaste(event)"
+         ondragover="event.preventDefault()"
+         ondrop="noteHandleDrop(event)"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeNoteOverlay()">Fechar</button>
+      <button class="btn btn-primary" onclick="saveCurrentNote()">Salvar</button>
+    </div>
   </div>
 </div>
 
-<button id="fab" onclick="showView('tasks');setTimeout(ttOpenQuick,200)"><i class="ti ti-plus"></i></button>
+<!-- ========== JS MODULES ========== -->
+<!-- Order matters: config → core → services → ui → components → views → bootstrap -->
+
+<script src="js/config/constants.js"></script>
+<script src="js/core/utils.js"></script>
+<script src="js/core/storage.js"></script>
+<script src="js/core/state.js"></script>
+
+<script src="js/services/taskService.js"></script>
+<script src="js/services/areaService.js"></script>
+<script src="js/services/projectService.js"></script>
+<script src="js/services/financeService.js"></script>
+<script src="js/services/pomodoroService.js"></script>
+
+<script src="js/ui/navigation.js"></script>
+<script src="js/ui/theme.js"></script>
+<script src="js/ui/modal.js"></script>
+<script src="js/ui/mobile.js"></script>
+
+<script src="js/components/taskModal.js"></script>
+<script src="js/components/areaModal.js"></script>
+<script src="js/components/financeModal.js"></script>
+<script src="js/components/projectModal.js"></script>
+<script src="js/components/imageResize.js"></script>
+<script src="js/components/noteEditor.js"></script>
+<script src="js/components/fileHandler.js"></script>
+<script src="js/components/pomodoroUI.js"></script>
+
+<script src="js/views/dashboardView.js"></script>
+<script src="js/views/tasksView.js"></script>
+<script src="js/views/taskDetail.js"></script>
+<script src="js/views/calendarView.js"></script>
+<script src="js/views/financeView.js"></script>
+<script src="js/views/areasView.js"></script>
+
+<script src="js/app.js"></script>
 
-<!-- TASK MODAL (fallback from dashboard/calendar) -->
-<div class="overlay" id="task-modal">
-<div class="modal">
-  <div class="modal-title"><span id="task-modal-title">Nova Tarefa</span><button class="modal-close" onclick="closeModal('task-modal')"><i class="ti ti-x"></i></button></div>
-  <div class="form-group"><label class="form-label">Nome *</label><input class="form-input" id="t-name" placeholder="Nome da tarefa"></div>
-  <div class="form-row">
-    <div class="form-group"><label class="form-label">Área</label><select class="form-select" id="t-area" onchange="updateProjectSelect()"></select></div>
-    <div class="form-group"><label class="form-label">Projeto</label><select class="form-select" id="t-project"></select></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label class="form-label">Prioridade</label>
-      <select class="form-select" id="t-priority"><option value="alta">🔴 Alta</option><option value="media" selected>🟡 Média</option><option value="baixa">🟢 Baixa</option><option value="nenhuma">⚪ Nenhuma</option></select></div>
-    <div class="form-group"><label class="form-label">Status</label>
-      <select class="form-select" id="t-status"><option value="afazer">A fazer</option><option value="andamento">Em andamento</option><option value="concluida">Concluída</option></select></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label class="form-label">Data início <span style="color:var(--text3);font-size:11px">(opcional)</span></label><input class="form-input" id="t-date" type="date"></div>
-    <div class="form-group"><label class="form-label">Data fim <span style="color:var(--text3);font-size:11px">(opcional)</span></label><input class="form-input" id="t-dateend" type="date"></div>
-  </div>
-  <div id="t-time-fields">
-    <div class="form-row">
-      <div class="form-group"><label class="form-label">Hora início</label><input class="form-input" id="t-start" type="time"></div>
-      <div class="form-group"><label class="form-label">Hora fim</label><input class="form-input" id="t-end" type="time"></div>
-    </div>
-    <div class="form-group"><label class="form-label">Duração</label><input class="form-input" id="t-duration" readonly placeholder="Calculado automaticamente"></div>
-  </div>
-  <div class="form-group"><label class="form-label">Recorrência</label>
-    <select class="form-select" id="t-recurrence"><option value="">Não repete</option><option value="daily">Diária</option><option value="weekly">Semanal</option><option value="monthly">Mensal</option></select></div>
-  <div class="form-group"><label class="form-label">Estimativa de tempo</label><input class="form-input" id="t-estimate" placeholder="Ex: 1h30min"></div>
-  <div class="form-group"><label class="form-label">Tags (separadas por vírgula)</label><input class="form-input" id="t-tags" placeholder="Ex: reunião, cliente, urgente"></div>
-  <div class="form-group"><label class="form-label">Notas</label><textarea class="form-textarea" id="t-notes" placeholder="Anotações..."></textarea></div>
-  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
-    <button class="btn btn-ghost" onclick="closeModal('task-modal')">Cancelar</button>
-    <button class="btn btn-primary" onclick="saveTask()"><i class="ti ti-check"></i> Salvar</button>
-  </div>
-</div>
-</div>
-
-<!-- FINANCE MODAL -->
-<div class="overlay" id="fin-modal">
-<div class="modal">
-  <div class="modal-title"><span>Novo Lançamento</span><button class="modal-close" onclick="closeModal('fin-modal')"><i class="ti ti-x"></i></button></div>
-  <div class="form-group"><label class="form-label">Tipo</label>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-ghost" id="fin-type-rec" onclick="setFinType('receita')" style="flex:1"><i class="ti ti-arrow-up"></i> Receita</button>
-      <button class="btn btn-ghost" id="fin-type-desp" onclick="setFinType('despesa')" style="flex:1;border-color:var(--red);color:var(--red)"><i class="ti ti-arrow-down"></i> Despesa</button>
-    </div>
-  </div>
-  <div class="form-group"><label class="form-label">Descrição *</label><input class="form-input" id="f-desc" placeholder="Ex: Salário, Mercado..."></div>
-  <div class="form-row">
-    <div class="form-group"><label class="form-label">Valor (R$) *</label><input class="form-input" id="f-value" type="number" min="0" step="0.01" placeholder="0,00"></div>
-    <div class="form-group"><label class="form-label">Data *</label><input class="form-input" id="f-date" type="date"></div>
-  </div>
-  <div class="form-group"><label class="form-label">Categoria</label><select class="form-select" id="f-cat"></select></div>
-  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
-    <button class="btn btn-ghost" onclick="closeModal('fin-modal')">Cancelar</button>
-    <button class="btn btn-primary" onclick="saveFinEntry()"><i class="ti ti-check"></i> Salvar</button>
-  </div>
-</div>
-</div>
-
-<!-- AREA MODAL -->
-<div class="overlay" id="area-modal">
-<div class="modal">
-  <div class="modal-title"><span id="area-modal-title">Nova Área</span><button class="modal-close" onclick="closeModal('area-modal')"><i class="ti ti-x"></i></button></div>
-  <div class="form-row">
-    <div class="form-group"><label class="form-label">Nome *</label><input class="form-input" id="a-name" placeholder="Ex: Trabalho"></div>
-    <div class="form-group"><label class="form-label">Ícone</label><input class="form-input" id="a-icon" placeholder="💼" maxlength="2"></div>
-  </div>
-  <div class="form-group"><label class="form-label">Cor</label><div style="display:flex;gap:8px;flex-wrap:wrap" id="color-picker"></div></div>
-  <hr style="border:none;border-top:1px solid var(--border);margin:12px 0">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-    <span class="fw6">Projetos</span>
-    <button class="btn btn-ghost btn-sm" onclick="addProjectField()"><i class="ti ti-plus"></i> Adicionar</button>
-  </div>
-  <div id="proj-fields"></div>
-  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
-    <button class="btn btn-ghost" onclick="closeModal('area-modal')">Cancelar</button>
-    <button class="btn btn-primary" onclick="saveArea()"><i class="ti ti-check"></i> Salvar</button>
-  </div>
-</div>
-</div>
-
-<!-- PROJECT MODAL -->
-<div class="overlay" id="proj-modal">
-<div class="modal">
-  <div class="modal-title"><span>Novo Projeto</span><button class="modal-close" onclick="closeModal('proj-modal')"><i class="ti ti-x"></i></button></div>
-  <div class="form-group"><label class="form-label">Nome *</label><input class="form-input" id="p-name" placeholder="Nome do projeto"></div>
-  <div class="form-row">
-    <div class="form-group"><label class="form-label">Status</label>
-      <select class="form-select" id="p-status"><option value="ativo">Ativo</option><option value="pausado">Pausado</option><option value="concluido">Concluído</option></select></div>
-    <div class="form-group"><label class="form-label">Área</label><select class="form-select" id="p-area"></select></div>
-  </div>
-  <div class="form-group"><label class="form-label">Descrição</label><textarea class="form-textarea" id="p-desc" placeholder="Descrição..."></textarea></div>
-  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
-    <button class="btn btn-ghost" onclick="closeModal('proj-modal')">Cancelar</button>
-    <button class="btn btn-primary" onclick="saveProject()"><i class="ti ti-check"></i> Salvar</button>
-  </div>
-</div>
-</div>
-
-</div><!-- #app -->
-
-<script>
-// ===================== CONSTANTS & STATE =====================
-const COLORS=['#7c6fff','#f87171','#4ade80','#fbbf24','#60a5fa','#f472b6','#34d399','#a78bfa','#fb923c'];
-const PRI_ICONS={alta:'🔴',media:'🟡',baixa:'🟢',nenhuma:'⚪'};
-const PRI_ORDER={alta:0,media:1,baixa:2,nenhuma:3};
-
-let editTaskId=null, areaEditId=null, finType='despesa';
-let calView='day', calDate=new Date();
-let calFilters={areas:new Set(),project:'all'};
-let finTab='resumo';
-let ttList='hoje', ttDetailId=null;
-let ttQuickPri='nenhuma', ttQuickDate='';
-
-// Pomodoro state
-let pomoTimer=null, pomoSeconds=25*60, pomoMode='work', pomoRound=0, pomoRunning=false;
-
-// ===================== HELPERS =====================
-function uid(){return Math.random().toString(36).substr(2,9)}
-function today(){return new Date().toISOString().split('T')[0]}
-function tomorrow(){const d=new Date();d.setDate(d.getDate()+1);return d.toISOString().split('T')[0]}
-function fmtDate(d){if(!d)return'';const[y,m,dy]=d.split('-');return`${dy}/${m}`}
-function fmtMoney(v){return'R$ '+parseFloat(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
-function daysBetween(d1,d2){return Math.round((new Date(d2)-new Date(d1))/86400000)+1}
-function addDays(ds,n){const d=new Date(ds);d.setDate(d.getDate()+n);return d.toISOString().split('T')[0]}
-function taskCoversDay(t,ds){
-  if(!t.date)return false;
-  if(!t.dateend||t.dateend===t.date)return t.date===ds;
-  return ds>=t.date&&ds<=t.dateend;
-}
-
-// ===================== DATA =====================
-function loadData(){
-  const def={tasks:[],areas:[
-    {id:'a1',name:'Trabalho',icon:'💼',color:'#7c6fff',projects:[{id:'p1',name:'Geral',status:'ativo',desc:''}]},
-    {id:'a2',name:'Pessoal',icon:'🏠',color:'#4ade80',projects:[]},
-    {id:'a3',name:'Saúde',icon:'❤️',color:'#f87171',projects:[]},
-    {id:'a4',name:'Financeiro',icon:'💰',color:'#fbbf24',projects:[]},
-    {id:'a5',name:'Espiritual',icon:'🙏',color:'#60a5fa',projects:[]}
-  ],finance:[],finCats:[
-    {id:'fc1',name:'Alimentação',color:'#f87171'},{id:'fc2',name:'Transporte',color:'#fbbf24'},
-    {id:'fc3',name:'Saúde',color:'#4ade80'},{id:'fc4',name:'Lazer',color:'#7c6fff'},
-    {id:'fc5',name:'Moradia',color:'#60a5fa'},{id:'fc6',name:'Receita',color:'#34d399'}
-  ]};
-  try{return JSON.parse(localStorage.getItem('lifeos'))||def}catch{return def}
-}
-function saveData(d){localStorage.setItem('lifeos',JSON.stringify(d))}
-let DB=loadData();
-
-// ===================== NAV =====================
-function showView(v){
-  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));
-  document.getElementById('view-'+v).classList.add('active');
-  document.getElementById('nav-'+v).classList.add('active');
-  if(v==='dashboard')renderDashboard();
-  if(v==='tasks'){ttRenderSidebar();ttFilterAndRender();}
-  if(v==='calendar')renderCalendar();
-  if(v==='finance')renderFinance();
-  if(v==='areas')renderAreas();
-}
-function closeModal(id){document.getElementById(id).classList.remove('open')}
-function openModal(id){document.getElementById(id).classList.add('open')}
-
-// ===================== TASK MODAL (legacy - used by calendar/dashboard) =====================
-function openTaskModal(id){
-  editTaskId=id||null;
-  const t=id?DB.tasks.find(x=>x.id===id):{};
-  document.getElementById('task-modal-title').textContent=id?'Editar Tarefa':'Nova Tarefa';
-  document.getElementById('t-name').value=t.name||'';
-  document.getElementById('t-priority').value=t.priority||'media';
-  document.getElementById('t-status').value=t.status||'afazer';
-  document.getElementById('t-date').value=t.date||'';
-  document.getElementById('t-dateend').value=t.dateend||'';
-  document.getElementById('t-start').value=t.start||'';
-  document.getElementById('t-end').value=t.end||'';
-  document.getElementById('t-duration').value=t.duration||'';
-  document.getElementById('t-recurrence').value=t.recurrence||'';
-  document.getElementById('t-estimate').value=t.estimate||'';
-  document.getElementById('t-tags').value=(t.tags||[]).join(', ');
-  document.getElementById('t-notes').value=t.notes||'';
-  populateAreaSelect('t-area',t.area);
-  setTimeout(()=>{updateProjectSelect();if(t.project)document.getElementById('t-project').value=t.project},50);
-  updateTimeFieldsVisibility();
-  document.getElementById('t-dateend').onchange=updateTimeFieldsVisibility;
-  document.getElementById('t-start').onchange=calcDuration;
-  document.getElementById('t-end').onchange=calcDuration;
-  openModal('task-modal');
-}
-function updateTimeFieldsVisibility(){
-  const tf=document.getElementById('t-time-fields');
-  if(tf)tf.style.display=document.getElementById('t-dateend').value?'none':'block';
-}
-function calcDuration(){
-  const s=document.getElementById('t-start').value,e=document.getElementById('t-end').value;
-  if(s&&e){const sm=timeToMins(s),em=timeToMins(e),d=em-sm;
-    if(d>0){document.getElementById('t-duration').value=(Math.floor(d/60)?Math.floor(d/60)+'h ':'')+((d%60)?d%60+'min':'');return}}
-  document.getElementById('t-duration').value='';
-}
-function timeToMins(t){return t.split(':').reduce((a,b)=>a*60+parseInt(b),0)}
-function populateAreaSelect(selId,val){
-  document.getElementById(selId).innerHTML='<option value="">Nenhuma</option>'+
-    DB.areas.map(a=>`<option value="${a.id}"${a.id===val?' selected':''}>${a.icon} ${a.name}</option>`).join('');
-}
-function updateProjectSelect(){
-  const a=DB.areas.find(x=>x.id===document.getElementById('t-area').value);
-  document.getElementById('t-project').innerHTML='<option value="">Nenhum</option>'+
-    (a?a.projects:[]).map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
-}
-function saveTask(){
-  const name=document.getElementById('t-name').value.trim();
-  if(!name)return alert('Nome é obrigatório');
-  const dateend=document.getElementById('t-dateend').value,datestart=document.getElementById('t-date').value;
-  if(dateend&&datestart&&dateend<datestart)return alert('Data fim não pode ser anterior à data início');
-  if(dateend&&!datestart)return alert('Defina uma data início antes de definir data fim');
-  const tags=document.getElementById('t-tags').value.split(',').map(x=>x.trim()).filter(Boolean);
-  const task={id:editTaskId||uid(),name,area:document.getElementById('t-area').value,
-    project:document.getElementById('t-project').value,priority:document.getElementById('t-priority').value,
-    status:document.getElementById('t-status').value,date:datestart,dateend:dateend||'',
-    start:dateend?'':document.getElementById('t-start').value,end:dateend?'':document.getElementById('t-end').value,
-    duration:dateend?'':document.getElementById('t-duration').value,
-    recurrence:document.getElementById('t-recurrence').value,
-    estimate:document.getElementById('t-estimate').value,tags,
-    notes:document.getElementById('t-notes').value,subtasks:(editTaskId?DB.tasks.find(x=>x.id===editTaskId)?.subtasks:[])||[]};
-  if(editTaskId){DB.tasks[DB.tasks.findIndex(x=>x.id===editTaskId)]=task}else{DB.tasks.push(task)}
-  saveData(DB);closeModal('task-modal');renderAll();
-}
-function deleteTask(id){
-  if(!confirm('Excluir esta tarefa?'))return;
-  DB.tasks=DB.tasks.filter(x=>x.id!==id);
-  saveData(DB);if(ttDetailId===id){ttCloseDetail()}renderAll();
-}
-function toggleTask(id){
-  const t=DB.tasks.find(x=>x.id===id);
-  if(!t)return;
-  t.status=t.status==='concluida'?'afazer':'concluida';
-  // Handle recurrence
-  if(t.status==='concluida'&&t.recurrence){
-    const next={...t,id:uid(),status:'afazer'};
-    if(t.recurrence==='daily')next.date=addDays(t.date,1);
-    else if(t.recurrence==='weekly')next.date=addDays(t.date,7);
-    else if(t.recurrence==='monthly'){const d=new Date(t.date);d.setMonth(d.getMonth()+1);next.date=d.toISOString().split('T')[0]}
-    DB.tasks.push(next);
-  }
-  saveData(DB);renderAll();
-  if(ttDetailId===id)ttOpenDetail(id);
-}
-function renderAll(){renderDashboard();ttFilterAndRender();renderCalendar();}
-
-// ===================== TICKTICK SIDEBAR =====================
-function ttRenderSidebar(){
-  const td=today(),tom=tomorrow();
-  const in7=addDays(today(),7);
-  const pending=DB.tasks.filter(x=>x.status!=='concluida');
-  document.getElementById('ttc-hoje').textContent=pending.filter(t=>taskCoversDay(t,td)).length||'';
-  document.getElementById('ttc-amanha').textContent=pending.filter(t=>taskCoversDay(t,tom)).length||'';
-  document.getElementById('ttc-semana').textContent=pending.filter(t=>t.date&&t.date>=td&&t.date<=in7).length||'';
-  document.getElementById('ttc-todas').textContent=pending.length||'';
-  document.getElementById('ttc-alta').textContent=pending.filter(t=>t.priority==='alta').length||'';
-  document.getElementById('ttc-semdata').textContent=pending.filter(t=>!t.date).length||'';
-  document.getElementById('ttc-concluidas').textContent=DB.tasks.filter(t=>t.status==='concluida').length||'';
-
-  // Area list
-  const al=document.getElementById('tt-area-list');
-  al.innerHTML=DB.areas.map(a=>{
-    const aActive=ttList===`area:${a.id}`;
-    const projs=a.projects||[];
-    return`<div class="tt-list-item${aActive?' active':''}" id="ttl-area-${a.id}" onclick="ttSetList('area:${a.id}')">
-      <div class="tt-area-dot" style="background:${a.color}"></div>
-      <span class="tt-label">${a.icon} ${a.name}</span>
-      <span class="tt-count">${DB.tasks.filter(t=>t.area===a.id&&t.status!=='concluida').length||''}</span>
-    </div>`+
-    (aActive&&projs.length?projs.map(p=>`<div class="tt-proj-item${ttList===`proj:${p.id}`?' active':''}" onclick="event.stopPropagation();ttSetList('proj:${p.id}')">
-      <i class="ti ti-point" style="font-size:10px;color:${a.color}"></i>${p.name}
-    </div>`).join(''):'');
-  }).join('');
-}
-
-function ttSetList(list){
-  ttList=list;
-  document.querySelectorAll('.tt-list-item').forEach(x=>x.classList.remove('active'));
-  const el=document.getElementById('ttl-'+list)||document.getElementById('ttl-area-'+list.replace('area:',''));
-  if(el)el.classList.add('active');
-  ttCloseDetail();
-  ttRenderSidebar();
-  ttFilterAndRender();
-}
-
-// ===================== TICKTICK QUICK ADD =====================
-function ttOpenQuick(){
-  const form=document.getElementById('tt-quick-form');
-  form.classList.add('open');
-  document.getElementById('tt-quick-input').focus();
-  ttQuickPri='nenhuma';ttQuickDate='';
-  document.getElementById('ttq-pri-icon').className='ti ti-flag';
-  document.getElementById('ttq-pri-label').textContent='Prioridade';
-  document.getElementById('ttq-date-label').textContent='Data';
-  // populate area select
-  const as=document.getElementById('ttq-area');
-  as.innerHTML='<option value="">Área...</option>'+DB.areas.map(a=>`<option value="${a.id}">${a.icon} ${a.name}</option>`).join('');
-  // Pre-fill date based on current list
-  if(ttList==='hoje'){ttQuickDate=today();document.getElementById('ttq-date-label').textContent=fmtDate(today())}
-  else if(ttList==='amanha'){ttQuickDate=tomorrow();document.getElementById('ttq-date-label').textContent=fmtDate(tomorrow())}
-  else{ttQuickDate='';}
-}
-function ttCloseQuick(){
-  document.getElementById('tt-quick-form').classList.remove('open');
-  document.getElementById('tt-quick-input').value='';
-}
-function ttqUpdateDate(){
-  const v=document.getElementById('ttq-date').value;
-  ttQuickDate=v;
-  document.getElementById('ttq-date-label').textContent=v?fmtDate(v):'Data';
-  document.getElementById('ttq-date-btn').classList.toggle('active',!!v);
-}
-let ttqPriCycle=['nenhuma','alta','media','baixa'];
-let ttqPriIdx=0;
-function ttqCyclePriority(){
-  ttqPriIdx=(ttqPriIdx+1)%4;
-  ttQuickPri=ttqPriCycle[ttqPriIdx];
-  const colors={alta:'var(--red)',media:'var(--amber)',baixa:'var(--green)',nenhuma:'var(--text3)'};
-  document.getElementById('ttq-pri-icon').style.color=colors[ttQuickPri];
-  document.getElementById('ttq-pri-label').textContent=ttQuickPri==='nenhuma'?'Prioridade':ttQuickPri;
-  document.getElementById('ttq-pri-btn').classList.toggle('active',ttQuickPri!=='nenhuma');
-}
-function ttQuickKey(e){if(e.key==='Enter')ttQuickSave();if(e.key==='Escape')ttCloseQuick()}
-function ttQuickSave(){
-  const name=document.getElementById('tt-quick-input').value.trim();
-  if(!name)return;
-  const areaVal=document.getElementById('ttq-area').value;
-  // Infer area/project from current list
-  let area=areaVal,project='';
-  if(!area&&ttList.startsWith('area:'))area=ttList.replace('area:','');
-  if(ttList.startsWith('proj:')){
-    const pid=ttList.replace('proj:','');
-    const foundArea=DB.areas.find(a=>a.projects.some(p=>p.id===pid));
-    if(foundArea){area=foundArea.id;project=pid}
-  }
-  const task={id:uid(),name,area,project,priority:ttQuickPri,status:'afazer',
-    date:ttQuickDate||today(),dateend:'',start:'',end:'',duration:'',recurrence:'',
-    estimate:'',tags:[],notes:'',subtasks:[]};
-  DB.tasks.push(task);saveData(DB);ttCloseQuick();ttRenderSidebar();ttFilterAndRender();
-}
-
-// ===================== TICKTICK TASK LIST =====================
-function ttGetListTasks(){
-  const td=today(),tom=tomorrow(),in7=addDays(today(),7);
-  const q=(document.getElementById('tt-search')||{}).value||'';
-  let tasks=[...DB.tasks];
-  if(q)tasks=tasks.filter(t=>t.name.toLowerCase().includes(q.toLowerCase())||
-    (t.tags||[]).some(tag=>tag.toLowerCase().includes(q.toLowerCase())));
-  if(ttList==='hoje')tasks=tasks.filter(t=>t.status!=='concluida'&&taskCoversDay(t,td));
-  else if(ttList==='amanha')tasks=tasks.filter(t=>t.status!=='concluida'&&taskCoversDay(t,tom));
-  else if(ttList==='semana')tasks=tasks.filter(t=>t.status!=='concluida'&&t.date&&t.date>=td&&t.date<=in7);
-  else if(ttList==='todas')tasks=tasks.filter(t=>t.status!=='concluida');
-  else if(ttList==='alta')tasks=tasks.filter(t=>t.status!=='concluida'&&t.priority==='alta');
-  else if(ttList==='semdata')tasks=tasks.filter(t=>t.status!=='concluida'&&!t.date);
-  else if(ttList==='concluidas')tasks=tasks.filter(t=>t.status==='concluida');
-  else if(ttList.startsWith('area:'))tasks=tasks.filter(t=>t.area===ttList.replace('area:','')&&t.status!=='concluida');
-  else if(ttList.startsWith('proj:'))tasks=tasks.filter(t=>t.project===ttList.replace('proj:','')&&t.status!=='concluida');
-  return tasks;
-}
-
-function ttFilterAndRender(){
-  ttRenderSidebar();
-  const sort=document.getElementById('tt-sort')?.value||'priority';
-  let tasks=ttGetListTasks();
-
-  // Listas cronológicas (hoje, amanhã, semana): tarefas COM horário primeiro por hora,
-  // depois tarefas SEM horário por prioridade
-  const chronoLists=['hoje','amanha','semana'];
-  if(chronoLists.includes(ttList)){
-    const withTime=tasks.filter(t=>t.start).sort((a,b)=>a.start>b.start?1:-1);
-    const noTime=tasks.filter(t=>!t.start).sort((a,b)=>PRI_ORDER[a.priority]-PRI_ORDER[b.priority]);
-    tasks=[...withTime,...noTime];
-  } else if(ttList==='semdata'){
-    tasks.sort((a,b)=>PRI_ORDER[a.priority]-PRI_ORDER[b.priority]);
-  } else {
-    if(sort==='priority')tasks.sort((a,b)=>PRI_ORDER[a.priority]-PRI_ORDER[b.priority]);
-    else if(sort==='date')tasks.sort((a,b)=>a.date>b.date?1:-1);
-    else if(sort==='name')tasks.sort((a,b)=>a.name.localeCompare(b.name));
-  }
-
-  // Title
-  const titles={hoje:'Hoje',amanha:'Amanhã',semana:'Próximos 7 dias',todas:'Todas as tarefas',alta:'Alta prioridade',semdata:'Sem data',concluidas:'Concluídas'};
-  let title=titles[ttList]||'';
-  if(!title&&ttList.startsWith('area:')){const a=DB.areas.find(x=>x.id===ttList.replace('area:',''));title=a?`${a.icon} ${a.name}`:'';}
-  if(!title&&ttList.startsWith('proj:')){
-    for(const a of DB.areas){const p=a.projects.find(x=>x.id===ttList.replace('proj:',''));if(p){title=p.name;break}}
-  }
-  document.getElementById('tt-main-title').textContent=title;
-  document.getElementById('tt-main-count').textContent=tasks.length?tasks.length+' tarefa'+(tasks.length!==1?'s':''):'';
-
-  const list=document.getElementById('tt-task-list');
-  if(!tasks.length){
-    list.innerHTML='<div class="empty"><i class="ti ti-checklist"></i><p>Nenhuma tarefa aqui</p></div>';return;
-  }
-  list.innerHTML=tasks.map(t=>ttTaskHtml(t)).join('');
-}
-
-function ttTaskHtml(t){
-  const area=DB.areas.find(a=>a.id===t.area);
-  const proj=area?area.projects.find(p=>p.id===t.project):null;
-  const isMulti=t.dateend&&t.dateend!==t.date;
-  const subtasks=t.subtasks||[];
-  const subDone=subtasks.filter(s=>s.done).length;
-  const priColors={alta:'var(--red)',media:'var(--amber)',baixa:'var(--green)',nenhuma:'var(--text3)'};
-  const isActive=ttDetailId===t.id;
-  const isOverdue=t.date&&t.date<today()&&t.status!=='concluida'&&!isMulti;
-
-  const metaParts=[];
-  if(t.date){
-    const dateColor=isOverdue?'var(--red)':t.date===today()?'var(--amber)':'inherit';
-    metaParts.push(`<span style="color:${dateColor}">${isMulti?fmtDate(t.date)+' → '+fmtDate(t.dateend):fmtDate(t.date)}</span>`);
-  }
-  if(t.start&&!isMulti)metaParts.push(`<span>${t.start}</span>`);
-  if(t.estimate)metaParts.push(`<span><i class="ti ti-clock" style="font-size:10px"></i> ${t.estimate}</span>`);
-  if(t.recurrence)metaParts.push(`<span><i class="ti ti-refresh" style="font-size:10px"></i></span>`);
-  if(area)metaParts.push(`<span style="color:${area.color}">${area.icon} ${area.name}</span>`);
-  if(proj)metaParts.push(`<span>${proj.name}</span>`);
-  (t.tags||[]).forEach(tag=>metaParts.push(`<span class="tag-chip">#${tag}</span>`));
-
-  const subBar=subtasks.length?`<div class="subtask-bar">
-    <span class="subtask-mini">${subDone}/${subtasks.length}</span>
-    <div class="subtask-prog"><div class="subtask-prog-fill" style="width:${Math.round(subDone/subtasks.length*100)}%"></div></div>
-  </div>`:'';
-
-  return`<div class="tt-task${t.status==='concluida'?' done-task':''}${isActive?' active-detail':''}" onclick="ttOpenDetail('${t.id}')">
-    <div class="tt-check${t.status==='concluida'?' checked':''}" onclick="event.stopPropagation();toggleTask('${t.id}')">
-      ${t.status==='concluida'?'<i class="ti ti-check" style="font-size:11px;color:#fff"></i>':''}
-    </div>
-    <div class="tt-pri-flag" onclick="event.stopPropagation();ttCyclePri('${t.id}')" title="Alterar prioridade">
-      <span style="color:${priColors[t.priority]||'var(--text3)'}">${PRI_ICONS[t.priority]||'⚪'}</span>
-    </div>
-    <div class="tt-task-body">
-      <div class="tt-task-name">${t.name}</div>
-      ${metaParts.length?`<div class="tt-task-sub">${metaParts.join('<span class="dot"></span>')}</div>`:''}
-      ${subBar}
-    </div>
-    <div class="tt-task-actions">
-      <button class="icon-btn" onclick="event.stopPropagation();ttDupTaskById('${t.id}')" title="Duplicar"><i class="ti ti-copy"></i></button>
-      <button class="icon-btn" onclick="event.stopPropagation();deleteTask('${t.id}')" title="Excluir" style="color:var(--red)"><i class="ti ti-trash"></i></button>
-    </div>
-  </div>`;
-}
-
-function ttCyclePri(id){
-  const t=DB.tasks.find(x=>x.id===id);if(!t)return;
-  const cycle=['nenhuma','alta','media','baixa'];
-  t.priority=cycle[(cycle.indexOf(t.priority)+1)%cycle.length];
-  saveData(DB);ttFilterAndRender();if(ttDetailId===id)ttOpenDetail(id);
-}
-function ttDupTaskById(id){
-  const t={...DB.tasks.find(x=>x.id===id),id:uid(),name:'Cópia — '+DB.tasks.find(x=>x.id===id).name,status:'afazer',subtasks:[]};
-  DB.tasks.push(t);saveData(DB);ttFilterAndRender();
-}
-function ttDupTask(){if(ttDetailId)ttDupTaskById(ttDetailId)}
-function ttDeleteFromDetail(){if(ttDetailId)deleteTask(ttDetailId)}
-
-// ===================== DETAIL PANEL =====================
-function ttOpenDetail(id){
-  ttDetailId=id;
-  const panel=document.getElementById('tt-detail');
-  panel.classList.remove('closed');
-  ttRenderDetail();
-  // Highlight task
-  document.querySelectorAll('.tt-task').forEach(x=>x.classList.remove('active-detail'));
-  document.querySelectorAll('.tt-task').forEach(x=>{if(x.onclick?.toString().includes(id))x.classList.add('active-detail')});
-}
-function ttCloseDetail(){
-  ttDetailId=null;
-  document.getElementById('tt-detail').classList.add('closed');
-  document.querySelectorAll('.tt-task').forEach(x=>x.classList.remove('active-detail'));
-}
-
-function ttRenderDetail(){
-  const t=DB.tasks.find(x=>x.id===ttDetailId);if(!t)return;
-  const area=DB.areas.find(a=>a.id===t.area);
-  const proj=area?area.projects.find(p=>p.id===t.project):null;
-  const subtasks=t.subtasks||[];
-  const isMulti=t.dateend&&t.dateend!==t.date;
-
-  const areaOpts='<option value="">Nenhuma</option>'+DB.areas.map(a=>`<option value="${a.id}"${a.id===t.area?' selected':''}>${a.icon} ${a.name}</option>`).join('');
-  const projArea=DB.areas.find(a=>a.id===t.area);
-  const projOpts='<option value="">Nenhum</option>'+(projArea?projArea.projects:[]).map(p=>`<option value="${p.id}"${p.id===t.project?' selected':''}>${p.name}</option>`).join('');
-
-  const html=`
-    <div class="tt-detail-name" contenteditable="true" id="detail-name" onblur="ttSaveDetailName()">${t.name}</div>
-
-    <div class="tt-detail-row">
-      <i class="ti ti-flag"></i>
-      <span class="tt-detail-row-label">Prioridade</span>
-      <div class="tt-detail-row-val">
-        <select onchange="ttSaveField('priority',this.value)" style="background:transparent;border:none;color:var(--text);font-size:13px;outline:none;cursor:pointer">
-          <option value="alta"${t.priority==='alta'?' selected':''}>🔴 Alta</option>
-          <option value="media"${t.priority==='media'?' selected':''}>🟡 Média</option>
-          <option value="baixa"${t.priority==='baixa'?' selected':''}>🟢 Baixa</option>
-          <option value="nenhuma"${t.priority==='nenhuma'?' selected':''}>⚪ Nenhuma</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="tt-detail-row">
-      <i class="ti ti-calendar"></i>
-      <span class="tt-detail-row-label">Data início</span>
-      <div class="tt-detail-row-val">
-        <input type="date" value="${t.date||''}" onchange="ttSaveField('date',this.value)" style="background:transparent;border:none;color:var(--text);font-size:13px;outline:none;cursor:pointer">
-      </div>
-    </div>
-
-    <div class="tt-detail-row">
-      <i class="ti ti-calendar-event"></i>
-      <span class="tt-detail-row-label">Data fim</span>
-      <div class="tt-detail-row-val">
-        <input type="date" value="${t.dateend||''}" onchange="ttSaveField('dateend',this.value)" style="background:transparent;border:none;color:var(--text);font-size:13px;outline:none;cursor:pointer">
-      </div>
-    </div>
-
-    ${!isMulti?`<div class="tt-detail-row">
-      <i class="ti ti-clock"></i>
-      <span class="tt-detail-row-label">Horário</span>
-      <div class="tt-detail-row-val" style="display:flex;gap:6px">
-        <input type="time" value="${t.start||''}" onchange="ttSaveField('start',this.value)" style="background:transparent;border:none;color:var(--text);font-size:13px;outline:none;width:80px;cursor:pointer">
-        <span style="color:var(--text3)">→</span>
-        <input type="time" value="${t.end||''}" onchange="ttSaveField('end',this.value)" style="background:transparent;border:none;color:var(--text);font-size:13px;outline:none;width:80px;cursor:pointer">
-      </div>
-    </div>`:''}
-
-    <div class="tt-detail-row">
-      <i class="ti ti-refresh"></i>
-      <span class="tt-detail-row-label">Recorrência</span>
-      <div class="tt-detail-row-val">
-        <select onchange="ttSaveField('recurrence',this.value)" style="background:transparent;border:none;color:var(--text);font-size:13px;outline:none;cursor:pointer">
-          <option value=""${!t.recurrence?' selected':''}>Não repete</option>
-          <option value="daily"${t.recurrence==='daily'?' selected':''}>Diária</option>
-          <option value="weekly"${t.recurrence==='weekly'?' selected':''}>Semanal</option>
-          <option value="monthly"${t.recurrence==='monthly'?' selected':''}>Mensal</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="tt-detail-row">
-      <i class="ti ti-hourglass"></i>
-      <span class="tt-detail-row-label">Estimativa</span>
-      <div class="tt-detail-row-val">
-        <input value="${t.estimate||''}" onchange="ttSaveField('estimate',this.value)" placeholder="Ex: 1h30min" style="background:transparent;border:none;color:var(--text);font-size:13px;outline:none;width:100%">
-      </div>
-    </div>
-
-    <div class="tt-detail-row">
-      <i class="ti ti-layout-2"></i>
-      <span class="tt-detail-row-label">Área</span>
-      <div class="tt-detail-row-val">
-        <select onchange="ttSaveField('area',this.value);ttRenderDetail()" style="background:transparent;border:none;color:var(--text);font-size:13px;outline:none;cursor:pointer">${areaOpts}</select>
-      </div>
-    </div>
-
-    <div class="tt-detail-row">
-      <i class="ti ti-folder"></i>
-      <span class="tt-detail-row-label">Projeto</span>
-      <div class="tt-detail-row-val">
-        <select onchange="ttSaveField('project',this.value)" style="background:transparent;border:none;color:var(--text);font-size:13px;outline:none;cursor:pointer">${projOpts}</select>
-      </div>
-    </div>
-
-    <div class="tt-detail-row" style="align-items:flex-start;cursor:default">
-      <i class="ti ti-tag" style="margin-top:2px"></i>
-      <span class="tt-detail-row-label" style="padding-top:2px">Tags</span>
-      <div class="tt-detail-row-val">
-        <div class="tag-input-wrap" id="detail-tags">
-          ${(t.tags||[]).map((tag,i)=>`<span class="tag-item">#${tag}<button onclick="ttRemoveTag(${i})"><i class="ti ti-x" style="font-size:10px"></i></button></span>`).join('')}
-          <input class="tag-new-input" id="tag-new-input" placeholder="+ tag" onkeydown="ttTagKey(event)">
-        </div>
-      </div>
-    </div>
-
-    <div class="detail-section-title">Subtarefas</div>
-    <div id="detail-subtasks">
-      ${subtasks.map((s,i)=>`<div class="subtask-item">
-        <div class="subtask-check${s.done?' done':''}" onclick="ttToggleSub(${i})">
-          ${s.done?'<i class="ti ti-check" style="font-size:10px;color:#fff"></i>':''}
-        </div>
-        <input class="subtask-name${s.done?' done-sub':''}" value="${s.name}" onchange="ttRenameSub(${i},this.value)">
-        <button class="subtask-del icon-btn" onclick="ttDeleteSub(${i})" style="color:var(--red)"><i class="ti ti-trash"></i></button>
-      </div>`).join('')}
-      <div class="subtask-add" onclick="ttAddSub()"><i class="ti ti-plus" style="font-size:14px"></i> Adicionar subtarefa</div>
-    </div>
-
-    <div class="detail-section-title">Notas</div>
-    <textarea class="detail-notes" id="detail-notes" onblur="ttSaveField('notes',this.value)" placeholder="Adicionar notas...">${t.notes||''}</textarea>
-
-    <div class="detail-section-title" style="display:flex;align-items:center;gap:6px"><i class="ti ti-tomato" style="color:var(--red)"></i> Pomodoro</div>
-    <div class="pomo-bar">
-      <div class="pomo-mode">
-        <button class="pomo-mode-btn${pomoMode==='work'?' active':''}" onclick="pomoSetMode('work')">Foco</button>
-        <button class="pomo-mode-btn${pomoMode==='short'?' active':''}" onclick="pomoSetMode('short')">Pausa curta</button>
-        <button class="pomo-mode-btn${pomoMode==='long'?' active':''}" onclick="pomoSetMode('long')">Pausa longa</button>
-      </div>
-      <div class="pomo-display${pomoMode==='work'?' work':' break'}" id="pomo-display">${pomoFmt()}</div>
-      <div class="pomo-dots" id="pomo-dots">${[0,1,2,3].map(i=>`<div class="pomo-dot${i<pomoRound?' done':''}"></div>`).join('')}</div>
-      <div class="pomo-controls">
-        <button class="pomo-btn pomo-start" onclick="pomoToggle()">${pomoRunning?'Pausar':'Iniciar'}</button>
-        <button class="pomo-btn pomo-stop" onclick="pomoReset()">Reiniciar</button>
-      </div>
-    </div>`;
-
-  document.getElementById('tt-detail-body').innerHTML=html;
-}
-
-function ttSaveDetailName(){
-  const t=DB.tasks.find(x=>x.id===ttDetailId);if(!t)return;
-  t.name=document.getElementById('detail-name').innerText.trim()||t.name;
-  saveData(DB);ttFilterAndRender();
-}
-function ttSaveField(field,val){
-  const t=DB.tasks.find(x=>x.id===ttDetailId);if(!t)return;
-  t[field]=val;saveData(DB);ttFilterAndRender();
-}
-// Tags
-function ttTagKey(e){if(e.key==='Enter'||e.key===','){e.preventDefault();const v=e.target.value.trim().replace(',','');if(v){const t=DB.tasks.find(x=>x.id===ttDetailId);t.tags=[...(t.tags||[]),v];saveData(DB);ttRenderDetail();}}}
-function ttRemoveTag(i){const t=DB.tasks.find(x=>x.id===ttDetailId);t.tags.splice(i,1);saveData(DB);ttRenderDetail();}
-// Subtasks
-function ttAddSub(){
-  const t=DB.tasks.find(x=>x.id===ttDetailId);if(!t)return;
-  t.subtasks=[...(t.subtasks||[]),{id:uid(),name:'Nova subtarefa',done:false}];
-  saveData(DB);ttRenderDetail();ttFilterAndRender();
-}
-function ttToggleSub(i){const t=DB.tasks.find(x=>x.id===ttDetailId);t.subtasks[i].done=!t.subtasks[i].done;saveData(DB);ttRenderDetail();ttFilterAndRender();}
-function ttRenameSub(i,v){const t=DB.tasks.find(x=>x.id===ttDetailId);t.subtasks[i].name=v;saveData(DB);}
-function ttDeleteSub(i){const t=DB.tasks.find(x=>x.id===ttDetailId);t.subtasks.splice(i,1);saveData(DB);ttRenderDetail();ttFilterAndRender();}
-
-// ===================== POMODORO =====================
-const POMO_TIMES={work:25*60,short:5*60,long:15*60};
-function pomoFmt(){const m=Math.floor(pomoSeconds/60),s=pomoSeconds%60;return`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
-function pomoSetMode(mode){pomoMode=mode;pomoSeconds=POMO_TIMES[mode];pomoRunning=false;clearInterval(pomoTimer);if(ttDetailId)ttRenderDetail()}
-function pomoToggle(){
-  if(pomoRunning){clearInterval(pomoTimer);pomoRunning=false}
-  else{pomoRunning=true;pomoTimer=setInterval(()=>{
-    pomoSeconds--;
-    if(pomoSeconds<=0){clearInterval(pomoTimer);pomoRunning=false;
-      if(pomoMode==='work'){pomoRound=(pomoRound+1)%4;pomoMode=pomoRound===0?'long':'short'}
-      else{pomoMode='work'}
-      pomoSeconds=POMO_TIMES[pomoMode];
-    }
-    if(ttDetailId){const d=document.getElementById('pomo-display');if(d)d.textContent=pomoFmt();}
-  },1000)}
-  if(ttDetailId)ttRenderDetail();
-}
-function pomoReset(){clearInterval(pomoTimer);pomoRunning=false;pomoSeconds=POMO_TIMES[pomoMode];if(ttDetailId)ttRenderDetail()}
-
-// ===================== DASHBOARD =====================
-function renderDashboard(){
-  const d=today();
-  document.getElementById('dash-date').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
-  const all=DB.tasks,todayTasks=all.filter(t=>taskCoversDay(t,d));
-  const pending=all.filter(t=>t.status!=='concluida'),done=all.filter(t=>t.status==='concluida');
-  document.getElementById('dash-stats').innerHTML=`
-    <div class="stat amber"><div class="stat-val">${todayTasks.filter(t=>t.status!=='concluida').length}</div><div class="stat-label">Hoje</div></div>
-    <div class="stat purple"><div class="stat-val">${pending.length}</div><div class="stat-label">Pendentes</div></div>
-    <div class="stat green"><div class="stat-val">${done.length}</div><div class="stat-label">Concluídas</div></div>`;
-  const withTime=todayTasks.filter(t=>t.start&&!t.dateend).sort((a,b)=>a.start>b.start?1:-1);
-  const noTime=todayTasks.filter(t=>(!t.start||t.dateend)&&t.status!=='concluida');
-  const high=pending.filter(t=>t.priority==='alta').slice(0,5);
-  document.getElementById('dash-today').innerHTML=withTime.length
-    ?withTime.map(t=>dashAgendaHtml(t)).join('')
-    :'<div class="text-muted">Nenhuma com horário hoje</div>';
-  document.getElementById('dash-notime').innerHTML=noTime.length
-    ?noTime.map(t=>dashTaskHtml(t)).join(''):'<div class="text-muted">Tudo planejado! ✅</div>';
-  document.getElementById('dash-high').innerHTML=high.length
-    ?high.map(t=>dashTaskHtml(t)).join(''):'<div class="text-muted">Nenhuma de alta prioridade 🎉</div>';
-}
-
-function dashAgendaHtml(t){
-  const area=DB.areas.find(a=>a.id===t.area);
-  const bg=area?area.color+'22':'var(--acc-dim)';
-  const border=area?area.color:'var(--accent)';
-  const priColors={alta:'var(--red)',media:'var(--amber)',baixa:'var(--green)',nenhuma:'var(--text3)'};
-  return`<div style="display:flex;align-items:stretch;gap:0;margin-bottom:6px;cursor:pointer;border-radius:var(--radius-sm);overflow:hidden;border:1px solid ${border}33" onclick="openTaskModal('${t.id}')">
-    <div style="width:3px;background:${border};flex-shrink:0"></div>
-    <div style="background:${bg};flex:1;padding:8px 10px;">
-      <div style="font-size:11px;color:${priColors[t.priority]||'var(--text3)'};margin-bottom:2px">
-        ${t.start}${t.end?' → '+t.end:''}${t.duration?' ('+t.duration+')':''}
-      </div>
-      <div style="font-size:14px;font-weight:600;color:var(--text)">${t.name}</div>
-      ${area?`<div style="font-size:11px;color:${area.color};margin-top:2px">${area.icon} ${area.name}</div>`:''}
-    </div>
-    <div style="display:flex;align-items:center;padding:0 10px;background:${bg}">
-      <div class="tt-check${t.status==='concluida'?' checked':''}" onclick="event.stopPropagation();toggleTask('${t.id}')" style="flex-shrink:0">
-        ${t.status==='concluida'?'<i class="ti ti-check" style="font-size:11px;color:#fff"></i>':''}
-      </div>
-    </div>
-  </div>`;
-}
-function dashTaskHtml(t){
-  const area=DB.areas.find(a=>a.id===t.area);
-  return`<div class="tt-task" onclick="openTaskModal('${t.id}')" style="margin-bottom:5px">
-    <div class="tt-check${t.status==='concluida'?' checked':''}" onclick="event.stopPropagation();toggleTask('${t.id}')">
-      ${t.status==='concluida'?'<i class="ti ti-check" style="font-size:11px;color:#fff"></i>':''}
-    </div>
-    <span style="color:${t.priority==='alta'?'var(--red)':t.priority==='media'?'var(--amber)':'var(--green)'};">${PRI_ICONS[t.priority]||'⚪'}</span>
-    <div class="tt-task-body">
-      <div class="tt-task-name">${t.name}</div>
-      <div class="tt-task-sub">${area?`<span style="color:${area.color}">${area.icon} ${area.name}</span>`:''}${t.date?`<span>${fmtDate(t.date)}</span>`:''}</div>
-    </div>
-  </div>`;
-}
-
-// ===================== CALENDAR =====================
-function calGoToday(){calDate=new Date();miniCalDate=new Date();renderCalendar()}
-function setCalView(v){calView=v;document.querySelectorAll('.cal-tab').forEach(b=>b.classList.remove('active'));document.getElementById('cal-tab-'+v).classList.add('active');renderCalendar()}
-function calNavigate(d){
-  if(calView==='day'){calDate=new Date(calDate.getTime()+d*86400000);miniCalDate=new Date(calDate)}
-  else if(calView==='week')calDate=new Date(calDate.getTime()+d*7*86400000);
-  else{calDate.setMonth(calDate.getMonth()+d);calDate=new Date(calDate)}
-  renderCalendar();
-}
-function renderCalendar(){if(calView==='day')renderCalDay();else if(calView==='week')renderCalWeek();else renderCalMonth()}
-function getCalTasks(){
-  let t=DB.tasks;
-  if(calFilters.areas.size>0)t=t.filter(x=>calFilters.areas.has(x.area));
-  if(calFilters.project!=='all')t=t.filter(x=>x.project===calFilters.project);
-  return t;
-}
-
-// Mini calendar state
-let miniCalDate=new Date();
-
-function renderCalDay(){
-  const d=calDate.toISOString().split('T')[0];
-  document.getElementById('cal-title').textContent=calDate.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'});
-  const tasks=getCalTasks().filter(t=>taskCoversDay(t,d));
-  const withTime=tasks.filter(t=>t.start&&!t.dateend).sort((a,b)=>a.start>b.start?1:-1);
-  const allDay=tasks.filter(t=>!t.start||t.dateend);
-
-  const PX_PER_MIN=1; // 60px per hour = 1px per minute
-  const HOUR_H=60;    // px per hour row
-
-  // All-day strip
-  let dayHtml='';
-  if(allDay.length){
-    const area0=t=>DB.areas.find(a=>a.id===t.area);
-    dayHtml+=`<div class="day-allday"><div class="day-allday-title">DIA INTEIRO / VÁRIOS DIAS</div>
-      ${allDay.map(t=>{const a=area0(t);const bg=a?a.color+'33':'var(--bg4)';const fg=a?a.color:'var(--text2)';
-        return`<div class="month-chip" style="background:${bg};color:${fg};cursor:pointer;margin-bottom:4px" onclick="openTaskModal('${t.id}')">${t.name}${t.dateend&&t.dateend!==t.date?' ('+fmtDate(t.date)+' → '+fmtDate(t.dateend)+')':''}</div>`}).join('')}
-    </div>`;
-  }
-
-  // Hour grid rows (0–23)
-  dayHtml+='<div class="time-grid" id="day-time-grid" style="height:'+(24*HOUR_H)+'px">';
-  for(let h=0;h<24;h++){
-    const hs=h.toString().padStart(2,'0')+':00';
-    dayHtml+=`<div class="time-row" onclick="calCreateTask('${d}','${hs}')">
-      <span class="time-label">${h>0?hs:''}</span>
-      <div class="time-slot-bg"></div>
-    </div>`;
-  }
-
-  // Overlap detection: group overlapping tasks into columns
-  function assignColumns(tasks){
-    const cols=[];
-    const result=tasks.map(t=>{
-      const ts=timeToMins(t.start);
-      const endMins=t.end?timeToMins(t.end):ts+60;
-      let col=0;
-      while(cols[col]&&cols[col]>ts)col++;
-      cols[col]=endMins;
-      return{...t,_col:col,_endMins:endMins,_startMins:ts};
-    });
-    const maxCols=cols.length||1;
-    return{tasks:result,maxCols};
-  }
-
-  const {tasks:positioned,maxCols}=assignColumns(withTime);
-
-  // Build positioned blocks
-  let blockHtml='<div class="time-events-layer" style="height:'+(24*HOUR_H)+'px">';
-  for(const t of positioned){
-    const startMins=t._startMins;
-    const endMins=t._endMins;
-    const durMins=Math.max(endMins-startMins,30); // min 30min height
-    const top=startMins*PX_PER_MIN;
-    const height=durMins*PX_PER_MIN;
-    const colW=100/maxCols;
-    const left=t._col*colW;
-    const width=colW;
-    const area=DB.areas.find(a=>a.id===t.area);
-    const bg=area?area.color+'28':'var(--acc-dim)';
-    const border=area?area.color:'var(--accent)';
-    const priClass=t.priority||'nenhuma';
-    const durLabel=t.end?`${t.start} → ${t.end}${t.duration?' ('+t.duration+')':''}`:t.start;
-    blockHtml+=`<div class="time-block ${priClass}" style="top:${top}px;height:${height}px;left:${left}%;width:calc(${width}% - 4px);background:${bg};border-left-color:${border}" onclick="openTaskModal('${t.id}')">
-      <div class="time-block-meta">${durLabel}</div>
-      <div class="time-block-name">${t.name}</div>
-    </div>`;
-  }
-
-  // Current time line (if today)
-  if(d===today()){
-    const now=new Date();
-    const nowMins=now.getHours()*60+now.getMinutes();
-    const topNow=nowMins*PX_PER_MIN;
-    blockHtml+=`<div class="time-now-dot" style="top:${topNow}px"></div>
-      <div class="time-now-line" style="top:${topNow+1}px"></div>`;
-  }
-  blockHtml+='</div>';
-  dayHtml+=blockHtml+'</div>';
-
-  // No-time tasks
-  if(allDay.length===0&&withTime.length===0){
-    dayHtml+=`<div class="no-time-section"><div class="no-time-title">Nenhuma tarefa neste dia</div></div>`;
-  }
-
-  document.getElementById('cal-body').innerHTML=`
-    <div class="day-layout">
-      <div class="day-mini-cal">${renderMiniCal()}</div>
-      <div class="day-scroll">${dayHtml}</div>
-    </div>`;
-
-  // Scroll to 6am or current time
-  setTimeout(()=>{
-    const scroll=document.querySelector('.day-scroll');
-    if(scroll){
-      const scrollTo=d===today()?
-        Math.max(0,(new Date().getHours()-1)*HOUR_H):6*HOUR_H;
-      scroll.scrollTop=scrollTo;
-    }
-  },80);
-}
-
-function renderMiniCal(){
-  const y=miniCalDate.getFullYear(),m=miniCalDate.getMonth();
-  const first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();
-  const td=today(),sel=calDate.toISOString().split('T')[0];
-  const names=['D','S','T','Q','Q','S','S'];
-  const monthName=miniCalDate.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
-  let html=`<div class="day-mini-cal-header">
-    <button class="day-mini-nav" onclick="miniCalNav(-1)"><i class="ti ti-chevron-left"></i></button>
-    <span class="day-mini-cal-title">${monthName}</span>
-    <button class="day-mini-nav" onclick="miniCalNav(1)"><i class="ti ti-chevron-right"></i></button>
-  </div>
-  <div class="mini-grid">
-    ${names.map(n=>`<div class="mini-day-name">${n}</div>`).join('')}`;
-  for(let i=0;i<first;i++){
-    const pd=new Date(y,m,1-first+i);
-    const ds=pd.toISOString().split('T')[0];
-    const hasTasks=DB.tasks.some(t=>taskCoversDay(t,ds));
-    html+=`<div class="mini-day-wrap"><div class="mini-day other-m${ds===sel?' selected':''}" onclick="miniCalSelect('${ds}')" style="position:relative">${pd.getDate()}${hasTasks?'<span style="position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:3px;height:3px;border-radius:50%;background:var(--accent);display:block"></span>':''}</div></div>`;
-  }
-  for(let d=1;d<=days;d++){
-    const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const isToday=ds===td,isSel=ds===sel;
-    const hasTasks=DB.tasks.some(t=>taskCoversDay(t,ds)&&t.status!=='concluida');
-    html+=`<div class="mini-day-wrap" style="position:relative"><div class="mini-day${isToday&&!isSel?' today-mini':''}${isSel?' selected':''}" onclick="miniCalSelect('${ds}')">${d}</div>${hasTasks&&!isSel?'<span style="position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:3px;height:3px;border-radius:50%;background:var(--accent);display:block"></span>':''}</div>`;
-  }
-  const rem=(7-((first+days)%7))%7;
-  for(let i=1;i<=rem;i++){
-    const nd=new Date(y,m+1,i);const ds=nd.toISOString().split('T')[0];
-    html+=`<div class="mini-day-wrap"><div class="mini-day other-m" onclick="miniCalSelect('${ds}')">${i}</div></div>`;
-  }
-  html+='</div>';
-  return html;
-}
-
-function miniCalNav(d){
-  miniCalDate.setMonth(miniCalDate.getMonth()+d);
-  miniCalDate=new Date(miniCalDate);
-  // Re-render just the mini cal
-  const mc=document.querySelector('.day-mini-cal');
-  if(mc)mc.innerHTML=renderMiniCal();
-}
-
-function miniCalSelect(ds){
-  calDate=new Date(ds+'T12:00:00');
-  miniCalDate=new Date(calDate);
-  renderCalDay();
-}
-
-function calCreateTask(date,time){
-  openTaskModal(null);
-  setTimeout(()=>{
-    document.getElementById('t-date').value=date;
-    document.getElementById('t-start').value=time;
-  },50);
-}
-
-function renderCalWeek(){
-  const dow=calDate.getDay();
-  const start=new Date(calDate.getTime()-dow*86400000);
-  const days=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-  const td=today();
-  let html='<div class="week-grid">';
-  for(let i=0;i<7;i++){
-    const dd=new Date(start.getTime()+i*86400000);
-    const ds=dd.toISOString().split('T')[0];
-    const tasks=getCalTasks().filter(t=>taskCoversDay(t,ds));
-    const extra=tasks.length>5?tasks.length-5:0;
-    const isToday=ds===td;
-    html+=`<div class="week-col${isToday?' today-col':''}">
-      <div class="week-col-title" style="${isToday?'color:var(--accent2);font-weight:700':''}">
-        ${days[i]}<br><span style="${isToday?'background:var(--accent);color:#fff;border-radius:50%;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center':''}"> ${dd.getDate()}</span>
-      </div>
-      ${tasks.slice(0,5).map(t=>`<div class="week-task-chip ${t.priority}" onclick="openTaskModal('${t.id}')" title="${t.name}">
-        ${t.start&&!t.dateend?`<span style="opacity:.7;margin-right:3px">${t.start}</span>`:''}${t.name}
-      </div>`).join('')}
-      ${extra?`<div class="month-more" onclick="calDate=new Date('${ds}');setCalView('day')">+${extra} mais</div>`:''}
-    </div>`;
-  }
-  html+='</div>';
-  const end=new Date(start.getTime()+6*86400000);
-  document.getElementById('cal-title').textContent='Semana de '+start.toLocaleDateString('pt-BR',{day:'numeric',month:'short'})+' a '+end.toLocaleDateString('pt-BR',{day:'numeric',month:'short'});
-  document.getElementById('cal-body').innerHTML=html;
-}
-
-function renderCalMonth(){
-  const y=calDate.getFullYear(),m=calDate.getMonth();
-  document.getElementById('cal-title').textContent=calDate.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
-  const first=new Date(y,m,1).getDay(),totalDays=new Date(y,m+1,0).getDate();
-  const td=today();
-  const names=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-  const allTasks=getCalTasks();
-  const MAX_ROWS=3;
-
-  // Build full cell list
-  const cells=[];
-  for(let i=0;i<first;i++){const pd=new Date(y,m,1-first+i);cells.push({ds:pd.toISOString().split('T')[0],dayNum:pd.getDate(),other:true})}
-  for(let d=1;d<=totalDays;d++){const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;cells.push({ds,dayNum:d,other:false})}
-  const rem=(7-(cells.length%7))%7;
-  for(let i=1;i<=rem;i++){const nd=new Date(y,m+1,i);cells.push({ds:nd.toISOString().split('T')[0],dayNum:i,other:true})}
-
-  // Split into weeks
-  const weeks=[];
-  for(let w=0;w<cells.length;w+=7)weeks.push(cells.slice(w,w+7));
-
-  function layoutWeek(weekCells){
-    const weekStart=weekCells[0].ds,weekEnd=weekCells[6].ds;
-    const multiTasks=allTasks.filter(t=>t.dateend&&t.dateend!==t.date&&t.date<=weekEnd&&t.dateend>=weekStart)
-      .sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:daysBetween(b.date,b.dateend)-daysBetween(a.date,a.dateend));
-    const rows=[...Array(MAX_ROWS)].map(()=>Array(7).fill(null));
-    for(const t of multiTasks){
-      const colStart=Math.max(0,weekCells.findIndex(c=>c.ds>=t.date));
-      const colEnd=Math.min(6,[...weekCells].reverse().findIndex(c=>c.ds<=t.dateend));
-      const colEndFixed=6-colEnd;
-      if(colStart>colEndFixed)continue;
-      let row=-1;
-      outer:for(let r=0;r<MAX_ROWS;r++){for(let c=colStart;c<=colEndFixed;c++){if(rows[r][c])continue outer}row=r;break;}
-      if(row===-1)continue;
-      for(let c=colStart;c<=colEndFixed;c++)rows[row][c]={task:t,isStart:c===colStart,isEnd:c===colEndFixed};
-    }
-    return rows;
-  }
-
-  const names_html=names.map(n=>`<div class="month-day-name">${n}</div>`).join('');
-  let html=`<div class="month-grid">${names_html}`;
-
-  for(const week of weeks){
-    const spanRows=layoutWeek(week);
-
-    // Determine which span rows actually have content in this week
-    const activeSpanRows=spanRows.map((row,r)=>({r,hasContent:row.some(slot=>slot!==null)})).filter(x=>x.hasContent).map(x=>x.r);
-    const spanRowSet=new Set(activeSpanRows);
-
-    for(let col=0;col<7;col++){
-      const {ds,dayNum,other}=week[col];
-      const isToday=ds===td;
-      const numHtml=isToday
-        ?`<div class="day-num"><span class="day-num-inner">${dayNum}</span></div>`
-        :`<div class="day-num">${dayNum}</div>`;
-
-      // Only render span rows that have at least one event somewhere in the week
-      let spanHtml='';
-      for(let r=0;r<MAX_ROWS;r++){
-        if(!spanRowSet.has(r))continue; // skip entirely empty span rows
-        const slot=spanRows[r][col];
-        if(slot){
-          const t=slot.task;
-          const area=DB.areas.find(a=>a.id===t.area);
-          const bg=area?area.color+'44':'#60a5fa44';
-          const fg=area?area.color:'var(--blue)';
-          const posClass=slot.isStart&&slot.isEnd?'span-alone':slot.isStart?'span-left':slot.isEnd?'span-right':'span-mid';
-          const ml=!slot.isStart?'margin-left:-2px;':'';
-          const mr=!slot.isEnd?'margin-right:-2px;':'';
-          const label=slot.isStart?t.name:'';
-          spanHtml+=`<div class="month-span ${posClass}" style="background:${bg};color:${fg};${ml}${mr}" onclick="event.stopPropagation();openTaskModal('${t.id}')" title="${t.name}">${label}</div>`;
-        } else {
-          spanHtml+=`<div class="span-placeholder"></div>`;
-        }
-      }
-
-      // Single-day tasks — sorted chronologically
-      const singleTasks=allTasks.filter(t=>!(t.dateend&&t.dateend!==t.date)&&taskCoversDay(t,ds))
-        .sort((a,b)=>{
-          if(a.start&&b.start)return a.start>b.start?1:-1;
-          if(a.start&&!b.start)return -1;
-          if(!a.start&&b.start)return 1;
-          return PRI_ORDER[a.priority]-PRI_ORDER[b.priority];
-        });
-
-      // Available slots = MAX_ROWS minus active span rows used in this col
-      const usedSpanSlots=activeSpanRows.filter(r=>spanRows[r][col]!==null).length;
-      const emptySpanSlots=activeSpanRows.filter(r=>spanRows[r][col]===null).length;
-      const available=MAX_ROWS-activeSpanRows.length-usedSpanSlots+emptySpanSlots;
-      const availableReal=MAX_ROWS-activeSpanRows.length+(activeSpanRows.filter(r=>spanRows[r][col]===null).length);
-      const show=singleTasks.slice(0,Math.max(0,MAX_ROWS-activeSpanRows.length+(spanRowSet.size>0?spanRows.filter(r=>r[col]===null).length:0)));
-
-      // Simpler: available = MAX_ROWS - (used span rows in this col) - (empty span placeholder rows)
-      const spanSlotsUsed=activeSpanRows.reduce((n,r)=>n+(spanRows[r][col]?1:0),0);
-      const spanPlaceholders=activeSpanRows.reduce((n,r)=>n+(spanRows[r][col]?0:1),0);
-      const finalShow=singleTasks.slice(0,MAX_ROWS-spanSlotsUsed-spanPlaceholders);
-      const extra=singleTasks.length-finalShow.length;
-
-      const chipHtml=finalShow.map(t=>{
-        const area=DB.areas.find(a=>a.id===t.area);
-        const bg=area?area.color+'33':'var(--bg4)';
-        const fg=area?area.color:'var(--text2)';
-        return`<div class="month-chip" style="background:${bg};color:${fg}" onclick="event.stopPropagation();openTaskModal('${t.id}')" title="${t.name}">${t.start?`<span style="opacity:.65;font-size:10px">${t.start} </span>`:''}${t.name}</div>`;
-      }).join('');
-
-      const moreHtml=extra>0?`<div class="month-more" onclick="event.stopPropagation();calDate=new Date('${ds}T12:00:00');miniCalDate=new Date('${ds}T12:00:00');setCalView('day')">+${extra} mais</div>`:'';
-
-      html+=`<div class="month-day${other?' other-month':''}${isToday?' today':''}" onclick="calDayPopover(event,'${ds}')">${numHtml}${spanHtml}${chipHtml}${moreHtml}</div>`;
-    }
-  }
-  html+='</div>';
-  document.getElementById('cal-body').innerHTML=html;
-}
-
-// Cal filters
-function toggleCalFilter(){
-  const p=document.getElementById('cal-filter-panel');
-  const open=p.style.display==='none'||!p.style.display;
-  p.style.display=open?'block':'none';
-  if(open)renderCalFilterChips();
-}
-function renderCalFilterChips(){
-  const areaChips=document.getElementById('cal-area-chips');
-  areaChips.innerHTML=DB.areas.map(a=>{
-    const active=calFilters.areas.has(a.id);
-    return`<button class="filter-chip${active?' active':''}" onclick="toggleCalArea('${a.id}')"
-      style="${active?'border-color:'+a.color+';color:'+a.color+';background:'+a.color+'22':''}">${a.icon} ${a.name}</button>`;
-  }).join('');
-  const projWrap=document.getElementById('cal-proj-wrap');
-  if(calFilters.areas.size===0){projWrap.style.display='none';return}
-  const selectedAreas=DB.areas.filter(a=>calFilters.areas.has(a.id));
-  const allProjs=selectedAreas.flatMap(a=>(a.projects||[]).map(p=>({...p,areaColor:a.color})));
-  if(!allProjs.length){projWrap.style.display='none';return}
-  projWrap.style.display='block';
-  document.getElementById('cal-proj-chips').innerHTML=
-    `<button class="filter-chip${calFilters.project==='all'?' active':''}" onclick="setCalProjFilter('all')">Todos</button>`+
-    allProjs.map(p=>`<button class="filter-chip${calFilters.project===p.id?' active':''}" onclick="setCalProjFilter('${p.id}')"
-      style="${calFilters.project===p.id?'border-color:'+p.areaColor+';color:'+p.areaColor+';background:'+p.areaColor+'22':''}">${p.name}</button>`).join('');
-}
-function toggleCalArea(areaId){
-  if(calFilters.areas.has(areaId)){calFilters.areas.delete(areaId);}
-  else{calFilters.areas.add(areaId);}
-  calFilters.project='all';
-  updateCalFilterBadge();renderCalFilterChips();renderCalendar();
-}
-function setCalProjFilter(pid){
-  calFilters.project=pid;
-  updateCalFilterBadge();renderCalFilterChips();renderCalendar();
-}
-function updateCalFilterBadge(){
-  const badge=document.getElementById('cal-filter-badge'),btn=document.getElementById('cal-filter-btn');
-  const active=calFilters.areas.size+(calFilters.project!=='all'?1:0);
-  badge.style.display=active?'inline':'none';if(active)badge.textContent=active;
-  btn.style.borderColor=active?'var(--accent)':'';btn.style.color=active?'var(--accent2)':'';
-}
-function setCalFilter(key,val){
-  if(key==='area'){if(val==='all')calFilters.areas.clear();else toggleCalArea(val);return;}
-  setCalProjFilter(val);
-}
-function clearCalFilters(){
-  calFilters.areas.clear();calFilters.project='all';
-  updateCalFilterBadge();renderCalFilterChips();renderCalendar();
-}
-
-// ===== DAY POPOVER (month view click) =====
-let popoverDate='';
-let popoverPri='nenhuma';
-let popoverPriIdx=0;
-
-function calDayPopover(e, ds){
-  e.stopPropagation();
-  closeDayPopover();
-  popoverDate=ds;popoverPri='nenhuma';popoverPriIdx=0;
-  const rect=e.currentTarget.getBoundingClientRect();
-  const pop=document.createElement('div');
-  pop.className='cal-popover';pop.id='cal-day-popover';
-  const d=new Date(ds+'T12:00:00');
-  const dateLabel=d.toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'});
-  const areaOpts='<option value="">Área...</option>'+DB.areas.map(a=>`<option value="${a.id}">${a.icon} ${a.name}</option>`).join('');
-  pop.innerHTML=`
-    <div class="cal-popover-header">
-      <span class="cal-popover-date"><i class="ti ti-calendar" style="margin-right:4px"></i>${dateLabel}</span>
-      <button class="cal-popover-close" onclick="closeDayPopover()"><i class="ti ti-x"></i></button>
-    </div>
-    <input class="cal-popover-input" id="pop-task-name" placeholder="O que você gostaria de fazer?" onkeydown="popKeyDown(event)" autofocus>
-    <div class="cal-popover-meta">
-      <button class="tt-meta-btn" id="pop-pri-btn" onclick="popCyclePri()"><i class="ti ti-flag" id="pop-pri-icon"></i> <span id="pop-pri-label">Prioridade</span></button>
-      <input type="time" id="pop-time" class="tt-meta-btn" style="border:1px solid var(--border)" title="Horário">
-      <select class="tt-meta-btn" id="pop-area" style="border:1px solid var(--border)">${areaOpts}</select>
-    </div>
-    <div class="cal-popover-footer">
-      <button class="btn btn-ghost btn-sm" onclick="closeDayPopover()">Cancelar</button>
-      <button class="btn btn-primary btn-sm" onclick="popSaveTask()"><i class="ti ti-check"></i> Salvar</button>
-      <button class="btn btn-ghost btn-sm" onclick="popOpenFull()" title="Abrir formulário completo"><i class="ti ti-arrows-maximize"></i></button>
-    </div>`;
-
-  // Position: prefer below-right, flip if off-screen
-  document.body.appendChild(pop);
-  const pw=pop.offsetWidth,ph=pop.offsetHeight;
-  let left=rect.left+window.scrollX;
-  let top=rect.bottom+window.scrollY+4;
-  if(left+pw>window.innerWidth-10)left=window.innerWidth-pw-10;
-  if(top+ph>window.innerHeight+window.scrollY-10)top=rect.top+window.scrollY-ph-4;
-  pop.style.left=Math.max(6,left)+'px';
-  pop.style.top=Math.max(6,top)+'px';
-  setTimeout(()=>document.getElementById('pop-task-name')?.focus(),50);
-}
-
-function closeDayPopover(){const p=document.getElementById('cal-day-popover');if(p)p.remove()}
-
-function popCyclePri(){
-  const cycle=['nenhuma','alta','media','baixa'];
-  popoverPriIdx=(popoverPriIdx+1)%4;popoverPri=cycle[popoverPriIdx];
-  const colors={alta:'var(--red)',media:'var(--amber)',baixa:'var(--green)',nenhuma:'var(--text3)'};
-  document.getElementById('pop-pri-icon').style.color=colors[popoverPri];
-  document.getElementById('pop-pri-label').textContent=popoverPri==='nenhuma'?'Prioridade':popoverPri;
-  document.getElementById('pop-pri-btn').classList.toggle('active',popoverPri!=='nenhuma');
-}
-
-function popKeyDown(e){if(e.key==='Enter')popSaveTask();if(e.key==='Escape')closeDayPopover()}
-
-function popSaveTask(){
-  const name=document.getElementById('pop-task-name').value.trim();
-  if(!name)return;
-  const time=document.getElementById('pop-time').value;
-  const area=document.getElementById('pop-area').value;
-  const task={id:uid(),name,area,project:'',priority:popoverPri,status:'afazer',
-    date:popoverDate,dateend:'',start:time||'',end:'',duration:'',recurrence:'',
-    estimate:'',tags:[],notes:'',subtasks:[]};
-  DB.tasks.push(task);saveData(DB);closeDayPopover();renderCalendar();renderDashboard();
-}
-
-function popOpenFull(){
-  const name=document.getElementById('pop-task-name').value.trim();
-  closeDayPopover();
-  openTaskModal(null);
-  document.getElementById('t-date').value=popoverDate;
-  document.getElementById('t-name').value=name;
-  document.getElementById('t-priority').value=popoverPri;
-}
-
-// ===================== FINANCE =====================
-function setFinTab(t){finTab=t;document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.getElementById('fin-tab-'+t).classList.add('active');renderFinance()}
-function openFinModal(){
-  setFinType('despesa');
-  ['f-desc','f-value'].forEach(x=>document.getElementById(x).value='');
-  document.getElementById('f-date').value=today();
-  document.getElementById('f-cat').innerHTML=DB.finCats.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
-  openModal('fin-modal');
-}
-function setFinType(t){
-  finType=t;
-  const r=document.getElementById('fin-type-rec'),d=document.getElementById('fin-type-desp');
-  r.style.borderColor=t==='receita'?'var(--green)':'var(--border)';r.style.color=t==='receita'?'var(--green)':'var(--text2)';
-  d.style.borderColor=t==='despesa'?'var(--red)':'var(--border)';d.style.color=t==='despesa'?'var(--red)':'var(--text2)';
-}
-function saveFinEntry(){
-  const desc=document.getElementById('f-desc').value.trim(),val=parseFloat(document.getElementById('f-value').value),
-    date=document.getElementById('f-date').value,cat=document.getElementById('f-cat').value;
-  if(!desc||!val||!date)return alert('Preencha todos os campos');
-  DB.finance.push({id:uid(),type:finType,desc,value:val,date,cat});
-  saveData(DB);closeModal('fin-modal');renderFinance();renderDashboard();
-}
-function deleteFinEntry(id){if(!confirm('Excluir?'))return;DB.finance=DB.finance.filter(x=>x.id!==id);saveData(DB);renderFinance()}
-function renderFinance(){
-  const now=new Date(),cm=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const monthly=DB.finance.filter(e=>e.date.startsWith(cm));
-  const rec=monthly.filter(e=>e.type==='receita').reduce((s,e)=>s+e.value,0);
-  const desp=monthly.filter(e=>e.type==='despesa').reduce((s,e)=>s+e.value,0);
-  const saldo=rec-desp;const pct=rec>0?Math.min(100,desp/rec*100):desp>0?100:0;
-  if(finTab==='resumo'){
-    document.getElementById('fin-body').innerHTML=`
-      <div class="grid3" style="margin-bottom:16px">
-        <div class="stat green"><div class="stat-val">${fmtMoney(rec)}</div><div class="stat-label">Receitas</div></div>
-        <div class="stat red"><div class="stat-val">${fmtMoney(desp)}</div><div class="stat-label">Despesas</div></div>
-        <div class="stat ${saldo>=0?'green':'red'}"><div class="stat-val">${fmtMoney(Math.abs(saldo))}</div><div class="stat-label">Saldo ${saldo>=0?'✅':'⚠️'}</div></div>
-      </div>
-      <div class="card"><div class="card-title">Comprometimento mensal</div>
-        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:4px"><span>0%</span><span>${Math.round(pct)}%</span><span>100%</span></div>
-        <div class="fin-bar"><div class="fin-bar-fill${pct>=100?' over':''}" style="width:${Math.round(pct)}%"></div></div>
-        <div style="font-size:12px;color:var(--text3);margin-top:6px">${pct<80?'✅ Dentro do orçamento':pct<100?'⚠️ Atenção':'🔴 Acima das receitas'}</div>
-      </div>
-      <div class="card"><div class="card-title">Últimos lançamentos</div>
-        ${[...DB.finance].sort((a,b)=>b.date>a.date?1:-1).slice(0,6).map(e=>finHtml(e)).join('')||'<div class="text-muted">Nenhum lançamento</div>'}
-      </div>`;
-  }else if(finTab==='lancamentos'){
-    document.getElementById('fin-body').innerHTML=`<div class="card"><div class="card-title">Todos os lançamentos</div>
-      ${[...DB.finance].sort((a,b)=>b.date>a.date?1:-1).map(e=>finHtml(e)).join('')||'<div class="empty"><i class="ti ti-wallet"></i><p>Nenhum lançamento</p></div>'}</div>`;
-  }else{
-    const cats=DB.finCats.map(c=>{const ents=monthly.filter(e=>e.cat===c.id);
-      return{...c,total:ents.reduce((s,e)=>s+e.value,0),isRec:ents.some(e=>e.type==='receita')}}).filter(c=>c.total>0).sort((a,b)=>b.total-a.total);
-    document.getElementById('fin-body').innerHTML=`<div class="card"><div class="card-title">Por categoria</div>
-      ${cats.length?cats.map(c=>`<div class="cat-item"><div class="cat-dot" style="background:${c.color}"></div>
-        <span style="flex:1">${c.name}</span><span class="cat-val ${c.isRec?'rec':'desp'}">${fmtMoney(c.total)}</span></div>`).join('')
-      :'<div class="text-muted">Nenhum dado este mês</div>'}</div>`;
-  }
-}
-function finHtml(e){
-  const cat=DB.finCats.find(c=>c.id===e.cat)||{name:'Geral',color:'#888'};
-  return`<div class="fin-entry">
-    <div class="fin-dot" style="background:${cat.color}22;color:${cat.color}"><i class="ti ti-${e.type==='receita'?'arrow-up':'arrow-down'}"></i></div>
-    <div class="fin-info"><div class="fin-title">${e.desc}</div><div class="fin-sub">${fmtDate(e.date)} · ${cat.name}</div></div>
-    <div class="fin-amount" style="color:${e.type==='receita'?'var(--green)':'var(--red)'}">${e.type==='receita'?'+':'-'}${fmtMoney(e.value)}</div>
-    <button class="icon-btn" onclick="deleteFinEntry('${e.id}')" style="color:var(--red)"><i class="ti ti-trash"></i></button>
-  </div>`;
-}
-
-// ===================== AREAS =====================
-let areaColorSel=COLORS[0];
-function openAreaModal(id){
-  areaEditId=id||null;
-  const a=id?DB.areas.find(x=>x.id===id):{};
-  document.getElementById('area-modal-title').textContent=id?'Editar Área':'Nova Área';
-  document.getElementById('a-name').value=a.name||'';
-  document.getElementById('a-icon').value=a.icon||'📁';
-  areaColorSel=a.color||COLORS[0];
-  document.getElementById('color-picker').innerHTML=COLORS.map(c=>`<div onclick="selectColor('${c}')" style="width:28px;height:28px;border-radius:50%;background:${c};cursor:pointer;border:3px solid ${c===areaColorSel?'#fff':'transparent'};transition:border .15s"></div>`).join('');
-  document.getElementById('proj-fields').innerHTML=(a.projects||[]).map(p=>`<div style="display:flex;gap:6px;margin-bottom:6px"><input class="form-input" value="${p.name}" style="flex:1" placeholder="Projeto"><button class="btn btn-ghost btn-sm" onclick="this.parentElement.remove()"><i class="ti ti-x"></i></button></div>`).join('');
-  openModal('area-modal');
-}
-function selectColor(c){areaColorSel=c;document.querySelectorAll('#color-picker div').forEach(d=>{d.style.border=d.style.background===c?'3px solid #fff':'3px solid transparent'})}
-function addProjectField(){const f=document.getElementById('proj-fields'),d=document.createElement('div');d.style='display:flex;gap:6px;margin-bottom:6px';d.innerHTML=`<input class="form-input" style="flex:1" placeholder="Projeto"><button class="btn btn-ghost btn-sm" onclick="this.parentElement.remove()"><i class="ti ti-x"></i></button>`;f.appendChild(d)}
-function saveArea(){
-  const name=document.getElementById('a-name').value.trim();if(!name)return alert('Nome obrigatório');
-  const icon=document.getElementById('a-icon').value||'📁',color=areaColorSel;
-  const newProjs=[...document.querySelectorAll('#proj-fields input')].map(i=>i.value.trim()).filter(Boolean).map(n=>({id:uid(),name:n,status:'ativo',desc:''}));
-  if(areaEditId){const i=DB.areas.findIndex(x=>x.id===areaEditId),ex=DB.areas[i];
-    DB.areas[i]={...ex,name,icon,color,projects:[...(ex.projects||[]),...newProjs.filter(p=>!(ex.projects||[]).some(ep=>ep.name===p.name))]};}
-  else{DB.areas.push({id:uid(),name,icon,color,projects:newProjs})}
-  saveData(DB);closeModal('area-modal');renderAreas();ttRenderSidebar();ttFilterAndRender();
-}
-function deleteArea(id){if(!confirm('Excluir área?'))return;DB.areas=DB.areas.filter(x=>x.id!==id);saveData(DB);renderAreas();ttRenderSidebar()}
-function openProjModal(areaId){
-  document.getElementById('p-name').value='';document.getElementById('p-status').value='ativo';document.getElementById('p-desc').value='';
-  populateAreaSelect('p-area',areaId);openModal('proj-modal');
-}
-function saveProject(){
-  const name=document.getElementById('p-name').value.trim();if(!name)return alert('Nome obrigatório');
-  const areaId=document.getElementById('p-area').value;if(!areaId)return alert('Selecione uma área');
-  const area=DB.areas.find(a=>a.id===areaId);if(!area)return;
-  area.projects.push({id:uid(),name,status:document.getElementById('p-status').value,desc:document.getElementById('p-desc').value});
-  saveData(DB);closeModal('proj-modal');renderAreas();ttRenderSidebar();
-}
-// ===================== PROJECTS WORKSPACE =====================
-let activeProjectId=null, activeProjTab='overview', editNoteId=null, npColorSel=COLORS[0], editProjectId=null;
-
-function loadDataWithProjects(){
-  // Ensure projects array exists in DB
-  if(!DB.projects)DB.projects=[];
-  // Migrate old area projects to new structure if needed
-  DB.areas.forEach(a=>{
-    (a.projects||[]).forEach(p=>{
-      if(!DB.projects.find(x=>x.id===p.id)){
-        DB.projects.push({id:p.id,name:p.name,icon:'📁',color:a.color,area:a.id,
-          status:p.status||'ativo',desc:p.desc||'',deadline:'',notes:[],files:[],createdAt:today()});
-      }
-    });
-  });
-  saveData(DB);
-}
-
-function renderAreas(){loadDataWithProjects();renderProjectList();renderAreaPills();}
-
-function renderProjectList(){
-  loadDataWithProjects();
-  const q=(document.getElementById('proj-search')||{}).value||'';
-  let projs=[...DB.projects];
-  if(q)projs=projs.filter(p=>p.name.toLowerCase().includes(q.toLowerCase()));
-  projs.sort((a,b)=>a.name.localeCompare(b.name));
-  const statusColors={ativo:'var(--green)',pausado:'var(--amber)',concluido:'var(--text3)',planejamento:'var(--blue)'};
-  const list=document.getElementById('proj-list');
-  if(!projs.length){
-    list.innerHTML=`<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">${q?'Nenhum projeto encontrado':'Nenhum projeto criado'}</div>`;return;
-  }
-  list.innerHTML=projs.map(p=>{
-    const tasks=DB.tasks.filter(t=>t.project===p.id);
-    const pending=tasks.filter(t=>t.status!=='concluida').length;
-    const area=DB.areas.find(a=>a.id===p.area);
-    return`<div class="proj-item${activeProjectId===p.id?' active':''}" onclick="openProject('${p.id}')">
-      <div class="proj-item-icon" style="background:${p.color}22;color:${p.color}">${p.icon||'📁'}</div>
-      <div style="flex:1;min-width:0">
-        <div class="proj-item-name">${p.name}</div>
-        ${area?`<div style="font-size:10px;color:var(--text3)">${area.icon} ${area.name}</div>`:''}
-      </div>
-      <div class="proj-status-dot" style="background:${statusColors[p.status]||'var(--text3)'}" title="${p.status}"></div>
-      ${pending?`<span class="proj-item-count">${pending}</span>`:''}
-    </div>`;
-  }).join('');
-}
-
-function renderAreaPills(){
-  const el=document.getElementById('area-pills-list');
-  if(!el)return;
-  el.innerHTML=DB.areas.map(a=>`<div class="area-pill" onclick="openAreaModal('${a.id}')">
-    <div class="area-pill-dot" style="background:${a.color}"></div>
-    <span style="flex:1;font-size:12px">${a.icon} ${a.name}</span>
-    <span style="font-size:10px;color:var(--text3)">${DB.projects.filter(p=>p.area===a.id).length}</span>
-  </div>`).join('');
-}
-
-function openProject(id){
-  activeProjectId=id;activeProjTab='overview';
-  renderProjectList();renderProjectWorkspace();
-}
-
-function renderProjectWorkspace(){
-  const p=DB.projects.find(x=>x.id===activeProjectId);
-  if(!p){document.getElementById('proj-workspace').innerHTML='<div class="proj-empty-state"><i class="ti ti-briefcase" style="font-size:48px;color:var(--text3);display:block;margin-bottom:12px"></i><div style="font-size:16px;font-weight:600;color:var(--text2)">Selecione um projeto</div></div>';return;}
-  const area=DB.areas.find(a=>a.id===p.area);
-  const tasks=DB.tasks.filter(t=>t.project===p.id);
-  const done=tasks.filter(t=>t.status==='concluida').length;
-  const statusLabels={ativo:'🟢 Ativo',pausado:'⏸️ Pausado',concluido:'✅ Concluído',planejamento:'📋 Planejamento'};
-  const ws=document.getElementById('proj-workspace');
-  ws.innerHTML=`
-    <div class="proj-ws-header">
-      <div class="proj-ws-title-row">
-        <div class="proj-ws-icon" style="background:${p.color}22;color:${p.color}">${p.icon||'📁'}</div>
-        <input class="proj-ws-name" id="ws-proj-name" value="${p.name}" onblur="pSaveField('name',this.value)">
-        <button class="icon-btn" onclick="openEditProject('${p.id}')" title="Editar projeto"><i class="ti ti-settings"></i></button>
-        <button class="icon-btn" onclick="deleteProject('${p.id}')" style="color:var(--red)" title="Excluir"><i class="ti ti-trash"></i></button>
-      </div>
-      <div class="proj-ws-meta">
-        <span class="proj-meta-chip"><i class="ti ti-flag" style="font-size:12px"></i>
-          <select onchange="pSaveField('status',this.value)" style="background:transparent;border:none;color:var(--text2);font-size:12px;outline:none;cursor:pointer">
-            ${['ativo','pausado','concluido','planejamento'].map(s=>`<option value="${s}"${p.status===s?' selected':''}>${statusLabels[s]}</option>`).join('')}
-          </select>
-        </span>
-        ${area?`<span class="proj-meta-chip" style="color:${area.color}">${area.icon} ${area.name}</span>`:''}
-        ${p.deadline?`<span class="proj-meta-chip"><i class="ti ti-calendar" style="font-size:12px"></i> ${fmtDate(p.deadline)}</span>`:''}
-        <span class="proj-meta-chip"><i class="ti ti-checklist" style="font-size:12px"></i> ${done}/${tasks.length} tarefas</span>
-        ${p.desc?`<span class="proj-meta-chip" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.desc}"><i class="ti ti-info-circle" style="font-size:12px"></i> ${p.desc}</span>`:''}
-      </div>
-    </div>
-    <div class="proj-tabs">
-      <button class="proj-tab${activeProjTab==='overview'?' active':''}" onclick="setProjTab('overview')"><i class="ti ti-layout-dashboard"></i> Visão Geral</button>
-      <button class="proj-tab${activeProjTab==='tasks'?' active':''}" onclick="setProjTab('tasks')"><i class="ti ti-checklist"></i> Tarefas</button>
-      <button class="proj-tab${activeProjTab==='notes'?' active':''}" onclick="setProjTab('notes')"><i class="ti ti-notes"></i> Notas ${(p.notes||[]).length?`<span style="background:var(--accent);color:#fff;border-radius:10px;padding:0 5px;font-size:10px">${p.notes.length}</span>`:''}</button>
-      <button class="proj-tab${activeProjTab==='files'?' active':''}" onclick="setProjTab('files')"><i class="ti ti-paperclip"></i> Arquivos ${(p.files||[]).length?`<span style="background:var(--accent);color:#fff;border-radius:10px;padding:0 5px;font-size:10px">${p.files.length}</span>`:''}</button>
-    </div>
-    <div class="proj-tab-content" id="proj-tab-content"></div>`;
-  renderProjTabContent();
-}
-
-function setProjTab(tab){activeProjTab=tab;renderProjTabContent();
-  document.querySelectorAll('.proj-tab').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('.proj-tab').forEach(b=>{if(b.textContent.includes(tab==='overview'?'Visão':tab==='tasks'?'Tarefas':tab==='notes'?'Notas':'Arquivos'))b.classList.add('active')});
-  renderProjectWorkspace();
-}
-
-function renderProjTabContent(){
-  const p=DB.projects.find(x=>x.id===activeProjectId);
-  if(!p)return;
-  const el=document.getElementById('proj-tab-content');
-  if(!el)return;
-  if(activeProjTab==='overview')el.innerHTML=renderOverviewTab(p);
-  else if(activeProjTab==='tasks')el.innerHTML=renderTasksTab(p);
-  else if(activeProjTab==='notes')el.innerHTML=renderNotesTab(p);
-  else if(activeProjTab==='files')el.innerHTML=renderFilesTab(p);
-}
-
-function renderOverviewTab(p){
-  const tasks=DB.tasks.filter(t=>t.project===p.id);
-  const done=tasks.filter(t=>t.status==='concluida').length;
-  const pct=tasks.length?Math.round(done/tasks.length*100):0;
-  const alta=tasks.filter(t=>t.priority==='alta'&&t.status!=='concluida').length;
-  const upcoming=tasks.filter(t=>t.status!=='concluida'&&t.date&&t.date>=today()).sort((a,b)=>a.date>b.date?1:-1).slice(0,5);
-  return`
-    <div class="proj-overview-grid">
-      <div class="proj-stat-card"><div class="proj-stat-val" style="color:var(--accent2)">${tasks.length}</div><div class="proj-stat-label">Total de tarefas</div></div>
-      <div class="proj-stat-card"><div class="proj-stat-val" style="color:var(--green)">${done}</div><div class="proj-stat-label">Concluídas</div></div>
-      <div class="proj-stat-card"><div class="proj-stat-val" style="color:var(--red)">${alta}</div><div class="proj-stat-label">Alta prioridade</div></div>
-      <div class="proj-stat-card"><div class="proj-stat-val" style="color:var(--amber)">${(p.notes||[]).length}</div><div class="proj-stat-label">Notas</div></div>
-    </div>
-    ${tasks.length?`<div class="card" style="margin-bottom:12px"><div class="card-title">Progresso geral</div>
-      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-bottom:4px"><span>${done} de ${tasks.length} tarefas</span><span>${pct}%</span></div>
-      <div class="progress-bar" style="height:8px;border-radius:4px"><div class="progress-fill" style="width:${pct}%;height:100%;border-radius:4px"></div></div>
-    </div>`:''}
-    <div class="card" style="margin-bottom:12px">
-      <div class="card-title" style="display:flex;justify-content:space-between">Próximas tarefas
-        <button class="btn btn-ghost btn-sm" onclick="setProjTab('tasks')">Ver todas</button>
-      </div>
-      ${upcoming.length?upcoming.map(t=>miniTaskHtml(t)).join(''):'<div class="text-muted">Nenhuma tarefa programada</div>'}
-    </div>
-    ${(p.notes||[]).length?`<div class="card">
-      <div class="card-title" style="display:flex;justify-content:space-between">Notas recentes
-        <button class="btn btn-ghost btn-sm" onclick="setProjTab('notes')">Ver todas</button>
-      </div>
-      ${p.notes.slice(-2).reverse().map(n=>`<div class="note-item" onclick="openNote('${n.id}')"><div class="note-item-title">${n.title||'Sem título'}</div><div class="note-item-preview">${n.content||''}</div></div>`).join('')}
-    </div>`:''}`;
-}
-
-function renderTasksTab(p){
-  const tasks=DB.tasks.filter(t=>t.project===p.id).sort((a,b)=>{
-    if(a.start&&b.start)return a.start>b.start?1:-1;
-    return PRI_ORDER[a.priority]-PRI_ORDER[b.priority];
-  });
-  const pending=tasks.filter(t=>t.status!=='concluida');
-  const done=tasks.filter(t=>t.status==='concluida');
-  return`<div style="display:flex;justify-content:flex-end;margin-bottom:12px">
-    <button class="btn btn-primary btn-sm" onclick="addTaskToProject('${p.id}')"><i class="ti ti-plus"></i> Nova tarefa</button>
-  </div>
-  ${pending.length?`<div class="tt-section-header">A fazer · ${pending.length}</div>${pending.map(t=>miniTaskHtml(t,true)).join('')}`:''}
-  ${done.length?`<div class="tt-section-header" style="margin-top:16px">Concluídas · ${done.length}</div>${done.map(t=>miniTaskHtml(t,true)).join('')}`:''}
-  ${!tasks.length?`<div class="empty"><i class="ti ti-checklist"></i><p>Nenhuma tarefa neste projeto</p><button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="addTaskToProject('${p.id}')"><i class="ti ti-plus"></i> Adicionar tarefa</button></div>`:''}`;
-}
-
-function extractNoteText(html){
-  const d=document.createElement('div');d.innerHTML=html||'';
-  return d.innerText||d.textContent||'';
-}
-function extractNoteImages(html){
-  const d=document.createElement('div');d.innerHTML=html||'';
-  return [...d.querySelectorAll('img')].map(i=>i.src).slice(0,3);
-}
-
-function renderNotesTab(p){
-  return`<div style="display:flex;justify-content:flex-end;margin-bottom:12px">
-    <button class="btn btn-primary btn-sm" onclick="openNote(null)"><i class="ti ti-plus"></i> Nova nota</button>
-  </div>
-  ${(p.notes||[]).length?[...(p.notes||[])].reverse().map(n=>{
-    const imgs=extractNoteImages(n.content);
-    const txt=extractNoteText(n.content);
-    return`<div class="note-item" onclick="openNote('${n.id}')">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div class="note-item-title">${n.title||'Sem título'}</div>
-        <button class="icon-btn" onclick="event.stopPropagation();deleteNote('${n.id}')" style="color:var(--red)"><i class="ti ti-trash"></i></button>
-      </div>
-      <div class="note-item-preview">${txt}</div>
-      ${imgs.length?`<div class="note-item-imgs">${imgs.map(src=>`<img class="note-item-thumb" src="${src}" alt="imagem">`).join('')}</div>`:''}
-      <div class="note-item-date"><i class="ti ti-clock" style="font-size:10px"></i> ${n.updatedAt||n.createdAt||''}</div>
-    </div>`;}).join('')
-  :`<div class="empty"><i class="ti ti-notes"></i><p>Nenhuma nota neste projeto</p><button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="openNote(null)"><i class="ti ti-plus"></i> Nova nota</button></div>`}`;
-}
-
-function getFileType(name){
-  const ext=(name||'').split('.').pop().toLowerCase();
-  if(['jpg','jpeg','png','gif','webp','svg'].includes(ext))return'image';
-  if(ext==='pdf')return'pdf';
-  if(['doc','docx'].includes(ext))return'doc';
-  if(['txt','md'].includes(ext))return'text';
-  if(['mp4','mov','avi','webm'].includes(ext))return'video';
-  if(['mp3','wav','ogg','m4a'].includes(ext))return'audio';
-  return'other';
-}
-
-function openFile(fileId){
-  const p=DB.projects.find(x=>x.id===activeProjectId);if(!p)return;
-  const f=(p.files||[]).find(x=>x.id===fileId);if(!f)return;
-  const type=getFileType(f.name);
-  if(type==='image'){
-    // Open image lightbox
-    const overlay=document.createElement('div');
-    overlay.style.cssText='position:fixed;inset:0;background:#000000cc;z-index:1000;display:flex;align-items:center;justify-content:center;cursor:zoom-out';
-    overlay.onclick=()=>overlay.remove();
-    const wrap=document.createElement('div');
-    wrap.style.cssText='position:relative;max-width:92vw;max-height:92vh';
-    const img=document.createElement('img');
-    img.src=f.data;img.style.cssText='max-width:100%;max-height:88vh;border-radius:10px;display:block';
-    const bar=document.createElement('div');
-    bar.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:8px 4px';
-    bar.innerHTML=`<span style="color:#fff;font-size:13px">${f.name}</span>
-      <a href="${f.data}" download="${f.name}" style="color:#fff;background:#ffffff22;border-radius:6px;padding:5px 12px;font-size:12px;text-decoration:none;display:flex;align-items:center;gap:4px" onclick="event.stopPropagation()">
-        <i class="ti ti-download"></i> Baixar
-      </a>`;
-    wrap.appendChild(img);wrap.appendChild(bar);overlay.appendChild(wrap);
-    document.body.appendChild(overlay);
-  } else if(type==='pdf'||type==='text'||type==='video'||type==='audio'){
-    // Open in new tab
-    const win=window.open();
-    if(type==='pdf'||type==='text'){
-      win.document.write(`<html><body style="margin:0;background:#111"><iframe src="${f.data}" style="width:100%;height:100vh;border:none"></iframe></body></html>`);
-    } else if(type==='video'){
-      win.document.write(`<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;height:100vh"><video controls autoplay src="${f.data}" style="max-width:100%;max-height:100vh"></video></body></html>`);
-    } else if(type==='audio'){
-      win.document.write(`<html><body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px"><p style="color:#fff;font-family:sans-serif">${f.name}</p><audio controls autoplay src="${f.data}"></audio></body></html>`);
-    }
-  } else {
-    // Download directly
-    downloadFile(fileId);
-  }
-}
-
-function downloadFile(fileId){
-  const p=DB.projects.find(x=>x.id===activeProjectId);if(!p)return;
-  const f=(p.files||[]).find(x=>x.id===fileId);if(!f)return;
-  const a=document.createElement('a');
-  a.href=f.data;a.download=f.name;a.click();
-}
-
-function renderFilesTab(p){
-  const fileIcons={image:'🖼️',pdf:'📄',doc:'📝',text:'📃',video:'🎬',audio:'🎵',other:'📎'};
-  const fileColors={image:'#60a5fa',pdf:'#f87171',doc:'#a78bfa',text:'#94a3b8',video:'#fb923c',audio:'#4ade80',other:'#9992c0'};
-  return`
-    <div class="file-drop-zone" id="file-drop-zone" onclick="document.getElementById('file-input').click()"
-      ondragover="event.preventDefault();this.classList.add('drag-over')"
-      ondragleave="this.classList.remove('drag-over')"
-      ondrop="handleFileDrop(event)">
-      <i class="ti ti-cloud-upload"></i>
-      <div style="font-size:14px;font-weight:600;margin-bottom:4px">Arraste arquivos aqui</div>
-      <div style="font-size:12px">ou clique para selecionar · imagens, PDF, vídeo, áudio, docs</div>
-      <input type="file" id="file-input" multiple style="display:none" onchange="handleFileSelect(event)">
-    </div>
-    ${(p.files||[]).length?`<div class="file-grid">${(p.files||[]).map(f=>{
-      const type=getFileType(f.name);
-      const isImg=type==='image';
-      return`<div class="file-card" onclick="openFile('${f.id}')" title="Clique para visualizar · ${f.name}">
-        ${isImg&&f.data
-          ?`<img src="${f.data}" style="width:100%;height:90px;object-fit:cover;border-radius:6px;margin-bottom:6px;display:block">`
-          :`<div class="file-card-icon" style="color:${fileColors[type]||'#888'}">${fileIcons[type]||'📎'}</div>`}
-        <div class="file-card-name">${f.name}</div>
-        <div class="file-card-size" style="color:var(--text3);font-size:10px">${f.size||''}</div>
-        <div style="display:flex;gap:4px;margin-top:6px;justify-content:center">
-          <button class="icon-btn" onclick="event.stopPropagation();downloadFile('${f.id}')" title="Baixar" style="font-size:13px;color:var(--accent2)"><i class="ti ti-download"></i></button>
-          <button class="icon-btn" onclick="event.stopPropagation();deleteFile('${f.id}')" title="Excluir" style="font-size:13px;color:var(--red)"><i class="ti ti-trash"></i></button>
-        </div>
-      </div>`;}).join('')}</div>`
-    :`<div style="text-align:center;color:var(--text3);font-size:13px;padding:20px 0">Nenhum arquivo anexado</div>`}`;
-}
-
-function miniTaskHtml(t,showActions=false){
-  const priColors={alta:'var(--red)',media:'var(--amber)',baixa:'var(--green)',nenhuma:'var(--text3)'};
-  const clickHandler=showActions?'openTaskModal(\'' +t.id+ '\')':'';
-  const dateColor=t.date&&t.date<today()&&t.status!=='concluida'?'var(--red)':'inherit';
-  return`<div class="tt-task${t.status==='concluida'?' done-task':''}" style="margin-bottom:5px;cursor:${showActions?'pointer':'default'}" onclick="${clickHandler}">
-    <div class="tt-check${t.status==='concluida'?' checked':''}" onclick="event.stopPropagation();toggleTask('${t.id}');renderProjTabContent()">
-      ${t.status==='concluida'?'<i class="ti ti-check" style="font-size:11px;color:#fff"></i>':''}
-    </div>
-    <span style="color:${priColors[t.priority]||'var(--text3)'};flex-shrink:0">${PRI_ICONS[t.priority]||'⚪'}</span>
-    <div class="tt-task-body">
-      <div class="tt-task-name">${t.name}</div>
-      <div class="tt-task-sub">
-        ${t.date?`<span style="color:${dateColor}">${fmtDate(t.date)}</span>`:''}
-        ${t.start?`<span>${t.start}</span>`:''}
-      </div>
-    </div>
-    ${showActions?`<div class="task-actions" style="opacity:1">
-      <button class="icon-btn" onclick="event.stopPropagation();deleteTask('${t.id}');renderProjTabContent()" style="color:var(--red)"><i class="ti ti-trash"></i></button>
-    </div>`:''}
-  </div>`;
-}
-
-function pSaveField(field,val){
-  const p=DB.projects.find(x=>x.id===activeProjectId);if(!p)return;
-  p[field]=val;saveData(DB);renderProjectList();
-}
-
-function addTaskToProject(projId){
-  openTaskModal(null);
-  const p=DB.projects.find(x=>x.id===projId);if(!p)return;
-  setTimeout(()=>{
-    if(p.area){document.getElementById('t-area').value=p.area;updateProjectSelect();}
-    setTimeout(()=>{document.getElementById('t-project').value=projId;},60);
-  },80);
-}
-
-// ===== RICH NOTE EDITOR =====
-function openNote(noteId){
-  editNoteId=noteId;
-  const p=DB.projects.find(x=>x.id===activeProjectId);if(!p)return;
-  const note=noteId?(p.notes||[]).find(n=>n.id===noteId):null;
-  document.getElementById('note-title-input').value=note?note.title:'';
-  const editor=document.getElementById('note-editor-rich');
-  editor.innerHTML=note?note.content:'';
-  document.getElementById('note-overlay').classList.add('open');
-  // Re-attach resize handles to existing images that were saved as plain <img>
-  setTimeout(()=>{
-    editor.querySelectorAll('img:not(.img-resize-wrap img)').forEach(img=>{
-      if(!img.closest('.img-resize-wrap'))makeResizableImg(img);
-    });
-    document.getElementById('note-title-input').focus();
-  },120);
-}
-
-function closeNoteOverlay(){
-  document.getElementById('note-overlay').classList.remove('open');
-}
-
-function noteOverlayClick(e){
-  if(e.target===document.getElementById('note-overlay'))closeNoteOverlay();
-}
-
-function saveCurrentNote(){
-  const p=DB.projects.find(x=>x.id===activeProjectId);if(!p)return;
-  const title=document.getElementById('note-title-input').value.trim();
-  const content=document.getElementById('note-editor-rich').innerHTML.trim();
-  const textOnly=document.getElementById('note-editor-rich').innerText.trim();
-  if(!title&&!textOnly)return closeNoteOverlay();
-  if(!p.notes)p.notes=[];
-  if(editNoteId){
-    const n=p.notes.find(x=>x.id===editNoteId);
-    if(n){n.title=title||'Sem título';n.content=content;n.updatedAt=today();}
-  } else {
-    p.notes.push({id:uid(),title:title||'Sem título',content,createdAt:today(),updatedAt:today()});
-  }
-  saveData(DB);closeNoteOverlay();renderProjectWorkspace();
-}
-
-function deleteNote(noteId){
-  if(!confirm('Excluir nota?'))return;
-  const p=DB.projects.find(x=>x.id===activeProjectId);if(!p)return;
-  p.notes=(p.notes||[]).filter(n=>n.id!==noteId);
-  saveData(DB);renderProjTabContent();renderProjectWorkspace();
-}
-
-function noteCmd(cmd,val){
-  document.getElementById('note-editor-rich').focus();
-  document.execCommand(cmd,false,val||null);
-}
-
-// ===== IMAGE RESIZE SYSTEM =====
-let _resizeImg=null,_resizeWrap=null,_resizeHandle=null;
-let _resizeStartX=0,_resizeStartY=0,_resizeStartW=0,_resizeStartH=0;
-
-function makeResizableImg(img){
-  // Wrap in resize container
-  const wrap=document.createElement('span');
-  wrap.className='img-resize-wrap';
-  wrap.contentEditable='false';
-  img.parentNode&&img.parentNode.insertBefore(wrap,img);
-  wrap.appendChild(img);
-
-  // Toolbar
-  const tb=document.createElement('div');
-  tb.className='img-resize-toolbar';
-  tb.innerHTML=`
-    <button class="img-resize-btn" onclick="resizeImgPreset(this,'25%')" title="25%">25%</button>
-    <button class="img-resize-btn" onclick="resizeImgPreset(this,'50%')" title="50%">50%</button>
-    <button class="img-resize-btn" onclick="resizeImgPreset(this,'75%')" title="75%">75%</button>
-    <button class="img-resize-btn active" onclick="resizeImgPreset(this,'100%')" title="100%">100%</button>
-    <span style="width:1px;background:var(--border);margin:0 2px;display:inline-block;height:16px"></span>
-    <button class="img-resize-btn" onclick="alignImg(this,'left')" title="Alinhar esquerda"><i class="ti ti-align-left"></i></button>
-    <button class="img-resize-btn" onclick="alignImg(this,'center')" title="Centralizar"><i class="ti ti-align-center"></i></button>
-    <button class="img-resize-btn" onclick="alignImg(this,'right')" title="Alinhar direita"><i class="ti ti-align-right"></i></button>
-    <span style="width:1px;background:var(--border);margin:0 2px;display:inline-block;height:16px"></span>
-    <button class="img-resize-btn" onclick="removeResizableImg()" title="Remover" style="color:var(--red)"><i class="ti ti-trash"></i></button>`;
-  wrap.appendChild(tb);
-
-  // 8 handles
-  ['nw','n','ne','w','e','sw','s','se'].forEach(pos=>{
-    const h=document.createElement('div');
-    h.className=`resize-handle ${pos}`;
-    h.dataset.pos=pos;
-    h.addEventListener('mousedown',e=>{
-      e.preventDefault();e.stopPropagation();
-      _resizeImg=img;_resizeWrap=wrap;_resizeHandle=pos;
-      _resizeStartX=e.clientX;_resizeStartY=e.clientY;
-      _resizeStartW=img.offsetWidth;_resizeStartH=img.offsetHeight;
-      document.addEventListener('mousemove',onResizeMove);
-      document.addEventListener('mouseup',onResizeUp);
-    });
-    wrap.appendChild(h);
-  });
-
-  // Click outside → deselect
-  img._selectHandler=()=>selectResizableImg(wrap,img);
-  wrap._deselHandler=(e)=>{if(!wrap.contains(e.target))deselectAllImgs()};
-  document.addEventListener('click',wrap._deselHandler);
-  return wrap;
-}
-
-function selectResizableImg(wrap,img){
-  deselectAllImgs();
-  wrap.classList.add('selected');
-  _resizeImg=img;_resizeWrap=wrap;
-}
-
-function deselectAllImgs(){
-  document.querySelectorAll('.img-resize-wrap.selected').forEach(w=>w.classList.remove('selected'));
-  _resizeImg=null;_resizeWrap=null;
-}
-
-function onResizeMove(e){
-  if(!_resizeImg||!_resizeHandle)return;
-  const dx=e.clientX-_resizeStartX, dy=e.clientY-_resizeStartY;
-  let newW=_resizeStartW, newH=_resizeStartH;
-  const pos=_resizeHandle;
-  if(pos.includes('e'))newW=Math.max(60,_resizeStartW+dx);
-  if(pos.includes('w'))newW=Math.max(60,_resizeStartW-dx);
-  if(pos.includes('s'))newH=Math.max(40,_resizeStartH+dy);
-  if(pos.includes('n'))newH=Math.max(40,_resizeStartH-dy);
-  // If corner, maintain aspect ratio
-  if(pos.length===2){
-    const ratio=_resizeStartW/_resizeStartH;
-    if(Math.abs(dx)>Math.abs(dy))newH=Math.round(newW/ratio);
-    else newW=Math.round(newH*ratio);
-  }
-  _resizeImg.style.width=newW+'px';
-  _resizeImg.style.height=newH+'px';
-}
-
-function onResizeUp(){
-  document.removeEventListener('mousemove',onResizeMove);
-  document.removeEventListener('mouseup',onResizeUp);
-  _resizeHandle=null;
-}
-
-function resizeImgPreset(btn,pct){
-  if(!_resizeImg)return;
-  const editor=document.getElementById('note-editor-rich');
-  const maxW=editor.offsetWidth-32;
-  const numPct=parseInt(pct);
-  _resizeImg.style.width=Math.round(maxW*numPct/100)+'px';
-  _resizeImg.style.height='auto';
-  // Update active button
-  btn.closest('.img-resize-toolbar').querySelectorAll('.img-resize-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-}
-
-function alignImg(btn,align){
-  if(!_resizeWrap)return;
-  _resizeWrap.style.display=align==='center'?'block':'inline-block';
-  _resizeWrap.style.marginLeft=align==='center'?'auto':align==='right'?'auto':'0';
-  _resizeWrap.style.marginRight=align==='center'?'auto':'0';
-  _resizeWrap.style.textAlign='';
-  if(align==='center'){_resizeWrap.style.display='block';_resizeWrap.style.margin='8px auto';}
-  else if(align==='right'){_resizeWrap.style.cssFloat='right';_resizeWrap.style.margin='4px 0 4px 12px';}
-  else{_resizeWrap.style.cssFloat='none';_resizeWrap.style.margin='8px 0';}
-  btn.closest('.img-resize-toolbar').querySelectorAll('[title^="Alinhar"],[title="Centralizar"]').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-}
-
-function removeResizableImg(){
-  if(_resizeWrap){_resizeWrap.remove();_resizeImg=null;_resizeWrap=null;}
-}
-
-function insertImgIntoEditor(dataUrl,name){
-  const editor=document.getElementById('note-editor-rich');
-  editor.focus();
-  const img=document.createElement('img');
-  img.src=dataUrl;
-  img.alt=name||'imagem';
-  img.style.width='100%';
-  img.style.borderRadius='8px';
-  const wrap=makeResizableImg(img);
-  const br=document.createElement('br');
-  // Insert at cursor
-  const sel=window.getSelection();
-  if(sel&&sel.rangeCount){
-    const range=sel.getRangeAt(0);
-    if(editor.contains(range.commonAncestorContainer)||range.commonAncestorContainer===editor){
-      range.insertNode(br.cloneNode());
-      range.insertNode(wrap);
-      range.collapse(false);
-      selectResizableImg(wrap,img);
-      return;
-    }
-  }
-  editor.appendChild(wrap);
-  editor.appendChild(br);
-  selectResizableImg(wrap,img);
-}
-
-// Insert images into editor
-function noteInsertImages(e){
-  const files=[...e.target.files];
-  files.forEach(file=>{
-    const reader=new FileReader();
-    reader.onload=ev=>insertImgIntoEditor(ev.target.result,file.name);
-    reader.readAsDataURL(file);
-  });
-  e.target.value='';
-}
-
-// Paste images
-function noteHandlePaste(e){
-  const items=e.clipboardData?.items;
-  if(!items)return;
-  for(const item of items){
-    if(item.type.startsWith('image/')){
-      e.preventDefault();
-      const file=item.getAsFile();
-      const reader=new FileReader();
-      reader.onload=ev=>insertImgIntoEditor(ev.target.result,'imagem colada');
-      reader.readAsDataURL(file);
-    }
-  }
-}
-
-// Drop images
-function noteHandleDrop(e){
-  const files=[...e.dataTransfer.files].filter(f=>f.type.startsWith('image/'));
-  if(!files.length)return;
-  e.preventDefault();
-  files.forEach(file=>{
-    const reader=new FileReader();
-    reader.onload=ev=>insertImgIntoEditor(ev.target.result,file.name);
-    reader.readAsDataURL(file);
-  });
-}
-
-// Files
-function handleFileSelect(e){processFiles([...e.target.files]);e.target.value='';}
-function handleFileDrop(e){e.preventDefault();document.getElementById('file-drop-zone').classList.remove('drag-over');processFiles([...e.dataTransfer.files]);}
-function processFiles(files){
-  const p=DB.projects.find(x=>x.id===activeProjectId);if(!p)return;
-  if(!p.files)p.files=[];
-  files.forEach(f=>{
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      p.files.push({id:uid(),name:f.name,size:formatFileSize(f.size),type:f.type,data:ev.target.result,addedAt:today()});
-      saveData(DB);renderProjTabContent();
-    };
-    reader.readAsDataURL(f);
-  });
-}
-function formatFileSize(bytes){if(bytes<1024)return bytes+'B';if(bytes<1024*1024)return Math.round(bytes/1024)+'KB';return(bytes/(1024*1024)).toFixed(1)+'MB';}
-function deleteFile(fileId){
-  if(!confirm('Remover arquivo?'))return;
-  const p=DB.projects.find(x=>x.id===activeProjectId);if(!p)return;
-  p.files=(p.files||[]).filter(f=>f.id!==fileId);
-  saveData(DB);renderProjTabContent();
-}
-
-// New/Edit project modal
-function openNewProjectModal(id){
-  editProjectId=id||null;npColorSel=COLORS[0];
-  const p=id?DB.projects.find(x=>x.id===id):{};
-  document.getElementById('new-proj-modal-title').textContent=id?'Editar Projeto':'Novo Projeto';
-  document.getElementById('np-name').value=p.name||'';
-  document.getElementById('np-icon').value=p.icon||'📁';
-  document.getElementById('np-status').value=p.status||'ativo';
-  document.getElementById('np-deadline').value=p.deadline||'';
-  document.getElementById('np-desc').value=p.desc||'';
-  if(id&&p.color)npColorSel=p.color;
-  populateAreaSelect('np-area',p.area||'');
-  const cp=document.getElementById('np-color-picker');
-  cp.innerHTML=COLORS.map(c=>`<div onclick="npSelectColor('${c}')" id="npc-${c.replace('#','')}" style="width:28px;height:28px;border-radius:50%;background:${c};cursor:pointer;border:3px solid ${c===npColorSel?'#fff':'transparent'};transition:border .15s"></div>`).join('');
-  openModal('new-proj-modal');
-}
-function npSelectColor(c){
-  npColorSel=c;
-  document.querySelectorAll('#np-color-picker div').forEach(d=>{d.style.border=d.style.background===c?'3px solid #fff':'3px solid transparent'});
-}
-function saveNewProject(){
-  const name=document.getElementById('np-name').value.trim();if(!name)return alert('Nome obrigatório');
-  if(!DB.projects)DB.projects=[];
-  const proj={
-    id:editProjectId||uid(),name,icon:document.getElementById('np-icon').value||'📁',
-    color:npColorSel,area:document.getElementById('np-area').value,
-    status:document.getElementById('np-status').value,
-    deadline:document.getElementById('np-deadline').value,
-    desc:document.getElementById('np-desc').value,
-    notes:editProjectId?(DB.projects.find(x=>x.id===editProjectId)||{}).notes||[]:[] ,
-    files:editProjectId?(DB.projects.find(x=>x.id===editProjectId)||{}).files||[]:[] ,
-    createdAt:editProjectId?(DB.projects.find(x=>x.id===editProjectId)||{}).createdAt||today():today()
-  };
-  // Also add to area.projects for compatibility with task selector
-  const area=DB.areas.find(a=>a.id===proj.area);
-  if(area){
-    if(!area.projects)area.projects=[];
-    const existing=area.projects.find(p=>p.id===proj.id);
-    if(existing){existing.name=proj.name;}
-    else{area.projects.push({id:proj.id,name:proj.name,status:proj.status,desc:proj.desc});}
-  }
-  if(editProjectId){DB.projects[DB.projects.findIndex(x=>x.id===editProjectId)]=proj;}
-  else{DB.projects.push(proj);}
-  saveData(DB);closeModal('new-proj-modal');
-  renderProjectList();renderAreaPills();ttRenderSidebar();
-  if(editProjectId===activeProjectId||(!editProjectId&&activeProjectId===proj.id)||!editProjectId){
-    activeProjectId=proj.id;renderProjectWorkspace();
-  }
-}
-function openEditProject(id){openNewProjectModal(id);}
-function deleteProject(id){
-  if(!confirm('Excluir projeto? As tarefas vinculadas perderão o projeto.'))return;
-  DB.projects=DB.projects.filter(x=>x.id!==id);
-  // Remove from area.projects too
-  DB.areas.forEach(a=>{if(a.projects)a.projects=a.projects.filter(p=>p.id!==id)});
-  saveData(DB);
-  if(activeProjectId===id){activeProjectId=null;document.getElementById('proj-workspace').innerHTML=`<div class="proj-empty-state"><i class="ti ti-briefcase" style="font-size:48px;color:var(--text3);display:block;margin-bottom:12px"></i><div style="font-size:16px;font-weight:600;color:var(--text2)">Selecione um projeto</div></div>`;}
-  renderProjectList();renderAreaPills();ttRenderSidebar();
-}
-
-
-// ===================== MOBILE RESPONSIVE =====================
-function isMobile(){return window.innerWidth<=768}
-
-function openMobileSidebar(){
-  if(!isMobile())return;
-  const panel=document.getElementById('mobile-sidebar-panel');
-  const overlay=document.getElementById('mobile-sidebar-overlay');
-  // Clone sidebar content into panel
-  const sidebar=document.querySelector('.tt-sidebar');
-  if(sidebar){
-    panel.innerHTML='';
-    const clone=sidebar.cloneNode(true);
-    clone.style.cssText='width:260px;height:100%;display:flex;flex-direction:column;overflow:hidden;background:var(--bg2);border-right:1px solid var(--border)';
-    panel.appendChild(clone);
-    // Re-attach event listeners by replacing onclick handlers
-    clone.querySelectorAll('[onclick]').forEach(el=>{
-      const handler=el.getAttribute('onclick');
-      el.addEventListener('click',()=>{eval(handler);closeMobileSidebar();});
-      el.removeAttribute('onclick');
-    });
-  }
-  panel.style.display='block';overlay.style.display='block';
-  requestAnimationFrame(()=>panel.style.transform='translateX(0)');
-}
-
-function closeMobileSidebar(){
-  const panel=document.getElementById('mobile-sidebar-panel');
-  const overlay=document.getElementById('mobile-sidebar-overlay');
-  panel.style.transform='translateX(-100%)';
-  overlay.style.display='none';
-  setTimeout(()=>panel.style.display='none',260);
-}
-
-function updateMobileUI(){
-  const mobile=isMobile();
-  const menuBtn=document.getElementById('tt-mobile-menu-btn');
-  if(menuBtn)menuBtn.style.display=mobile?'flex':'none';
-}
-
-window.addEventListener('resize',updateMobileUI);
-updateMobileUI();
-
-// ===================== THEME =====
-function toggleTheme(){
-  const light=document.body.classList.toggle('light');
-  document.getElementById('theme-icon').className=light?'ti ti-moon':'ti ti-sun';
-  localStorage.setItem('lifeos-theme',light?'light':'dark');
-}
-function initTheme(){const s=localStorage.getItem('lifeos-theme');if(s==='light'){document.body.classList.add('light');document.getElementById('theme-icon').className='ti ti-moon'}}
-initTheme();
-
-// ===================== INIT =====================
-renderDashboard();
-renderCalendar();
-document.addEventListener('click',e=>{
-  if(e.target.classList.contains('overlay'))e.target.classList.remove('open');
-  if(!e.target.closest('#cal-day-popover')&&!e.target.closest('.month-day'))closeDayPopover();
-});
-</script>
 </body>
 </html>
