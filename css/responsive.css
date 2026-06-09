@@ -12,12 +12,16 @@
 @media(max-width:768px){
   :root{--sidebar-w:0px;--detail-w:100%}
 
-  /* Nav → bottom bar */
+  /* Nav → floating glass bottom bar */
   nav{
-    position:fixed;bottom:0;top:auto;left:0;right:0;
-    padding:6px 0 max(6px,env(safe-area-inset-bottom));
-    background:var(--bg2);border-top:1px solid var(--border);
-    border-bottom:none;
+    position:fixed;bottom:max(10px,env(safe-area-inset-bottom));top:auto;
+    left:12px;right:12px;
+    padding:8px 12px;
+    background:var(--nav-glass);
+    backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:22px;
+    box-shadow:0 4px 24px rgba(0,0,0,0.35);
     display:flex;justify-content:space-around;align-items:center;
     gap:0;flex-wrap:nowrap;z-index:150;
   }
@@ -30,17 +34,52 @@
   .nav-btn i{font-size:20px}
   .nav-btn[style*="margin-left:auto"]{margin-left:0!important}
 
-  /* View padding for bottom nav */
-  .view.active,.view.active.padded{padding-bottom:80px!important}
+  /* View padding for floating nav (taller to clear the floating pill) */
+  .view.active,.view.active.padded{padding-bottom:90px!important}
   #view-tasks.active,#view-calendar.active,#view-areas.active{
-    height:calc(100vh - 0px);padding-bottom:0!important;
+    height:100dvh;height:100vh;padding-bottom:0!important;
   }
-  .tt-content{padding-bottom:80px}
-  .day-scroll{padding-bottom:80px}
-  .proj-tab-content{padding-bottom:80px}
+  .tt-content{padding-bottom:90px}
+  .day-scroll{padding-bottom:90px}
+  .proj-tab-content{padding-bottom:90px}
 
-  /* FAB repositioned */
-  #fab{bottom:76px;right:16px;width:46px;height:46px;font-size:20px}
+  /* FAB repositioned above floating nav */
+  #fab{bottom:90px;right:16px;width:46px;height:46px;font-size:20px}
+
+  /* ===== Calendar fullscreen (iOS-like) ===== */
+  #view-calendar.active{
+    padding:env(safe-area-inset-top,0px) 0 0 0!important;
+    height:100dvh!important;height:100vh!important;
+    gap:0;overflow:hidden;
+  }
+  .cal-header{
+    padding:10px 14px 4px;
+    margin-bottom:0;
+  }
+  .cal-tabs{
+    padding:0 14px;
+    margin-bottom:4px;
+  }
+  #cal-body{
+    flex:1;min-height:0;
+    display:flex;flex-direction:column;
+    overflow:hidden;
+  }
+  /* Month grid fills all available height */
+  .month-grid{
+    flex:1;min-height:0;
+    border-left:none;border-top:none;
+    height:100%;
+  }
+  .month-day-name{
+    border-left:none;border-right:none;
+    padding:4px 0;font-size:10px;
+  }
+  .month-day{
+    min-height:0;border-left:none;
+    padding:2px 3px;overflow:hidden;
+  }
+  .month-chip,.month-span{font-size:10px}
 
   /* Tasks — hide sidebar */
   .tt-sidebar{display:none}

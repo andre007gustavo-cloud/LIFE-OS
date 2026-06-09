@@ -5,7 +5,7 @@
   height:calc(100vh - 53px);overflow:hidden;padding:20px 16px;
 }
 
-#cal-body{flex:1;overflow:hidden;min-height:0}
+#cal-body{flex:1;overflow:hidden;min-height:0;display:flex;flex-direction:column}
 
 .cal-header{
   display:flex;align-items:center;justify-content:space-between;

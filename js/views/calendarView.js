@@ -417,6 +417,12 @@ const CalendarView = (() => {
     html += '</div>';
 
     document.getElementById('cal-body').innerHTML = html;
+
+    // Mobile: stretch grid rows to fill viewport height
+    if (window.innerWidth <= 768) {
+      const grid = document.querySelector('.month-grid');
+      if (grid) grid.style.gridTemplateRows = `28px repeat(${weeks.length}, 1fr)`;
+    }
   }
 
   function buildMonthGrid(year, month, firstDay, daysInMonth) {
