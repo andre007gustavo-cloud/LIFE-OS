@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>LIFE OS — Gerador de Ícones PWA</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0F172A; color: #F8FAFC; padding: 40px 24px; min-height: 100vh; }
+    h1 { color: #3B82F6; font-size: 24px; margin-bottom: 8px; }
+    p  { color: #94A3B8; margin-bottom: 28px; line-height: 1.5; }
+    code { background: #1E293B; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+    .btn { background: #2563EB; color: #fff; border: none; padding: 14px 32px; border-radius: 10px;
+           font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .btn:hover { background: #1D4ED8; }
+    .btn:disabled { opacity: .5; cursor: default; }
+    #status { margin-top: 24px; color: #4ADE80; font-weight: 600; min-height: 22px; font-size: 14px; }
+    #error  { color: #F87171; margin-top: 8px; font-size: 13px; }
+    .grid { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 32px; }
+    .card { background: #1E293B; border: 1px solid #334155; border-radius: 12px; padding: 14px;
+            text-align: center; }
+    .card canvas { border-radius: 10px; display: block; }
+    .card span { display: block; color: #64748B; font-size: 11px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <h1>LIFE OS — Gerador de Ícones PWA</h1>
+  <p>
+    Clique em <strong style="color:#F8FAFC">Gerar e Baixar Todos os Ícones</strong> para criar os arquivos PNG.<br>
+    Mova os arquivos baixados para a pasta <code>icons/</code> do projeto.
+  </p>
+
+  <button class="btn" id="genBtn" onclick="generateAll()">⬇ Gerar e Baixar Todos os Ícones</button>
+
+  <div id="status"></div>
+  <div id="error"></div>
+  <div class="grid" id="preview"></div>
+
+  <script>
+  // ─── Design constants (match the provided logo) ───────────────────────────
+  const BG          = '#FFFFFF';
+  const NAVY        = '#0D1B3E';
+  const BLUE        = '#2563EB';
+  const ARC_BLUE    = '#3B82F6';
+  const ARC_NAVY    = '#0D1B3E';
+  const ARC_MID     = '#1A56DB';
+
+  // Arc geometry: start at 150° (lower-left, 8 o'clock), end at 225° (upper-left, 11 o'clock)
+  // Goes CCW (counterclockwise) through bottom → right → top = the long 285° arc
+  const START_DEG = 150;
+  const END_DEG   = 225;
+
+  // ─── Draw the LIFE OS icon onto a canvas ──────────────────────────────────
+  function drawIcon(canvas, size, maskable = false) {
+    canvas.width  = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    const cx  = size / 2;
+    const cy  = size / 2;
+
+    // 1. Background
+    ctx.fillStyle = BG;
+    if (maskable) {
+      ctx.fillRect(0, 0, size, size);
+    } else {
+      const r = size * 0.156; // ~80px on 512 = iOS-style corner
+      ctx.beginPath();
+      roundRectPath(ctx, 0, 0, size, size, r);
+      ctx.fill();
+      ctx.save();
+      ctx.clip();           // clip rounded corners for everything below
+    }
+
+    // 2. Compute arc geometry
+    const arcR      = maskable ? size * 0.355 : size * 0.41;
+    const strokeW   = maskable ? size * 0.039  : size * 0.043;
+    const dotR      = strokeW * 0.68;
+
+    const startRad  = START_DEG * Math.PI / 180;
+    const endRad    = END_DEG   * Math.PI / 180;
+
+    const dotX = cx + arcR * Math.cos(startRad);  // lower-left
+    const dotY = cy + arcR * Math.sin(startRad);
+    const endX = cx + arcR * Math.cos(endRad);    // upper-left
+    const endY = cy + arcR * Math.sin(endRad);
+
+    // 3. Arc gradient: navy at arc-end (upper-left) → blue at dot (lower-left)
+    const grad = ctx.createLinearGradient(endX, endY, dotX, dotY);
+    grad.addColorStop(0,    ARC_NAVY);
+    grad.addColorStop(0.42, ARC_MID);
+    grad.addColorStop(1,    ARC_BLUE);
+
+    // 4. Draw arc (CCW = counterclockwise = true)
+    ctx.beginPath();
+    ctx.arc(cx, cy, arcR, startRad, endRad, true);
+    ctx.strokeStyle = grad;
+    ctx.lineWidth   = strokeW;
+    ctx.lineCap     = 'round';
+    ctx.stroke();
+
+    // 5. Blue dot at arc start (8 o'clock)
+    ctx.beginPath();
+    ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
+    ctx.fillStyle = ARC_BLUE;
+    ctx.fill();
+
+    // 6. Text
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+
+    // "LIFE" - dark navy, bold
+    const lifeSz = maskable ? size * 0.192 : size * 0.211;
+    const lifeY  = maskable ? cy - size * 0.062 : cy - size * 0.063;
+    ctx.font      = `800 ${lifeSz}px "Segoe UI", "Helvetica Neue", Arial, sans-serif`;
+    ctx.fillStyle = NAVY;
+    ctx.fillText('LIFE', cx, lifeY);
+
+    // "OS" - blue, regular weight, letter-spaced
+    const osSz = maskable ? size * 0.165 : size * 0.184;
+    const osY  = maskable ? cy + size * 0.162 : cy + size * 0.179;
+    ctx.font      = `400 ${osSz}px "Segoe UI", "Helvetica Neue", Arial, sans-serif`;
+    ctx.fillStyle = BLUE;
+    // Simulate letter-spacing by measuring + offsetting
+    drawSpaced(ctx, 'OS', cx + size * 0.005, osY, osSz * 0.075);
+
+    if (!maskable) ctx.restore();
+  }
+
+  // Simple letter-spacing helper for Canvas
+  function drawSpaced(ctx, text, x, y, spacing) {
+    const chars   = text.split('');
+    const widths  = chars.map(c => ctx.measureText(c).width);
+    const total   = widths.reduce((s, w) => s + w, 0) + spacing * (chars.length - 1);
+    let cur       = x - total / 2;
+    chars.forEach((c, i) => {
+      ctx.fillText(c, cur + widths[i] / 2, y);
+      cur += widths[i] + spacing;
+    });
+  }
+
+  function roundRectPath(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y,     x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x,     y + h, x,     y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x,     y,     x + r, y);
+    ctx.closePath();
+  }
+
+  // ─── Download helper ──────────────────────────────────────────────────────
+  function download(canvas, filename) {
+    return new Promise(resolve => {
+      canvas.toBlob(blob => {
+        const a  = document.createElement('a');
+        a.href   = URL.createObjectURL(blob);
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); resolve(); }, 200);
+      }, 'image/png');
+    });
+  }
+
+  // ─── Main generator ───────────────────────────────────────────────────────
+  async function generateAll() {
+    const btn     = document.getElementById('genBtn');
+    const status  = document.getElementById('status');
+    const errDiv  = document.getElementById('error');
+    const preview = document.getElementById('preview');
+
+    btn.disabled  = true;
+    preview.innerHTML = '';
+    errDiv.textContent = '';
+
+    const REGULAR_SIZES = [72, 96, 128, 144, 152, 180, 192, 384, 512];
+
+    try {
+      // Regular icons
+      for (const size of REGULAR_SIZES) {
+        const c = document.createElement('canvas');
+        drawIcon(c, size, false);
+        await download(c, `icon-${size}.png`);
+        status.textContent = `✓ icon-${size}.png`;
+        await sleep(180);
+
+        if ([192, 512].includes(size)) addPreview(preview, c, `icon-${size}.png`);
+      }
+
+      // Maskable 512
+      const cm = document.createElement('canvas');
+      drawIcon(cm, 512, true);
+      await download(cm, 'maskable-512.png');
+      status.textContent = '✓ maskable-512.png';
+      addPreview(preview, cm, 'maskable-512.png');
+      await sleep(180);
+
+      // apple-touch-icon (uses same as 180)
+      const ca = document.createElement('canvas');
+      drawIcon(ca, 180, false);
+      await download(ca, 'apple-touch-icon.png');
+      status.textContent = '✓ apple-touch-icon.png';
+      addPreview(preview, ca, 'apple-touch-icon.png');
+
+      status.textContent = '✅ Todos os ícones gerados! Mova os arquivos para a pasta icons/';
+    } catch (e) {
+      errDiv.textContent = 'Erro: ' + e.message;
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function addPreview(container, canvas, label) {
+    const size = Math.min(canvas.width, 96);
+    const c2   = document.createElement('canvas');
+    c2.width   = size;
+    c2.height  = size;
+    c2.getContext('2d').drawImage(canvas, 0, 0, size, size);
+
+    const div  = document.createElement('div');
+    div.className = 'card';
+    const span = document.createElement('span');
+    span.textContent = label;
+    div.appendChild(c2);
+    div.appendChild(span);
+    container.appendChild(div);
+  }
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+  </script>
+</body>
+</html>
