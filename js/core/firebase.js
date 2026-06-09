@@ -23,6 +23,9 @@ const FirebaseApp = (() => {
   // Habilita cache offline do Firestore
   db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
 
+  // Processa resultado de qualquer redirect pendente (fallback seguro)
+  auth.getRedirectResult().catch(() => {});
+
   /** Retorna referência ao documento do usuário logado */
   function getUserDoc() {
     const user = auth.currentUser;
@@ -33,10 +36,8 @@ const FirebaseApp = (() => {
   /** Login com conta Google */
   async function loginWithGoogle() {
     const provider = new firebase.auth.GoogleAuthProvider();
-    // Em mobile, usar redirect é mais confiável
-    if (window.innerWidth <= 768) {
-      return auth.signInWithRedirect(provider);
-    }
+    // signInWithPopup funciona em desktop e iOS Safari (acionado por gesto do usuário)
+    // signInWithRedirect é bloqueado pelo ITP do Safari no iOS
     return auth.signInWithPopup(provider);
   }
 
