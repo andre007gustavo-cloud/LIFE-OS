@@ -15,7 +15,28 @@
 </head>
 <body>
 
-<div id="app">
+<!-- ========== LOGIN SCREEN ========== -->
+<div id="login-screen" style="display:flex">
+  <div class="login-card">
+    <div class="login-logo">LIFE OS</div>
+    <div class="login-sub">Seu sistema pessoal de produtividade</div>
+    <button id="login-btn" onclick="loginWithGoogle()">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G" class="google-icon">
+      Entrar com Google
+    </button>
+    <div id="login-error"></div>
+    <div class="login-footer">Seus dados ficam seguros e privados</div>
+  </div>
+</div>
+
+<!-- ========== LOADING SCREEN ========== -->
+<div id="loading-screen">
+  <div style="font-size:20px;font-weight:700;color:var(--accent2)">LIFE OS</div>
+  <div class="loading-dot-pulse"><span></span><span></span><span></span></div>
+  <div style="font-size:13px;color:var(--text3)">Carregando dados...</div>
+</div>
+
+<div id="app" style="display:none">
 
   <!-- ========== NAV ========== -->
   <nav>
@@ -38,6 +59,7 @@
     <button class="nav-btn" onclick="toggleTheme()" style="margin-left:auto" title="Alternar tema">
       <i class="ti ti-sun" id="theme-icon"></i>
     </button>
+    <div id="user-info"></div>
   </nav>
 
   <!-- ========== DASHBOARD VIEW ========== -->
@@ -521,11 +543,17 @@
   </div>
 </div>
 
+<!-- ========== FIREBASE SDK ========== -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
 <!-- ========== JS MODULES ========== -->
 <!-- Order matters: config → core → services → ui → components → views → bootstrap -->
 
 <script src="js/config/constants.js"></script>
 <script src="js/core/utils.js"></script>
+<script src="js/core/firebase.js"></script>
 <script src="js/core/storage.js"></script>
 <script src="js/core/state.js"></script>
 
@@ -548,6 +576,7 @@
 <script src="js/components/noteEditor.js"></script>
 <script src="js/components/fileHandler.js"></script>
 <script src="js/components/pomodoroUI.js"></script>
+<script src="js/components/loginScreen.js"></script>
 
 <script src="js/views/dashboardView.js"></script>
 <script src="js/views/tasksView.js"></script>

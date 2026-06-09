@@ -1,10 +1,10 @@
 /**
  * ===================== APP STATE =====================
  * Single, central place where all mutable application state lives.
- * Anywhere else that needs to read/write state goes through here.
  *
  * - DB: persistent data (tasks, areas, projects, finance)
  * - UI state: which view, which filter, which item is being edited
+ * - setDB(): used by real-time sync to replace the entire DB without triggering a save
  */
 
 const AppState = (() => {
@@ -53,10 +53,18 @@ const AppState = (() => {
 
   function getDB() { return DB; }
 
+  /** Replace DB in memory (from remote sync). Does NOT trigger a save to cloud. */
+  function setDB(newDB) {
+    DB = newDB;
+    // Atualiza cache local (sem enviar pro cloud)
+    localStorage.setItem(Constants.STORAGE_KEY, JSON.stringify(DB));
+  }
+
+  /** Save current state to localStorage + cloud (debounced) */
   function persist() { Storage.save(DB); }
 
-  /** Reload from storage — used after external mutations (rare) */
+  /** Reload from local storage */
   function reload() { DB = Storage.load(); }
 
-  return { DB: () => DB, getDB, persist, reload, ui };
+  return { DB: () => DB, getDB, setDB, persist, reload, ui };
 })();

@@ -79,6 +79,85 @@ nav{
 .progress-text{font-size:11px;color:var(--text3);margin-top:3px}
 
 /* ===== FAB ===== */
+/* ===== Login screen ===== */
+#login-screen{
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;background:var(--bg);
+  padding:20px;
+}
+.login-card{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:16px;padding:48px 40px;text-align:center;
+  max-width:380px;width:100%;
+  box-shadow:0 8px 40px #00000033;
+}
+.login-logo{
+  font-size:32px;font-weight:800;color:var(--accent2);
+  letter-spacing:-1px;margin-bottom:4px;
+}
+.login-sub{
+  font-size:14px;color:var(--text3);margin-bottom:32px;
+}
+#login-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  width:100%;padding:12px 20px;
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:var(--radius-sm);color:var(--text);
+  font-size:15px;font-weight:600;cursor:pointer;
+  transition:all .15s;font-family:inherit;
+}
+#login-btn:hover{border-color:var(--accent);background:var(--bg4)}
+#login-btn:disabled{opacity:.6;cursor:wait}
+.google-icon{width:20px;height:20px}
+.login-spinner{
+  width:18px;height:18px;border:2px solid var(--border);
+  border-top-color:var(--accent);border-radius:50%;
+  animation:spin .6s linear infinite;display:inline-block;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+#login-error{
+  font-size:13px;color:var(--red);margin-top:12px;min-height:18px;
+}
+.login-footer{
+  font-size:11px;color:var(--text3);margin-top:24px;
+}
+
+/* ===== Loading screen ===== */
+#loading-screen{
+  display:none;position:fixed;inset:0;
+  background:var(--bg);z-index:9999;
+  align-items:center;justify-content:center;
+  flex-direction:column;gap:12px;
+}
+.loading-dot-pulse{
+  display:flex;gap:6px;
+}
+.loading-dot-pulse span{
+  width:10px;height:10px;border-radius:50%;
+  background:var(--accent);animation:pulse 1.2s infinite;
+}
+.loading-dot-pulse span:nth-child(2){animation-delay:.2s}
+.loading-dot-pulse span:nth-child(3){animation-delay:.4s}
+@keyframes pulse{
+  0%,80%,100%{opacity:.3;transform:scale(.8)}
+  40%{opacity:1;transform:scale(1)}
+}
+
+/* ===== User info in nav ===== */
+.user-avatar{
+  width:26px;height:26px;border-radius:50%;
+  border:2px solid var(--border);
+}
+.user-name{
+  font-size:12px;color:var(--text2);font-weight:500;
+  max-width:80px;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;
+}
+#user-info{
+  display:flex;align-items:center;gap:6px;margin-left:4px;
+}
+
+/* ===== FAB ===== */
 #fab{
   position:fixed;bottom:24px;right:24px;
   width:52px;height:52px;border-radius:50%;

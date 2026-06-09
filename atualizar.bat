@@ -6,7 +6,7 @@ REM ===================================================
 
 REM Ajuste os caminhos abaixo para os seus
 set ORIGEM=%USERPROFILE%\Downloads\life-os
-set DESTINO=%\\ANDRE\Users\André\Documents\LIFE-OS
+set DESTINO=%USERPROFILE%\Documents\GitHub\LIFE-OS
 
 echo.
 echo === Atualizando Life OS ===
