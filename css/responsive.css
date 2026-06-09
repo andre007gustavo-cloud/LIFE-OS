@@ -2,7 +2,6 @@
 
 /* ===== Tablet (≤900px) ===== */
 @media(max-width:900px){
-  #app{max-width:100%}
   :root{--sidebar-w:200px;--detail-w:280px}
   .grid3{grid-template-columns:1fr 1fr}
   .proj-sidebar{width:200px;min-width:200px}
