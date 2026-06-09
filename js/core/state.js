@@ -35,6 +35,7 @@ const AppState = (() => {
     ttDetailId: null,
     ttQuickPri: 'nenhuma',
     ttQuickDate: '',
+    ttQuickTime: '',
     ttqPriIdx: 0,
 
     // Projects workspace

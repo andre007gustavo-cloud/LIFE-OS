@@ -225,6 +225,16 @@ const CalendarView = (() => {
     </div>`;
   }
 
+  /** Returns the display color for a task: area color if set, else priority fallback */
+  function taskColor(t) {
+    if (t.area) {
+      const area = AreaService.getById(t.area);
+      if (area && area.color) return area.color;
+    }
+    const map = { alta: 'var(--red)', media: 'var(--accent2)', baixa: 'var(--green)', nenhuma: 'var(--text3)' };
+    return map[t.priority] || map.nenhuma;
+  }
+
   function buildTimeGrid(timed, iso) {
     const startHour = 0;
     const endHour = 24;
@@ -247,20 +257,27 @@ const CalendarView = (() => {
 
   function renderTimeBlocks(tasks) {
     const columns = assignColumns(tasks);
-    const colCount = Math.max(1, ...columns.map(c => c.col + 1));
     const PX_PER_MIN = Constants.TIME_GRID.PX_PER_MIN;
+    const MIN_H = Constants.TIME_GRID.MIN_BLOCK_HEIGHT_MIN;
 
     return `<div class="time-events-layer">` +
-      columns.map(({ task: t, col }) => {
-        const startMin = Utils.timeToMins(t.start);
-        const endMin = t.end ? Utils.timeToMins(t.end) : startMin + 30;
+      columns.map((item) => {
+        const { task: t, col, startMin, endMin } = item;
         const top = startMin * PX_PER_MIN;
-        const height = Math.max(Constants.TIME_GRID.MIN_BLOCK_HEIGHT_MIN, (endMin - startMin)) * PX_PER_MIN;
+        const height = Math.max(MIN_H, endMin - startMin) * PX_PER_MIN;
+        const effEnd = Math.max(endMin, startMin + MIN_H);
+        // Per-cluster colCount: considers only tasks that visually overlap with this one
+        const overlapping = columns.filter(o => {
+          const oEffEnd = Math.max(o.endMin, o.startMin + MIN_H);
+          return !(effEnd <= o.startMin || startMin >= oEffEnd);
+        });
+        const colCount = Math.max(1, ...overlapping.map(o => o.col + 1));
         const widthPct = 100 / colCount;
         const leftPct = col * widthPct;
+        const color = taskColor(t);
 
-        return `<div class="time-block ${t.priority || 'nenhuma'}"
-                     style="top:${top}px;height:${height - 2}px;left:${leftPct}%;width:calc(${widthPct}% - 2px)"
+        return `<div class="time-block"
+                     style="top:${top}px;height:${height - 2}px;left:${leftPct}%;width:calc(${widthPct}% - 2px);background:${color}18;border-left-color:${color}"
                      onclick="ttOpenDetail('${t.id}');showView('tasks')">
           <div class="time-block-name">${t.name}</div>
           <div class="time-block-meta">${t.start}${t.end ? '–' + t.end : ''}</div>
@@ -269,19 +286,21 @@ const CalendarView = (() => {
       `</div>`;
   }
 
-  /** Overlap-column assignment: each task gets a column so overlapping tasks don't collide */
+  /** Overlap-column assignment using effective visual end time (with minimum block height) */
   function assignColumns(tasks) {
     const sorted = [...tasks].sort((a, b) =>
       Utils.timeToMins(a.start) - Utils.timeToMins(b.start));
     const result = [];
+    const MIN_H = Constants.TIME_GRID.MIN_BLOCK_HEIGHT_MIN;
     sorted.forEach(t => {
       const startMin = Utils.timeToMins(t.start);
       const endMin = t.end ? Utils.timeToMins(t.end) : startMin + 30;
+      const effEnd = Math.max(endMin, startMin + MIN_H);
       let col = 0;
-      while (result.some(r =>
-        r.col === col && !(endMin <= r.startMin || startMin >= r.endMin))) {
-        col++;
-      }
+      while (result.some(r => {
+        const rEffEnd = Math.max(r.endMin, r.startMin + MIN_H);
+        return r.col === col && !(effEnd <= r.startMin || startMin >= rEffEnd);
+      })) col++;
       result.push({ task: t, col, startMin, endMin });
     });
     return result;
@@ -338,10 +357,11 @@ const CalendarView = (() => {
 
       html += `<div class="week-col${iso === todayISO ? ' today-col' : ''}">
         <div class="week-col-title">${name}<br>${day.getDate()}</div>
-        ${dayTasks.slice(0, 5).map(t => `
-          <div class="week-task-chip ${t.priority || 'nenhuma'}"
-               onclick="ttOpenDetail('${t.id}');showView('tasks')">${t.name}</div>
-        `).join('')}
+        ${dayTasks.slice(0, 5).map(t => {
+          const c = taskColor(t);
+          return `<div class="week-task-chip" style="background:${c}22;color:${c}"
+               onclick="ttOpenDetail('${t.id}');showView('tasks')">${t.name}</div>`;
+        }).join('')}
         ${dayTasks.length > 5 ? `<div style="font-size:10px;color:var(--text3);text-align:center;margin-top:4px;cursor:pointer"
              onclick="AppState.ui.calDate=new Date('${iso}');setCalView('day')">+${dayTasks.length - 5}</div>` : ''}
       </div>`;
@@ -398,7 +418,8 @@ const CalendarView = (() => {
         html += '</div>';
 
         singleVisible.forEach(t => {
-          html += `<div class="month-chip ${t.priority}"
+          const tc = taskColor(t);
+          html += `<div class="month-chip" style="background:${tc}22;color:${tc}"
                        onclick="event.stopPropagation();ttOpenDetail('${t.id}');showView('tasks')">
             ${t.start ? t.start + ' ' : ''}${t.name}
           </div>`;
@@ -465,21 +486,22 @@ const CalendarView = (() => {
     const cellSpans = {};
 
     const multiDay = new Map();
-    weekCells.forEach((cell, dayIdx) => {
+    weekCells.forEach((cell) => {
       cell.tasks.forEach(t => {
         if (!t.dateend || t.dateend === t.date) return;
         if (!multiDay.has(t.id)) {
-          const startsThisWeek = t.date >= weekCells[0].iso;
-          const startIdx = startsThisWeek
-            ? weekCells.findIndex(c => c.iso === t.date)
-            : 0;
-          const endIdx = weekCells.findIndex(c => c.iso === t.dateend);
+          const weekStart = weekCells[0].iso;
+          const weekEnd = weekCells[6].iso;
+          const startsThisWeek = t.date >= weekStart && t.date <= weekEnd;
+          const endsThisWeek = t.dateend >= weekStart && t.dateend <= weekEnd;
+          const rawStart = startsThisWeek ? weekCells.findIndex(c => c.iso === t.date) : 0;
+          const rawEnd = endsThisWeek ? weekCells.findIndex(c => c.iso === t.dateend) : 6;
           multiDay.set(t.id, {
             task: t,
-            startIdx: startIdx >= 0 ? startIdx : 0,
-            endIdx: endIdx >= 0 ? endIdx : 6,
-            startsThisWeek: t.date >= weekCells[0].iso && t.date <= weekCells[6].iso,
-            endsThisWeek: t.dateend >= weekCells[0].iso && t.dateend <= weekCells[6].iso
+            startIdx: rawStart >= 0 ? rawStart : 0,
+            endIdx: rawEnd >= 0 ? rawEnd : 6,
+            startsThisWeek,
+            endsThisWeek
           });
         }
       });
@@ -500,18 +522,19 @@ const CalendarView = (() => {
       }
       if (row >= maxRows) return;
 
+      // Each covered cell gets its own piece of the span
       for (let i = span.startIdx; i <= span.endIdx; i++) {
         cellRows[i] = cellRows[i] || new Set();
         cellRows[i].add(row);
         cellSpans[i] = cellSpans[i] || [];
-        if (i === span.startIdx) {
-          let cls = 'span-mid';
-          if (span.startIdx === span.endIdx) cls = 'span-alone';
-          else if (span.startsThisWeek && span.endsThisWeek) cls = 'span-alone';
-          else if (span.startsThisWeek) cls = 'span-left';
-          else if (i === 0) cls = 'span-mid';
-          cellSpans[i].push({ ...span, row, cls });
-        }
+        const isFirst = i === span.startIdx;
+        const isLast = i === span.endIdx;
+        let cls;
+        if (isFirst && isLast) cls = 'span-alone';
+        else if (isFirst) cls = span.startsThisWeek ? 'span-left' : 'span-mid';
+        else if (isLast) cls = span.endsThisWeek ? 'span-right' : 'span-mid';
+        else cls = 'span-mid';
+        cellSpans[i].push({ ...span, row, cls, isFirst });
       }
     });
 
@@ -520,18 +543,11 @@ const CalendarView = (() => {
 
   function renderMonthSpan(span) {
     const t = span.task;
-    const colWidth = 100;
-    const widthPct = (span.endIdx - span.startIdx + 1) * colWidth;
-    let cls = span.cls;
-    if (span.startsThisWeek && span.endsThisWeek) cls = 'span-alone';
-    else if (span.startsThisWeek) cls = 'span-left';
-    else if (span.endsThisWeek) cls = 'span-right';
-    else cls = 'span-mid';
-
-    return `<div class="month-span col-${t.priority} ${cls}"
-                 style="width:calc(${widthPct}% - 4px)"
+    const color = taskColor(t);
+    return `<div class="month-span ${span.cls}"
+                 style="width:100%;background:${color}33;color:${color}"
                  onclick="event.stopPropagation();ttOpenDetail('${t.id}');showView('tasks')">
-      ${t.name}
+      ${span.isFirst ? t.name : ''}
     </div>`;
   }
 

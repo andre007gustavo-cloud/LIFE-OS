@@ -168,6 +168,10 @@
                 <i class="ti ti-calendar"></i> <span id="ttq-date-label">Data</span>
               </button>
               <input type="date" id="ttq-date" onchange="ttqUpdateDate()" style="position:absolute;width:0;height:0;opacity:0;overflow:hidden" tabindex="-1">
+              <button class="tt-meta-btn" type="button" id="ttq-time-btn" onclick="ttqPickTime()">
+                <i class="ti ti-clock"></i> <span id="ttq-time-label">Horário</span>
+              </button>
+              <input type="time" id="ttq-time" onchange="ttqUpdateTime()" style="position:absolute;width:0;height:0;opacity:0;overflow:hidden" tabindex="-1">
               <select class="tt-meta-btn" id="ttq-area" style="cursor:pointer"></select>
               <button class="tt-meta-btn" onclick="ttCloseQuick()">Cancelar</button>
               <button class="tt-meta-btn" style="background:var(--accent);color:#fff;border-color:var(--accent)" onclick="ttQuickSave()">

@@ -143,7 +143,9 @@
     window.ttQuickSave          = TasksView.quickSave;
     window.ttQuickKey           = TasksView.quickKeyHandler;
     window.ttqPickDate          = TasksView.quickPickDate;
+    window.ttqPickTime          = TasksView.quickPickTime;
     window.ttqUpdateDate        = TasksView.quickUpdateDate;
+    window.ttqUpdateTime        = TasksView.quickUpdateTime;
     window.ttqCyclePriority     = TasksView.quickCyclePriority;
     window.ttCyclePri           = TasksView.cyclePri;
     window.ttDupTaskById        = TasksView.duplicateById;

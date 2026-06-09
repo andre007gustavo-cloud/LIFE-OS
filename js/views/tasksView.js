@@ -248,10 +248,15 @@ const TasksView = (() => {
     AppState.ui.ttQuickPri = 'nenhuma';
     AppState.ui.ttqPriIdx = 0;
     AppState.ui.ttQuickDate = '';
+    AppState.ui.ttQuickTime = '';
 
     document.getElementById('ttq-pri-icon').className = 'ti ti-flag';
     document.getElementById('ttq-pri-label').textContent = 'Prioridade';
     document.getElementById('ttq-date-label').textContent = 'Data';
+    document.getElementById('ttq-time-label').textContent = 'Horário';
+    document.getElementById('ttq-pri-btn').classList.remove('active');
+    document.getElementById('ttq-date-btn').classList.remove('active');
+    document.getElementById('ttq-time-btn').classList.remove('active');
 
     // Populate area select
     document.getElementById('ttq-area').innerHTML =
@@ -272,11 +277,27 @@ const TasksView = (() => {
   function closeQuick() {
     document.getElementById('tt-quick-form').classList.remove('open');
     document.getElementById('tt-quick-input').value = '';
+    document.getElementById('ttq-date').value = '';
+    document.getElementById('ttq-time').value = '';
+    AppState.ui.ttQuickDate = '';
+    AppState.ui.ttQuickTime = '';
   }
 
   function quickPickDate() {
     const inp = document.getElementById('ttq-date');
     try { inp.showPicker(); } catch(e) { inp.click(); }
+  }
+
+  function quickPickTime() {
+    const inp = document.getElementById('ttq-time');
+    try { inp.showPicker(); } catch(e) { inp.click(); }
+  }
+
+  function quickUpdateTime() {
+    const v = document.getElementById('ttq-time').value;
+    AppState.ui.ttQuickTime = v;
+    document.getElementById('ttq-time-label').textContent = v || 'Horário';
+    document.getElementById('ttq-time-btn').classList.toggle('active', !!v);
   }
 
   function quickUpdateDate() {
@@ -320,7 +341,8 @@ const TasksView = (() => {
     TaskService.create({
       name, area, project,
       priority: AppState.ui.ttQuickPri,
-      date: AppState.ui.ttQuickDate || Utils.today()
+      date: AppState.ui.ttQuickDate || Utils.today(),
+      start: AppState.ui.ttQuickTime || ''
     });
 
     closeQuick();
@@ -343,7 +365,7 @@ const TasksView = (() => {
 
   return {
     renderSidebar, setList, filterAndRender,
-    openQuick, closeQuick, quickPickDate, quickUpdateDate, quickCyclePriority, quickKeyHandler, quickSave,
+    openQuick, closeQuick, quickPickDate, quickPickTime, quickUpdateDate, quickUpdateTime, quickCyclePriority, quickKeyHandler, quickSave,
     duplicateById, cyclePri
   };
 })();
