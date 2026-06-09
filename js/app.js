@@ -12,6 +12,10 @@
   Theme.init();
   let appInitialized = false;
 
+  // Expõe login/logout ANTES do auth check (o botão precisa disso)
+  window.loginWithGoogle = LoginScreen.login;
+  window.logoutUser      = LoginScreen.logout;
+
   // Escuta mudanças de autenticação
   FirebaseApp.onAuthChanged(async (user) => {
     if (user) {
