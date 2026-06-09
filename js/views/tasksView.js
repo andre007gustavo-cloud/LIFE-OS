@@ -274,6 +274,11 @@ const TasksView = (() => {
     document.getElementById('tt-quick-input').value = '';
   }
 
+  function quickPickDate() {
+    const inp = document.getElementById('ttq-date');
+    try { inp.showPicker(); } catch(e) { inp.click(); }
+  }
+
   function quickUpdateDate() {
     const v = document.getElementById('ttq-date').value;
     AppState.ui.ttQuickDate = v;
@@ -338,7 +343,7 @@ const TasksView = (() => {
 
   return {
     renderSidebar, setList, filterAndRender,
-    openQuick, closeQuick, quickUpdateDate, quickCyclePriority, quickKeyHandler, quickSave,
+    openQuick, closeQuick, quickPickDate, quickUpdateDate, quickCyclePriority, quickKeyHandler, quickSave,
     duplicateById, cyclePri
   };
 })();
