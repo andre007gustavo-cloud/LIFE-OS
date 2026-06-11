@@ -85,7 +85,7 @@ const ProjectModal = (() => {
     document.getElementById('np-area').innerHTML =
       '<option value="">Nenhuma</option>' +
       AreaService.getAll()
-        .map(a => `<option value="${a.id}"${a.id === selected ? ' selected' : ''}>${a.icon} ${a.name}</option>`)
+        .map(a => `<option value="${a.id}"${a.id === selected ? ' selected' : ''}>${Utils.escapeHtml(a.icon)} ${Utils.escapeHtml(a.name)}</option>`)
         .join('');
   }
 

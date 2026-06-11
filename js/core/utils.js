@@ -109,6 +109,17 @@ const Utils = (() => {
 
   // ===== HTML helpers =====
 
+  /** Escapa conteúdo do usuário antes de interpolar em innerHTML */
+  function escapeHtml(s) {
+    return String(s || '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  /** Escapa para uso dentro de atributos HTML (value="...", title="...") */
+  function escapeAttr(s) {
+    return escapeHtml(s).replace(/"/g, '&quot;');
+  }
+
   /** Extract plain text from HTML string (for previews) */
   function extractHtmlText(html) {
     const d = document.createElement('div');
@@ -139,6 +150,8 @@ const Utils = (() => {
     getFileType,
     isMobile,
     formatPomodoroTime,
+    escapeHtml,
+    escapeAttr,
     extractHtmlText,
     extractHtmlImages
   };

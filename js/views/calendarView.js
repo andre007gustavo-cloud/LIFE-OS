@@ -6,6 +6,8 @@
 
 const CalendarView = (() => {
 
+  const escapeHtml = Utils.escapeHtml;
+
   // ===== Top-level render =====
 
   function render() {
@@ -80,13 +82,13 @@ const CalendarView = (() => {
     document.getElementById('cal-filter-areas').innerHTML = AreaService.getAll().map(a => `
       <span class="filter-chip${AppState.ui.calFilters.areas.has(a.id) ? ' active' : ''}"
             onclick="toggleCalArea('${a.id}')">
-        <span style="color:${a.color}">${a.icon}</span> ${a.name}
+        <span style="color:${a.color}">${escapeHtml(a.icon)}</span> ${escapeHtml(a.name)}
       </span>`).join('');
 
     document.getElementById('cal-filter-proj').innerHTML =
       '<option value="all">Todos</option>' +
       AreaService.getAll().flatMap(a => a.projects.map(p =>
-        `<option value="${p.id}"${AppState.ui.calFilters.project === p.id ? ' selected' : ''}>${a.icon} ${p.name}</option>`
+        `<option value="${p.id}"${AppState.ui.calFilters.project === p.id ? ' selected' : ''}>${escapeHtml(a.icon)} ${escapeHtml(p.name)}</option>`
       )).join('');
   }
 
@@ -220,8 +222,8 @@ const CalendarView = (() => {
     return `<div style="display:flex;align-items:center;gap:6px;padding:4px 0;cursor:pointer"
                  onclick="ttOpenDetail('${t.id}');showView('tasks')">
       <span>${Constants.PRI_ICONS[t.priority]}</span>
-      <span style="flex:1;font-size:13px">${t.name}</span>
-      ${area ? `<span style="font-size:11px;color:${area.color}">${area.icon}</span>` : ''}
+      <span style="flex:1;font-size:13px">${escapeHtml(t.name)}</span>
+      ${area ? `<span style="font-size:11px;color:${area.color}">${escapeHtml(area.icon)}</span>` : ''}
     </div>`;
   }
 
@@ -279,7 +281,7 @@ const CalendarView = (() => {
         return `<div class="time-block"
                      style="top:${top}px;height:${height - 2}px;left:${leftPct}%;width:calc(${widthPct}% - 2px);background:${color}18;border-left-color:${color}"
                      onclick="ttOpenDetail('${t.id}');showView('tasks')">
-          <div class="time-block-name">${t.name}</div>
+          <div class="time-block-name">${escapeHtml(t.name)}</div>
           <div class="time-block-meta">${t.start}${t.end ? '–' + t.end : ''}</div>
         </div>`;
       }).join('') +
@@ -360,7 +362,7 @@ const CalendarView = (() => {
         ${dayTasks.slice(0, 5).map(t => {
           const c = taskColor(t);
           return `<div class="week-task-chip" style="background:${c}22;color:${c}"
-               onclick="ttOpenDetail('${t.id}');showView('tasks')">${t.name}</div>`;
+               onclick="ttOpenDetail('${t.id}');showView('tasks')">${escapeHtml(t.name)}</div>`;
         }).join('')}
         ${dayTasks.length > 5 ? `<div style="font-size:10px;color:var(--text3);text-align:center;margin-top:4px;cursor:pointer"
              onclick="AppState.ui.calDate=Utils.parseISO('${iso}');setCalView('day')">+${dayTasks.length - 5}</div>` : ''}
@@ -421,7 +423,7 @@ const CalendarView = (() => {
           const tc = taskColor(t);
           html += `<div class="month-chip" style="background:${tc}22;color:${tc}"
                        onclick="event.stopPropagation();ttOpenDetail('${t.id}');showView('tasks')">
-            ${t.start ? t.start + ' ' : ''}${t.name}
+            ${t.start ? t.start + ' ' : ''}${escapeHtml(t.name)}
           </div>`;
         });
         if (hidden > 0) {
@@ -547,7 +549,7 @@ const CalendarView = (() => {
     return `<div class="month-span ${span.cls}"
                  style="width:100%;background:${color}33;color:${color}"
                  onclick="event.stopPropagation();ttOpenDetail('${t.id}');showView('tasks')">
-      ${span.isFirst ? t.name : ''}
+      ${span.isFirst ? escapeHtml(t.name) : ''}
     </div>`;
   }
 
@@ -583,7 +585,7 @@ const CalendarView = (() => {
           <div style="display:flex;align-items:center;gap:6px;padding:4px 0;cursor:pointer;font-size:12px"
                onclick="ttOpenDetail('${t.id}');showView('tasks');closeDayPopover()">
             <span>${Constants.PRI_ICONS[t.priority]}</span>
-            <span style="flex:1">${t.name}</span>
+            <span style="flex:1">${escapeHtml(t.name)}</span>
           </div>`).join('') : '<div style="font-size:12px;color:var(--text3);text-align:center;padding:8px">Nenhuma tarefa</div>'}
       </div>
       <div class="cal-popover-footer">

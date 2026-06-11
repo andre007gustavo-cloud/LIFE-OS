@@ -51,12 +51,14 @@ const LoginScreen = (() => {
     const el = document.getElementById('user-info');
     if (!el || !user) return;
 
-    const photo = user.photoURL || '';
+    // Só aceita URL https para a foto (bloqueia javascript:/data: vindos do perfil)
+    const rawPhoto = user.photoURL || '';
+    const photo = /^https:\/\//i.test(rawPhoto) ? rawPhoto : '';
     const name = (user.displayName || user.email || '').split(' ')[0];
 
     el.innerHTML = `
-      ${photo ? `<img src="${photo}" class="user-avatar" alt="">` : ''}
-      <span class="user-name">${name}</span>
+      ${photo ? `<img src="${Utils.escapeAttr(photo)}" class="user-avatar" alt="">` : ''}
+      <span class="user-name">${Utils.escapeHtml(name)}</span>
       <button class="icon-btn" onclick="logoutUser()" title="Sair" style="color:var(--text3)">
         <i class="ti ti-logout"></i>
       </button>`;

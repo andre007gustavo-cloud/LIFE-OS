@@ -7,6 +7,9 @@
 
 const TaskDetail = (() => {
 
+  const escapeHtml = Utils.escapeHtml;
+  const escapeAttr = Utils.escapeAttr;
+
   // ===== Open / close =====
 
   function open(id) {
@@ -122,7 +125,7 @@ const TaskDetail = (() => {
         <select onchange="ttSaveField('${task.id}','area',this.value);ttOpenDetail('${task.id}')">
           <option value="">Nenhuma</option>
           ${AreaService.getAll().map(a =>
-            `<option value="${a.id}"${a.id === task.area ? ' selected' : ''}>${a.icon} ${a.name}</option>`
+            `<option value="${a.id}"${a.id === task.area ? ' selected' : ''}>${escapeHtml(a.icon)} ${escapeHtml(a.name)}</option>`
           ).join('')}
         </select>
       </div>
@@ -134,7 +137,7 @@ const TaskDetail = (() => {
           <select onchange="ttSaveField('${task.id}','project',this.value)">
             <option value="">Nenhum</option>
             ${area.projects.map(p =>
-              `<option value="${p.id}"${p.id === task.project ? ' selected' : ''}>${p.name}</option>`
+              `<option value="${p.id}"${p.id === task.project ? ' selected' : ''}>${escapeHtml(p.name)}</option>`
             ).join('')}
           </select>
         </div>` : ''}
@@ -269,17 +272,6 @@ const TaskDetail = (() => {
   function deleteSub(taskId, idx) {
     TaskService.removeSubtask(taskId, idx);
     open(taskId);
-  }
-
-  // ===== Utilities =====
-
-  function escapeHtml(s) {
-    return String(s || '')
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  }
-
-  function escapeAttr(s) {
-    return escapeHtml(s).replace(/"/g, '&quot;');
   }
 
   return {

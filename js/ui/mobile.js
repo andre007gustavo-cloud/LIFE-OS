@@ -42,14 +42,17 @@ const MobileSidebar = (() => {
   function cloneAndRewireSidebar(sidebar) {
     const clone = sidebar.cloneNode(true);
     clone.style.cssText = 'width:260px;height:100%;display:flex;flex-direction:column;overflow:hidden;background:var(--bg2);border-right:1px solid var(--border)';
-    clone.querySelectorAll('[onclick]').forEach(el => {
-      const handler = el.getAttribute('onclick');
-      el.addEventListener('click', () => {
-        // eslint-disable-next-line no-eval
-        eval(handler);
+    // cloneNode preserva a ordem dos nós, então o índice mapeia clone → original.
+    // Disparar o click do original executa o onclick dele sem precisar de eval.
+    const originals = sidebar.querySelectorAll('[onclick]');
+    clone.querySelectorAll('[onclick]').forEach((el, i) => {
+      const original = originals[i];
+      el.removeAttribute('onclick');
+      el.addEventListener('click', e => {
+        e.stopPropagation();
+        if (original) original.click();
         close();
       });
-      el.removeAttribute('onclick');
     });
     return clone;
   }

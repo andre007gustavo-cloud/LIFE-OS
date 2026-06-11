@@ -76,7 +76,7 @@ const AreaModal = (() => {
   function renderProjectFields(projects) {
     document.getElementById('proj-fields').innerHTML = projects.map(p => `
       <div style="display:flex;gap:6px;margin-bottom:6px">
-        <input class="form-input" value="${p.name}" style="flex:1" placeholder="Projeto">
+        <input class="form-input" value="${Utils.escapeAttr(p.name)}" style="flex:1" placeholder="Projeto">
         <button class="btn btn-ghost btn-sm" onclick="this.parentElement.remove()">
           <i class="ti ti-x"></i>
         </button>

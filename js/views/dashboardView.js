@@ -5,6 +5,8 @@
 
 const DashboardView = (() => {
 
+  const escapeHtml = Utils.escapeHtml;
+
   function render() {
     const td = Utils.today();
     document.getElementById('dash-date').textContent =
@@ -84,8 +86,8 @@ const DashboardView = (() => {
         <div style="font-size:11px;color:${priColor};margin-bottom:2px">
           ${t.start}${t.end ? ' → ' + t.end : ''}${t.duration ? ' (' + t.duration + ')' : ''}
         </div>
-        <div style="font-size:14px;font-weight:600;color:var(--text)">${t.name}</div>
-        ${area ? `<div style="font-size:11px;color:${area.color};margin-top:2px">${area.icon} ${area.name}</div>` : ''}
+        <div style="font-size:14px;font-weight:600;color:var(--text)">${escapeHtml(t.name)}</div>
+        ${area ? `<div style="font-size:11px;color:${area.color};margin-top:2px">${escapeHtml(area.icon)} ${escapeHtml(area.name)}</div>` : ''}
       </div>
       <div style="display:flex;align-items:center;padding:0 10px;background:${bg}">
         <div class="tt-check${t.status === 'concluida' ? ' checked' : ''}"
@@ -108,9 +110,9 @@ const DashboardView = (() => {
       </div>
       <span style="color:${priColor}">${Constants.PRI_ICONS[t.priority] || '⚪'}</span>
       <div class="tt-task-body">
-        <div class="tt-task-name">${t.name}</div>
+        <div class="tt-task-name">${escapeHtml(t.name)}</div>
         <div class="tt-task-sub">
-          ${area ? `<span style="color:${area.color}">${area.icon} ${area.name}</span>` : ''}
+          ${area ? `<span style="color:${area.color}">${escapeHtml(area.icon)} ${escapeHtml(area.name)}</span>` : ''}
           ${t.date ? `<span>${Utils.fmtDate(t.date)}</span>` : ''}
         </div>
       </div>

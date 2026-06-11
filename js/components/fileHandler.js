@@ -76,8 +76,8 @@ const FileHandler = (() => {
     const bar = document.createElement('div');
     bar.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:8px 4px';
     bar.innerHTML = `
-      <span style="color:#fff;font-size:13px">${file.name}</span>
-      <a href="${file.data}" download="${file.name}"
+      <span style="color:#fff;font-size:13px">${Utils.escapeHtml(file.name)}</span>
+      <a href="${Utils.escapeAttr(file.data)}" download="${Utils.escapeAttr(file.name)}"
          style="color:#fff;background:#ffffff22;border-radius:6px;padding:5px 12px;font-size:12px;text-decoration:none;display:flex;align-items:center;gap:4px"
          onclick="event.stopPropagation()">
         <i class="ti ti-download"></i> Baixar
@@ -92,12 +92,13 @@ const FileHandler = (() => {
   function openInNewTab(file, type) {
     const win = window.open();
     if (!win) return;
+    const src = Utils.escapeAttr(file.data);
     if (type === 'pdf' || type === 'text') {
-      win.document.write(`<html><body style="margin:0;background:#111"><iframe src="${file.data}" style="width:100%;height:100vh;border:none"></iframe></body></html>`);
+      win.document.write(`<html><body style="margin:0;background:#111"><iframe src="${src}" style="width:100%;height:100vh;border:none"></iframe></body></html>`);
     } else if (type === 'video') {
-      win.document.write(`<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;height:100vh"><video controls autoplay src="${file.data}" style="max-width:100%;max-height:100vh"></video></body></html>`);
+      win.document.write(`<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;height:100vh"><video controls autoplay src="${src}" style="max-width:100%;max-height:100vh"></video></body></html>`);
     } else if (type === 'audio') {
-      win.document.write(`<html><body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px"><p style="color:#fff;font-family:sans-serif">${file.name}</p><audio controls autoplay src="${file.data}"></audio></body></html>`);
+      win.document.write(`<html><body style="margin:0;background:#111;display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px"><p style="color:#fff;font-family:sans-serif">${Utils.escapeHtml(file.name)}</p><audio controls autoplay src="${src}"></audio></body></html>`);
     }
   }
 

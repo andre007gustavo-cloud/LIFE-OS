@@ -6,6 +6,8 @@
 
 const TasksView = (() => {
 
+  const escapeHtml = Utils.escapeHtml;
+
   const SMART_LISTS = ['hoje', 'amanha', 'semana', 'todas', 'alta', 'semdata', 'concluidas'];
   const CHRONO_LISTS = ['hoje', 'amanha', 'semana'];
 
@@ -54,11 +56,11 @@ const TasksView = (() => {
 
       return `<div class="tt-list-item${isAreaActive ? ' active' : ''}" id="ttl-area-${area.id}" onclick="ttSetList('area:${area.id}')">
         <div class="tt-area-dot" style="background:${area.color}"></div>
-        <span class="tt-label">${area.icon} ${area.name}</span>
+        <span class="tt-label">${escapeHtml(area.icon)} ${escapeHtml(area.name)}</span>
         <span class="tt-count">${areaCount || ''}</span>
       </div>` + (isAreaActive && projs.length
         ? projs.map(p => `<div class="tt-proj-item${ttList === `proj:${p.id}` ? ' active' : ''}" onclick="event.stopPropagation();ttSetList('proj:${p.id}')">
-            <i class="ti ti-point" style="font-size:10px;color:${area.color}"></i>${p.name}
+            <i class="ti ti-point" style="font-size:10px;color:${area.color}"></i>${escapeHtml(p.name)}
           </div>`).join('')
         : '');
     }).join('');
@@ -206,7 +208,7 @@ const TasksView = (() => {
         <span style="color:${priColor}">${Constants.PRI_ICONS[t.priority] || '⚪'}</span>
       </div>
       <div class="tt-task-body">
-        <div class="tt-task-name">${t.name}</div>
+        <div class="tt-task-name">${escapeHtml(t.name)}</div>
         ${metaParts.length ? `<div class="tt-task-sub">${metaParts.join('<span class="dot"></span>')}</div>` : ''}
         ${subBar}
       </div>
@@ -228,11 +230,11 @@ const TasksView = (() => {
       }</span>`);
     }
     if (t.start && !isMulti) parts.push(`<span>${t.start}</span>`);
-    if (t.estimate) parts.push(`<span><i class="ti ti-clock" style="font-size:10px"></i> ${t.estimate}</span>`);
+    if (t.estimate) parts.push(`<span><i class="ti ti-clock" style="font-size:10px"></i> ${escapeHtml(t.estimate)}</span>`);
     if (t.recurrence) parts.push(`<span><i class="ti ti-refresh" style="font-size:10px"></i></span>`);
-    if (area) parts.push(`<span style="color:${area.color}">${area.icon} ${area.name}</span>`);
-    if (proj) parts.push(`<span>${proj.name}</span>`);
-    (t.tags || []).forEach(tag => parts.push(`<span class="tag-chip">#${tag}</span>`));
+    if (area) parts.push(`<span style="color:${area.color}">${escapeHtml(area.icon)} ${escapeHtml(area.name)}</span>`);
+    if (proj) parts.push(`<span>${escapeHtml(proj.name)}</span>`);
+    (t.tags || []).forEach(tag => parts.push(`<span class="tag-chip">#${escapeHtml(tag)}</span>`));
 
     return parts;
   }
@@ -262,7 +264,7 @@ const TasksView = (() => {
     document.getElementById('ttq-area').innerHTML =
       '<option value="">Área...</option>' +
       AreaService.getAll().map(a =>
-        `<option value="${a.id}">${a.icon} ${a.name}</option>`).join('');
+        `<option value="${a.id}">${escapeHtml(a.icon)} ${escapeHtml(a.name)}</option>`).join('');
 
     // Pre-fill date based on current list
     if (AppState.ui.ttList === 'hoje') {

@@ -59,7 +59,7 @@ const TaskModal = (() => {
     document.getElementById('t-project').innerHTML =
       '<option value="">Nenhum</option>' +
       (area ? area.projects : [])
-        .map(p => `<option value="${p.id}">${p.name}</option>`)
+        .map(p => `<option value="${p.id}">${Utils.escapeHtml(p.name)}</option>`)
         .join('');
   }
 
@@ -106,7 +106,7 @@ const TaskModal = (() => {
     document.getElementById(selectId).innerHTML =
       '<option value="">Nenhuma</option>' +
       AreaService.getAll()
-        .map(a => `<option value="${a.id}"${a.id === selectedAreaId ? ' selected' : ''}>${a.icon} ${a.name}</option>`)
+        .map(a => `<option value="${a.id}"${a.id === selectedAreaId ? ' selected' : ''}>${Utils.escapeHtml(a.icon)} ${Utils.escapeHtml(a.name)}</option>`)
         .join('');
   }
 

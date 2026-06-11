@@ -6,6 +6,9 @@
 
 const AreasView = (() => {
 
+  const escapeHtml = Utils.escapeHtml;
+  const escapeAttr = Utils.escapeAttr;
+
   function render() {
     ProjectService.ensureMigrated();
     renderProjectList();
@@ -34,8 +37,8 @@ const AreasView = (() => {
       : 'var(--accent2)';
 
     return `<div class="proj-item${isActive ? ' active' : ''}" onclick="openProject('${project.id}')">
-      <div class="proj-item-icon" style="background:${project.color}22;color:${project.color}">${project.icon}</div>
-      <div class="proj-item-name">${project.name}</div>
+      <div class="proj-item-icon" style="background:${project.color}22;color:${project.color}">${escapeHtml(project.icon)}</div>
+      <div class="proj-item-name">${escapeHtml(project.name)}</div>
       <div class="proj-status-dot" style="background:${statusColor}"></div>
       ${taskCount ? `<div class="proj-item-count">${taskCount}</div>` : ''}
     </div>`;
@@ -54,7 +57,7 @@ const AreasView = (() => {
     container.innerHTML = AreaService.getAll().map(a => `
       <div class="area-pill" onclick="openAreaModal('${a.id}')">
         <div class="area-pill-dot" style="background:${a.color}"></div>
-        <span style="flex:1">${a.icon} ${a.name}</span>
+        <span style="flex:1">${escapeHtml(a.icon)} ${escapeHtml(a.name)}</span>
       </div>`).join('');
   }
 
@@ -79,7 +82,7 @@ const AreasView = (() => {
     document.getElementById('proj-workspace').innerHTML = `
       <div class="proj-ws-header">
         <div class="proj-ws-title-row">
-          <div class="proj-ws-icon" style="background:${project.color}22;color:${project.color}">${project.icon}</div>
+          <div class="proj-ws-icon" style="background:${project.color}22;color:${project.color}">${escapeHtml(project.icon)}</div>
           <input class="proj-ws-name" value="${escapeAttr(project.name)}"
                  onblur="pSaveField('name',this.value);renderProjectList()">
           <button class="icon-btn" onclick="openEditProject('${project.id}')" title="Editar"><i class="ti ti-edit"></i></button>
@@ -94,7 +97,7 @@ const AreasView = (() => {
               <option value="concluido"${project.status === 'concluido' ? ' selected' : ''}>● Concluído</option>
             </select>
           </div>
-          ${area ? `<div class="proj-meta-chip" style="background:${area.color}22;color:${area.color};border-color:${area.color}44">${area.icon} ${area.name}</div>` : ''}
+          ${area ? `<div class="proj-meta-chip" style="background:${area.color}22;color:${area.color};border-color:${area.color}44">${escapeHtml(area.icon)} ${escapeHtml(area.name)}</div>` : ''}
           <div class="proj-meta-chip">
             <i class="ti ti-calendar" style="font-size:12px"></i>
             <input type="date" value="${project.deadline || ''}"
@@ -213,7 +216,7 @@ const AreasView = (() => {
             <div style="flex:1">
               <div class="note-item-title">${escapeHtml(n.title)}</div>
               <div class="note-item-preview">${escapeHtml(text)}</div>
-              ${imgs.length ? `<div class="note-item-imgs">${imgs.map(s => `<img class="note-item-thumb" src="${s}">`).join('')}</div>` : ''}
+              ${imgs.length ? `<div class="note-item-imgs">${imgs.map(s => `<img class="note-item-thumb" src="${escapeAttr(s)}">`).join('')}</div>` : ''}
               <div class="note-item-date">${Utils.fmtDate(n.updatedAt || n.createdAt)}</div>
             </div>
             <button class="icon-btn" onclick="event.stopPropagation();deleteNote('${n.id}')" style="color:var(--red)">
@@ -238,12 +241,12 @@ const AreasView = (() => {
       </div>
       ${files.length ? `<div class="file-grid">
         ${files.map(f => `
-          <div class="file-card" onclick="openFile('${f.id}')" title="${f.name}">
+          <div class="file-card" onclick="openFile('${f.id}')" title="${escapeAttr(f.name)}">
             <button class="icon-btn file-card-del" onclick="event.stopPropagation();deleteFile('${f.id}')" style="color:var(--red)"><i class="ti ti-x"></i></button>
             ${Utils.getFileType(f.name) === 'image' && f.data
-              ? `<img src="${f.data}" style="width:100%;height:60px;object-fit:cover;border-radius:6px;margin-bottom:6px">`
+              ? `<img src="${escapeAttr(f.data)}" style="width:100%;height:60px;object-fit:cover;border-radius:6px;margin-bottom:6px">`
               : `<div class="file-card-icon">${fileIcon(f.name)}</div>`}
-            <div class="file-card-name">${f.name}</div>
+            <div class="file-card-name">${escapeHtml(f.name)}</div>
             <div class="file-card-size">${f.size}</div>
           </div>`).join('')}
       </div>` : '<div class="empty"><i class="ti ti-file"></i><p>Nenhum arquivo</p></div>'}`;
@@ -255,7 +258,7 @@ const AreasView = (() => {
     return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;border-bottom:1px solid var(--border)"
                  onclick="ttOpenDetail('${task.id}');showView('tasks')">
       <span>${Constants.PRI_ICONS[task.priority]}</span>
-      <span style="flex:1;font-size:13px${task.status === 'concluida' ? ';text-decoration:line-through;color:var(--text3)' : ''}">${task.name}</span>
+      <span style="flex:1;font-size:13px${task.status === 'concluida' ? ';text-decoration:line-through;color:var(--text3)' : ''}">${escapeHtml(task.name)}</span>
       ${task.date ? `<span style="font-size:11px;color:var(--text3)">${Utils.fmtDate(task.date)}</span>` : ''}
     </div>`;
   }
@@ -291,15 +294,6 @@ const AreasView = (() => {
 
   function tabLabel(tab) {
     return { overview: 'Visão Geral', tasks: 'Tarefas', notes: 'Notas', files: 'Arquivos' }[tab];
-  }
-
-  function escapeHtml(s) {
-    return String(s || '')
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  }
-
-  function escapeAttr(s) {
-    return escapeHtml(s).replace(/"/g, '&quot;');
   }
 
   return {
