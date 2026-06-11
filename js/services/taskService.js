@@ -27,7 +27,12 @@ const TaskService = (() => {
     const tasks = AppState.getDB().tasks;
     const idx = tasks.findIndex(t => t.id === id);
     if (idx === -1) return null;
+    const wasDone = tasks[idx].status === 'concluida';
     tasks[idx] = { ...tasks[idx], ...patch };
+    // Concluir pelo modal (status no formulário) também agenda a recorrência
+    if (!wasDone && tasks[idx].status === 'concluida' && tasks[idx].recurrence) {
+      tasks.push(buildNextRecurrence(tasks[idx]));
+    }
     AppState.persist();
     return tasks[idx];
   }
@@ -35,7 +40,11 @@ const TaskService = (() => {
   function updateField(id, field, value) {
     const t = getById(id);
     if (!t) return;
+    const wasDone = t.status === 'concluida';
     t[field] = value;
+    if (field === 'status' && !wasDone && value === 'concluida' && t.recurrence) {
+      AppState.getDB().tasks.push(buildNextRecurrence(t));
+    }
     AppState.persist();
   }
 
