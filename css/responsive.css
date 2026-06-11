@@ -38,6 +38,12 @@
   #view-tasks.active,#view-calendar.active,#view-areas.active{
     height:100dvh;height:100vh;padding-bottom:0!important;
   }
+  /* iPhone (status bar translúcida): sem este recuo o conteúdo fica sob o
+     relógio/notch e o botão de menu não recebe toques */
+  #view-tasks.active,#view-areas.active{
+    padding-top:env(safe-area-inset-top,0px)!important;
+  }
+  #mobile-sidebar-panel{padding-top:env(safe-area-inset-top,0px)}
   .tt-content{padding-bottom:90px}
   .day-scroll{padding-bottom:90px}
   .proj-tab-content{padding-bottom:90px}

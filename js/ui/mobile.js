@@ -71,9 +71,54 @@ const MobileSidebar = (() => {
     return clone;
   }
 
+  /**
+   * Gesto: deslizar da borda esquerda → abre o menu (na aba de tarefas);
+   * deslizar o drawer aberto para a esquerda → fecha.
+   */
+  function initEdgeSwipe() {
+    let startX = null, startY = null, mode = null; // 'open' | 'close'
+
+    document.addEventListener('touchstart', e => {
+      mode = null;
+      if (!Utils.isMobile()) return;
+      const t = e.touches[0];
+      const panel = document.getElementById('mobile-sidebar-panel');
+      const panelOpen = panel && panel.style.display === 'block';
+
+      if (panelOpen) {
+        mode = 'close';
+      } else {
+        const view = document.getElementById('view-tasks');
+        if (!view || !view.classList.contains('active')) return;
+        if (t.clientX > 30) return; // só conta a partir da borda esquerda
+        mode = 'open';
+      }
+      startX = t.clientX;
+      startY = t.clientY;
+    }, { passive: true });
+
+    document.addEventListener('touchmove', e => {
+      if (!mode) return;
+      const t = e.touches[0];
+      const dx = t.clientX - startX;
+      const dy = Math.abs(t.clientY - startY);
+      // Exige movimento claramente horizontal antes de agir
+      if (mode === 'open' && dx > 50 && dx > dy * 1.5) {
+        mode = null;
+        open();
+      } else if (mode === 'close' && dx < -50 && -dx > dy * 1.5) {
+        mode = null;
+        close();
+      }
+    }, { passive: true });
+
+    document.addEventListener('touchend', () => { mode = null; }, { passive: true });
+  }
+
   function init() {
     window.addEventListener('resize', updateUI);
     updateUI();
+    initEdgeSwipe();
   }
 
   return { open, close, updateUI, init };
