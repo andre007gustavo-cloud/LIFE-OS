@@ -4,6 +4,7 @@
 @media(max-width:900px){
   :root{--sidebar-w:200px;--detail-w:280px}
   .grid3{grid-template-columns:1fr 1fr}
+  .metric-grid{grid-template-columns:1fr 1fr}
   .proj-sidebar{width:200px;min-width:200px}
 }
 
@@ -153,6 +154,13 @@
   .tt-task-actions{opacity:1}
 
   .cal-filter-panel{padding:10px}
+
+  /* Dashboard: métricas 2x2 e colunas empilhadas (timeline primeiro) */
+  .metric-grid{grid-template-columns:1fr 1fr}
+  .dash-grid{grid-template-columns:1fr}
+
+  /* Nav mobile compacta: só avatar com pontinho de sync + sair */
+  #user-info .user-name,#user-info .sync-label{display:none}
 }
 
 /* ===== Small mobile (≤480px) ===== */

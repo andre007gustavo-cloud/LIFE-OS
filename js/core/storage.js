@@ -15,6 +15,28 @@ const Storage = (() => {
   let _isSaving = false;
   const DEBOUNCE_MS = 1500;
 
+  // ===== Sync state observer ('synced' | 'saving' | 'offline') =====
+  // Permite à UI (indicador na nav) reagir sem conhecer o storage por dentro.
+
+  const _syncListeners = [];
+  let _syncState = navigator.onLine ? 'synced' : 'offline';
+
+  /** Registra callback de estado de sync; chama imediatamente com o estado atual */
+  function onSyncStateChange(callback) {
+    _syncListeners.push(callback);
+    callback(_syncState);
+  }
+
+  function _setSyncState(state) {
+    if (state === _syncState) return;
+    _syncState = state;
+    _syncListeners.forEach(cb => cb(state));
+  }
+
+  window.addEventListener('offline', () => _setSyncState('offline'));
+  window.addEventListener('online', () =>
+    _setSyncState(_saveTimer || _pendingDB || _isSaving ? 'saving' : 'synced'));
+
   // Fechar/minimizar a aba antes do debounce de 1.5s perderia o sync na nuvem.
   // O Firestore (com persistence ativa) enfileira a escrita e completa depois.
   document.addEventListener('visibilitychange', () => {
@@ -76,6 +98,8 @@ const Storage = (() => {
     if (!docRef) return;
     _isSaving = true;
     _pendingDB = null;
+    // Offline, o set() fica enfileirado pelo Firestore — indica vermelho, não "salvando"
+    _setSyncState(navigator.onLine ? 'saving' : 'offline');
     try {
       await docRef.set({
         tasks: db.tasks || [],
@@ -86,11 +110,13 @@ const Storage = (() => {
         inbox: db.inbox || [],
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
+      _setSyncState('synced');
       // Aguarda um pouco antes de voltar a escutar updates remotos
       setTimeout(() => { _isSaving = false; }, 1000);
     } catch (err) {
       console.error('Erro ao salvar no Firestore:', err);
       _isSaving = false;
+      _setSyncState('offline');
       _notifySyncError();
     }
   }
@@ -98,6 +124,7 @@ const Storage = (() => {
   function _debounceSaveToCloud(db) {
     if (_saveTimer) clearTimeout(_saveTimer);
     _pendingDB = db;
+    _setSyncState(navigator.onLine ? 'saving' : 'offline');
     _saveTimer = setTimeout(() => {
       _saveTimer = null;
       saveToCloud(db);
@@ -171,6 +198,7 @@ const Storage = (() => {
     load, save,
     loadFromCloud, saveToCloud,
     listenForChanges, stopListening,
+    onSyncStateChange,
     cloneSeedData,
     loadTheme, saveTheme
   };

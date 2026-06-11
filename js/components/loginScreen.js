@@ -45,24 +45,49 @@ const LoginScreen = (() => {
     FirebaseApp.logout();
   }
 
-  /** Atualiza a UI do nav com o nome/foto do usuário logado */
+  /** Atualiza a UI do nav com avatar (iniciais), nome e estado de sync */
   function updateUserInfo() {
     const user = FirebaseApp.currentUser();
     const el = document.getElementById('user-info');
     if (!el || !user) return;
 
-    // Só aceita URL https para a foto (bloqueia javascript:/data: vindos do perfil)
-    const rawPhoto = user.photoURL || '';
-    const photo = /^https:\/\//i.test(rawPhoto) ? rawPhoto : '';
-    const name = (user.displayName || user.email || '').split(' ')[0];
+    const fullName = (user.displayName || user.email || '').trim();
+    const firstName = fullName.split(' ')[0];
+    const initials = fullName.split(' ').filter(Boolean).slice(0, 2)
+      .map(part => part[0]).join('').toUpperCase();
 
     el.innerHTML = `
-      ${photo ? `<img src="${Utils.escapeAttr(photo)}" class="user-avatar" alt="">` : ''}
-      <span class="user-name">${Utils.escapeHtml(name)}</span>
+      <div class="user-avatar-initials">${Utils.escapeHtml(initials)}</div>
+      <div class="user-block-info">
+        <div class="user-name">${Utils.escapeHtml(firstName)}</div>
+        <div class="sync-indicator">
+          <span class="sync-dot" id="sync-dot"></span><span class="sync-label" id="sync-label"></span>
+        </div>
+      </div>
       <button class="icon-btn" onclick="logoutUser()" title="Sair" style="color:var(--text3)">
         <i class="ti ti-logout"></i>
       </button>`;
+
+    setSyncState(_syncState);
   }
 
-  return { show, hide, login, logout, updateUserInfo };
+  // ===== Indicador de sincronização (alimentado pelo Storage via app.js) =====
+
+  let _syncState = 'synced';
+  const SYNC_LABELS = {
+    synced: 'Sincronizado',
+    saving: 'Salvando...',
+    offline: 'Offline'
+  };
+
+  function setSyncState(state) {
+    _syncState = SYNC_LABELS[state] ? state : 'synced';
+    const dot = document.getElementById('sync-dot');
+    const label = document.getElementById('sync-label');
+    if (!dot || !label) return;
+    dot.className = 'sync-dot ' + _syncState;
+    label.textContent = SYNC_LABELS[_syncState];
+  }
+
+  return { show, hide, login, logout, updateUserInfo, setSyncState };
 })();

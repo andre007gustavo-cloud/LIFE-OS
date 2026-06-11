@@ -3,20 +3,28 @@
 *{box-sizing:border-box;margin:0;padding:0}
 
 :root{
-  --bg:#0f0f13;--bg2:#16161d;--bg3:#1e1e28;--bg4:#25252f;
-  --accent:#7c6fff;--accent2:#a78bfa;--acc-dim:#7c6fff22;
-  --text:#f0eeff;--text2:#9992c0;--text3:#5a5478;
-  --green:#4ade80;--red:#f87171;--amber:#fbbf24;--blue:#60a5fa;--pink:#f472b6;
-  --border:#2a2836;--radius:12px;--radius-sm:8px;
+  --bg:#0B1220;--bg2:#0F172A;--bg3:#1E293B;--bg4:#283548;
+  --accent:#6366F1;--accent2:#818CF8;--acc-dim:#6366F122;--on-accent:#EEF2FF;
+  --text:#F1F5F9;--text2:#94A3B8;--text3:#64748B;
+  --green:#22C55E;--red:#F87171;--amber:#F59E0B;--blue:#60A5FA;--pink:#F472B6;
+  --emerald:#34D399;--teal:#2DD4BF;
+  --border:#1E293B;--radius:12px;--radius-sm:8px;
+  --task-active-bg:#13203A;
+  --nav-active-bg:#312E81;--nav-active-text:#C7D2FE;
   --sidebar-w:220px;--detail-w:320px;
-  --nav-glass:rgba(18,18,24,0.88);
+  --nav-glass:rgba(11,18,32,0.88);
 }
 
 body.light{
-  --bg:#f0f0f5;--bg2:#ffffff;--bg3:#f5f5fa;--bg4:#eaeaf2;
-  --text:#1a1a2e;--text2:#555577;--text3:#9999bb;
-  --border:#dddde8;--acc-dim:#7c6fff18;
-  --nav-glass:rgba(240,240,245,0.88);
+  --bg:#F1F5F9;--bg2:#ffffff;--bg3:#E2E8F0;--bg4:#CBD5E1;
+  --accent:#6366F1;--accent2:#4F46E5;--acc-dim:#6366F114;--on-accent:#EEF2FF;
+  --text:#0F172A;--text2:#475569;--text3:#94A3B8;
+  --green:#16A34A;--red:#DC2626;--amber:#D97706;--blue:#2563EB;--pink:#DB2777;
+  --emerald:#059669;--teal:#0D9488;
+  --border:#E2E8F0;
+  --task-active-bg:#E0E7FF;
+  --nav-active-bg:#E0E7FF;--nav-active-text:#4338CA;
+  --nav-glass:rgba(241,245,249,0.88);
 }
 
 body{
@@ -45,7 +53,7 @@ nav{
   transition:all .15s;
 }
 .nav-btn:hover{background:var(--bg3);color:var(--text)}
-.nav-btn.active{background:var(--acc-dim);color:var(--accent2)}
+.nav-btn.active{background:var(--nav-active-bg);color:var(--nav-active-text)}
 .logo{
   font-size:16px;font-weight:700;color:var(--accent2);
   padding:7px 12px;letter-spacing:-0.5px;margin-right:8px;
@@ -145,19 +153,30 @@ nav{
   40%{opacity:1;transform:scale(1)}
 }
 
-/* ===== User info in nav ===== */
-.user-avatar{
-  width:26px;height:26px;border-radius:50%;
-  border:2px solid var(--border);
+/* ===== User block in nav (avatar + nome + estado de sync) ===== */
+#user-info{
+  display:flex;align-items:center;gap:8px;margin-left:4px;
 }
+.user-avatar-initials{
+  width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  background:var(--acc-dim);color:var(--accent2);
+  font-size:12px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;
+}
+.user-block-info{display:flex;flex-direction:column;line-height:1.25;min-width:0}
 .user-name{
-  font-size:12px;color:var(--text2);font-weight:500;
-  max-width:80px;overflow:hidden;text-overflow:ellipsis;
+  font-size:12px;color:var(--text);font-weight:500;
+  max-width:90px;overflow:hidden;text-overflow:ellipsis;
   white-space:nowrap;
 }
-#user-info{
-  display:flex;align-items:center;gap:6px;margin-left:4px;
+.sync-indicator{
+  display:flex;align-items:center;gap:4px;
+  font-size:10px;color:var(--text3);white-space:nowrap;
 }
+.sync-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sync-dot.synced{background:var(--green)}
+.sync-dot.saving{background:var(--amber)}
+.sync-dot.offline{background:var(--red)}
 
 /* ===== FAB ===== */
 #fab{
@@ -165,7 +184,7 @@ nav{
   width:52px;height:52px;border-radius:50%;
   background:var(--accent);border:none;color:#fff;
   font-size:24px;cursor:pointer;
-  box-shadow:0 4px 20px #7c6fff44;
+  box-shadow:0 4px 20px #6366F144;
   display:flex;align-items:center;justify-content:center;
   z-index:200;transition:all .2s;
 }

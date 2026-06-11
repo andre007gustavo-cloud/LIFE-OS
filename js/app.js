@@ -12,6 +12,9 @@
   Theme.init();
   let appInitialized = false;
 
+  // Indicador de sync na nav: o storage emite, a UI reage (sem acoplamento direto)
+  Storage.onSyncStateChange(LoginScreen.setSyncState);
+
   // Expõe login/logout ANTES do auth check (o botão precisa disso)
   window.loginWithGoogle = LoginScreen.login;
   window.logoutUser      = LoginScreen.logout;
@@ -135,6 +138,9 @@
     window.inboxEditCancel    = DashboardView.inboxEditCancel;
     window.inboxEditKey       = DashboardView.inboxEditKey;
     window.inboxDelete        = DashboardView.inboxDelete;
+
+    // --- Dashboard ---
+    window.dashOpenDay        = DashboardView.openDay;
 
     // --- Tasks (legacy modal + actions) ---
     window.openTaskModal       = TaskModal.open;

@@ -46,7 +46,7 @@ const TaskDetail = (() => {
       ${subtasksHtml(task)}
       ${tagsHtml(task)}
       ${notesHtml(task)}
-      ${pomodoroHtml()}
+      ${pomodoroHtml(task)}
 
       <div style="display:flex;gap:6px;margin-top:16px">
         <button class="btn btn-ghost btn-sm" onclick="ttDupTask('${task.id}')">
@@ -192,7 +192,7 @@ const TaskDetail = (() => {
     `;
   }
 
-  function pomodoroHtml() {
+  function pomodoroHtml(task) {
     return `
       <div class="pomo-bar">
         <div class="pomo-title">
@@ -201,7 +201,7 @@ const TaskDetail = (() => {
         <div class="pomo-mode" id="pomo-mode-row"></div>
         <div class="pomo-display" id="pomo-display">25:00</div>
         <div class="pomo-controls">
-          <button class="pomo-btn pomo-start" id="pomo-toggle" onclick="pomoToggle()">
+          <button class="pomo-btn pomo-start" id="pomo-toggle" onclick="pomoToggle('${task.id}')">
             <i class="ti ti-player-play"></i> Iniciar
           </button>
           <button class="pomo-btn pomo-stop" onclick="pomoReset()">

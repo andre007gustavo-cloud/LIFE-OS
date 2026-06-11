@@ -12,6 +12,29 @@ const PomodoroService = (() => {
   let round = 0;
   let running = false;
 
+  /** Tarefa vinculada ao timer (mostrada "em andamento" no dashboard) */
+  let linkedTaskId = null;
+
+  /** Foco acumulado no dia (em memória; zera na virada do dia) */
+  let focusDate = Utils.today();
+  let focusSeconds = 0;
+  let focusCount = 0;
+
+  function rolloverFocusIfNewDay() {
+    const td = Utils.today();
+    if (td !== focusDate) {
+      focusDate = td;
+      focusSeconds = 0;
+      focusCount = 0;
+    }
+  }
+
+  /** Tempo de trabalho somado e pomodoros completos de hoje */
+  function getFocusToday() {
+    rolloverFocusIfNewDay();
+    return { seconds: focusSeconds, count: focusCount };
+  }
+
   /** Listeners notified on each tick */
   const tickListeners = [];
 
@@ -24,7 +47,7 @@ const PomodoroService = (() => {
   }
 
   function getState() {
-    return { seconds, mode, round, running };
+    return { seconds, mode, round, running, taskId: linkedTaskId };
   }
 
   function setMode(newMode) {
@@ -34,16 +57,17 @@ const PomodoroService = (() => {
     stop();
   }
 
-  function toggle() {
+  function toggle(taskId) {
     if (running) {
       stop();
     } else {
-      start();
+      start(taskId);
     }
   }
 
-  function start() {
+  function start(taskId) {
     if (running) return;
+    if (taskId) linkedTaskId = taskId;
     running = true;
     timer = setInterval(tick, 1000);
     notify();
@@ -58,6 +82,7 @@ const PomodoroService = (() => {
 
   function reset() {
     stop();
+    linkedTaskId = null;
     seconds = Constants.POMO_TIMES[mode];
     notify();
   }
@@ -65,6 +90,8 @@ const PomodoroService = (() => {
   /** Internal: called each second */
   function tick() {
     seconds--;
+    rolloverFocusIfNewDay();
+    if (mode === 'work') focusSeconds++;
     if (seconds <= 0) {
       advanceMode();
     }
@@ -75,6 +102,7 @@ const PomodoroService = (() => {
   function advanceMode() {
     stop();
     if (mode === 'work') {
+      focusCount++;
       round = (round + 1) % 4;
       mode = round === 0 ? 'long' : 'short';
     } else {
@@ -83,5 +111,5 @@ const PomodoroService = (() => {
     seconds = Constants.POMO_TIMES[mode];
   }
 
-  return { onTick, getState, setMode, toggle, reset };
+  return { onTick, getState, getFocusToday, setMode, toggle, reset };
 })();

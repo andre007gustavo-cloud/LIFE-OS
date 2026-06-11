@@ -1,0 +1,99 @@
+/* ===================== DASHBOARD: header, métricas, timeline, semana ===================== */
+
+/* ===== Cabeçalho ===== */
+.dash-header{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  gap:12px;margin-bottom:18px;
+}
+.dash-greeting{font-size:19px;font-weight:500}
+.dash-subtitle{font-size:13px;color:var(--text2);margin-top:2px}
+
+/* ===== Cards de métrica ===== */
+.metric-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:12px;margin-bottom:16px;
+}
+.metric-card{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);padding:14px 16px;min-width:0;
+}
+.metric-card.clickable{cursor:pointer;transition:border-color .15s}
+.metric-card.clickable:hover{border-color:var(--accent)}
+.metric-label{
+  font-size:11px;color:var(--text3);
+  display:flex;align-items:center;gap:5px;margin-bottom:6px;
+}
+.metric-value{font-size:21px;font-weight:500;line-height:1.2;white-space:nowrap}
+.metric-context{font-size:11px;color:var(--text3);margin-top:6px;min-height:12px}
+
+/* ===== Grid principal 2 colunas ===== */
+.dash-grid{
+  display:grid;grid-template-columns:1.4fr 1fr;
+  gap:12px;align-items:start;
+}
+.dash-grid .card{margin-bottom:0}
+.dash-col-side{display:flex;flex-direction:column;gap:12px;min-width:0}
+
+/* ===== Linha do tempo de hoje ===== */
+.tl-item{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 10px;border-radius:var(--radius-sm);
+  cursor:pointer;transition:background .15s;
+}
+.tl-item:hover{background:var(--bg3)}
+.tl-item.active{background:var(--task-active-bg)}
+.tl-item.active .tl-name{font-weight:500}
+.tl-item.active .tl-sub{color:var(--text2)}
+.tl-item.done .tl-name{text-decoration:line-through;color:var(--text3)}
+.tl-time{
+  width:42px;flex-shrink:0;font-size:12px;color:var(--text3);
+  font-variant-numeric:tabular-nums;
+}
+.tl-bar{width:3px;min-height:30px;align-self:stretch;border-radius:2px;flex-shrink:0}
+.tl-body{flex:1;min-width:0}
+.tl-name{
+  font-size:14px;color:var(--text);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.tl-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.tl-side{flex-shrink:0;display:flex;align-items:center}
+.tl-done-icon{color:var(--green);font-size:19px;cursor:pointer}
+.tl-pomo-btn{color:var(--accent2);font-size:18px;padding:2px}
+
+/* ===== Sem horário ===== */
+.dash-notime-label{
+  font-size:11px;font-weight:600;color:var(--text3);
+  text-transform:uppercase;letter-spacing:.5px;
+  margin:14px 0 4px;padding:0 10px;
+}
+.tl-notime-item{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 10px;border-radius:var(--radius-sm);
+  cursor:pointer;transition:background .15s;
+}
+.tl-notime-item:hover{background:var(--bg3)}
+.tl-pri-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.tl-notime-name{
+  font-size:13px;color:var(--text);flex:1;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.tl-notime-area{font-size:11px;flex-shrink:0}
+
+/* ===== Estado vazio ===== */
+.dash-empty{
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  text-align:center;padding:28px 16px;color:var(--text2);font-size:14px;
+}
+.dash-empty-emoji{font-size:32px}
+
+/* ===== Esta semana ===== */
+.week-row{
+  display:flex;align-items:center;gap:8px;
+  padding:7px 10px;border-radius:var(--radius-sm);
+  cursor:pointer;transition:background .15s;
+}
+.week-row:hover{background:var(--bg3)}
+.week-row-day{font-size:13px;color:var(--text);width:60px;flex-shrink:0}
+.week-row-count{font-size:12px;color:var(--text3);flex:1}
+.week-dots{display:flex;gap:3px;flex-shrink:0}
+.week-area-dot{width:6px;height:6px;border-radius:50%}

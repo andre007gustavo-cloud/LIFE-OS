@@ -33,8 +33,9 @@ const PomodoroUI = (() => {
     refresh();
   }
 
-  function toggle() {
-    PomodoroService.toggle();
+  /** taskId opcional: vincula a tarefa ao timer ao iniciar */
+  function toggle(taskId) {
+    PomodoroService.toggle(taskId);
     refresh();
   }
 
