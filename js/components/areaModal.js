@@ -48,7 +48,7 @@ const AreaModal = (() => {
   function selectColor(color) {
     AppState.ui.areaColorSel = color;
     document.querySelectorAll('#color-picker div').forEach(d => {
-      d.style.border = d.style.background === color
+      d.style.border = d.dataset.color === color
         ? '3px solid #fff' : '3px solid transparent';
     });
   }
@@ -69,7 +69,7 @@ const AreaModal = (() => {
 
   function renderColorPicker() {
     document.getElementById('color-picker').innerHTML = Constants.COLORS
-      .map(c => `<div onclick="selectColor('${c}')" style="width:28px;height:28px;border-radius:50%;background:${c};cursor:pointer;border:3px solid ${c === AppState.ui.areaColorSel ? '#fff' : 'transparent'};transition:border .15s"></div>`)
+      .map(c => `<div onclick="selectColor('${c}')" data-color="${c}" style="width:28px;height:28px;border-radius:50%;background:${c};cursor:pointer;border:3px solid ${c === AppState.ui.areaColorSel ? '#fff' : 'transparent'};transition:border .15s"></div>`)
       .join('');
   }
 

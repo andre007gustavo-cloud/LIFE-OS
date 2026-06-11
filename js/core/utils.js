@@ -9,6 +9,8 @@ const Utils = (() => {
   // ===== ID generation =====
 
   function uid() {
+    // crypto.randomUUID evita colisão de IDs; fallback para browsers antigos
+    if (window.crypto?.randomUUID) return crypto.randomUUID();
     return Math.random().toString(36).substr(2, 9);
   }
 

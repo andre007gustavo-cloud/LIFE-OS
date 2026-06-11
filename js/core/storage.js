@@ -10,9 +10,24 @@
 const Storage = (() => {
 
   let _saveTimer = null;
+  let _pendingDB = null;
   let _unsubscribe = null;
   let _isSaving = false;
   const DEBOUNCE_MS = 1500;
+
+  // Fechar/minimizar a aba antes do debounce de 1.5s perderia o sync na nuvem.
+  // O Firestore (com persistence ativa) enfileira a escrita e completa depois.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushPendingSave();
+  });
+  window.addEventListener('beforeunload', flushPendingSave);
+
+  function flushPendingSave() {
+    if (!_saveTimer) return;
+    clearTimeout(_saveTimer);
+    _saveTimer = null;
+    if (_pendingDB) saveToCloud(_pendingDB);
+  }
 
   // ===== LOCAL (cache) =====
 
@@ -59,6 +74,7 @@ const Storage = (() => {
     const docRef = FirebaseApp.getUserDoc();
     if (!docRef) return;
     _isSaving = true;
+    _pendingDB = null;
     try {
       await docRef.set({
         tasks: db.tasks || [],
@@ -68,17 +84,36 @@ const Storage = (() => {
         finCats: db.finCats || [],
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-    } catch (err) {
-      console.warn('Erro ao salvar no Firestore:', err);
-    } finally {
       // Aguarda um pouco antes de voltar a escutar updates remotos
       setTimeout(() => { _isSaving = false; }, 1000);
+    } catch (err) {
+      console.error('Erro ao salvar no Firestore:', err);
+      _isSaving = false;
+      _notifySyncError();
     }
   }
 
   function _debounceSaveToCloud(db) {
     if (_saveTimer) clearTimeout(_saveTimer);
-    _saveTimer = setTimeout(() => saveToCloud(db), DEBOUNCE_MS);
+    _pendingDB = db;
+    _saveTimer = setTimeout(() => {
+      _saveTimer = null;
+      saveToCloud(db);
+    }, DEBOUNCE_MS);
+  }
+
+  /** Toast discreto quando o save na nuvem falha (dados continuam no dispositivo) */
+  function _notifySyncError() {
+    if (document.getElementById('sync-error-toast')) return;
+    const el = document.createElement('div');
+    el.id = 'sync-error-toast';
+    el.textContent = '⚠️ Falha ao sincronizar com a nuvem — os dados estão salvos neste dispositivo';
+    el.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);'
+      + 'background:#7f1d1d;color:#fff;padding:10px 16px;border-radius:10px;'
+      + 'font-size:13px;z-index:9999;max-width:calc(100vw - 32px);text-align:center;'
+      + 'box-shadow:0 4px 16px #00000066';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 6000);
   }
 
   // ===== REAL-TIME SYNC =====

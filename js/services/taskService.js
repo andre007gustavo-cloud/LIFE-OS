@@ -183,6 +183,11 @@ const TaskService = (() => {
       d.setMonth(d.getMonth() + 1);
       next.date = Utils.toISO(d);
     }
+    // Tarefa multi-dia: desloca a data fim mantendo a mesma duração
+    if (task.dateend && task.date) {
+      const spanDays = Utils.daysBetween(task.date, task.dateend) - 1;
+      next.dateend = spanDays > 0 ? Utils.addDays(next.date, spanDays) : '';
+    }
     return next;
   }
 

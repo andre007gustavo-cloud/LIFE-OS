@@ -22,7 +22,8 @@ const FinanceModal = (() => {
     const date = document.getElementById('f-date').value;
     const cat = document.getElementById('f-cat').value;
 
-    if (!desc || !value || !date) return alert('Preencha todos os campos');
+    if (!desc || !date) return alert('Preencha todos os campos');
+    if (isNaN(value) || value <= 0) return alert('Informe um valor válido maior que zero');
 
     FinanceService.create({
       type: AppState.ui.finType,

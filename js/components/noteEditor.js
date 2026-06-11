@@ -96,6 +96,7 @@ const NoteEditor = (() => {
   function readAndInsert(file, fallbackName) {
     const reader = new FileReader();
     reader.onload = ev => ImageResize.insertAtCursor(ev.target.result, fallbackName || file.name);
+    reader.onerror = () => alert('Erro ao ler a imagem: ' + (fallbackName || file.name));
     reader.readAsDataURL(file);
   }
 

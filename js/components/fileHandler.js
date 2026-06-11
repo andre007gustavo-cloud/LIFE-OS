@@ -30,6 +30,7 @@ const FileHandler = (() => {
         });
         if (window.AreasView?.renderTabContent) AreasView.renderTabContent();
       };
+      reader.onerror = () => alert('Erro ao ler o arquivo: ' + f.name);
       reader.readAsDataURL(f);
     });
   }

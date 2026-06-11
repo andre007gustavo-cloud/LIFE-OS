@@ -74,7 +74,7 @@ const ProjectModal = (() => {
   function selectColor(color) {
     AppState.ui.npColorSel = color;
     document.querySelectorAll('#np-color-picker div').forEach(d => {
-      d.style.border = d.style.background === color
+      d.style.border = d.dataset.color === color
         ? '3px solid #fff' : '3px solid transparent';
     });
   }
@@ -91,7 +91,7 @@ const ProjectModal = (() => {
 
   function renderColorPicker() {
     document.getElementById('np-color-picker').innerHTML = Constants.COLORS
-      .map(c => `<div onclick="npSelectColor('${c}')" id="npc-${c.replace('#', '')}" style="width:28px;height:28px;border-radius:50%;background:${c};cursor:pointer;border:3px solid ${c === AppState.ui.npColorSel ? '#fff' : 'transparent'};transition:border .15s"></div>`)
+      .map(c => `<div onclick="npSelectColor('${c}')" id="npc-${c.replace('#', '')}" data-color="${c}" style="width:28px;height:28px;border-radius:50%;background:${c};cursor:pointer;border:3px solid ${c === AppState.ui.npColorSel ? '#fff' : 'transparent'};transition:border .15s"></div>`)
       .join('');
   }
 

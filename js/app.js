@@ -54,6 +54,7 @@
     } else {
       // Não logado
       Storage.stopListening();
+      PomodoroService.reset(); // para o timer que continuaria rodando após logout
       appInitialized = false;
       LoginScreen.show();
     }
