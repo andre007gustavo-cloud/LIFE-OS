@@ -143,6 +143,7 @@
     window.ttCloseQuick         = TasksView.closeQuick;
     window.ttQuickSave          = TasksView.quickSave;
     window.ttQuickKey           = TasksView.quickKeyHandler;
+    window.ttQuickPreview       = TasksView.quickPreview;
     window.ttqPickDate          = TasksView.quickPickDate;
     window.ttqPickTime          = TasksView.quickPickTime;
     window.ttqUpdateDate        = TasksView.quickUpdateDate;

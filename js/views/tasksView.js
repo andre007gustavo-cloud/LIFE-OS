@@ -281,6 +281,7 @@ const TasksView = (() => {
     document.getElementById('ttq-time').value = '';
     AppState.ui.ttQuickDate = '';
     AppState.ui.ttQuickTime = '';
+    quickPreview();
   }
 
   function quickPickDate() {
@@ -322,32 +323,71 @@ const TasksView = (() => {
   }
 
   function quickSave() {
-    const name = document.getElementById('tt-quick-input').value.trim();
-    if (!name) return;
+    const raw = document.getElementById('tt-quick-input').value.trim();
+    if (!raw) return;
 
-    let area = document.getElementById('ttq-area').value;
+    const parsed = QuickParser.parse(raw, AreaService.getAll());
+    if (!parsed.name) return; // só tokens, sem nome de tarefa
+
+    // Texto digitado tem precedência sobre os botões do quick-add
+    let area = parsed.areaId || document.getElementById('ttq-area').value;
     let project = '';
 
     // Infer area/project from current list context
     if (!area && AppState.ui.ttList.startsWith('area:')) {
       area = AppState.ui.ttList.replace('area:', '');
     }
-    if (AppState.ui.ttList.startsWith('proj:')) {
+    if (!parsed.areaId && AppState.ui.ttList.startsWith('proj:')) {
       const pid = AppState.ui.ttList.replace('proj:', '');
       const foundArea = AreaService.findAreaByNestedProjectId(pid);
       if (foundArea) { area = foundArea.id; project = pid; }
     }
 
     TaskService.create({
-      name, area, project,
-      priority: AppState.ui.ttQuickPri,
-      date: AppState.ui.ttQuickDate || Utils.today(),
-      start: AppState.ui.ttQuickTime || ''
+      name: parsed.name, area, project,
+      priority: parsed.priority || AppState.ui.ttQuickPri,
+      date: parsed.date || AppState.ui.ttQuickDate || Utils.today(),
+      start: parsed.time || AppState.ui.ttQuickTime || '',
+      end: parsed.timeend || ''
     });
 
     closeQuick();
     renderSidebar();
     filterAndRender();
+  }
+
+  // ===== Quick Add: preview ao vivo do parser =====
+
+  function quickPreview() {
+    const box = document.getElementById('tt-quick-preview');
+    const raw = document.getElementById('tt-quick-input').value.trim();
+    if (!raw) {
+      box.innerHTML = '';
+      box.classList.remove('show');
+      return;
+    }
+    const chips = buildPreviewChips(QuickParser.parse(raw, AreaService.getAll()));
+    box.innerHTML = chips.join('');
+    box.classList.toggle('show', chips.length > 0);
+  }
+
+  function buildPreviewChips(parsed) {
+    const chips = [];
+    if (parsed.date) {
+      const dow = Constants.CALENDAR.WEEK_DAY_NAMES_FULL[Utils.parseISO(parsed.date).getDay()].toLowerCase();
+      chips.push(`<span class="ttq-chip">📅 ${dow} ${Utils.fmtDate(parsed.date)}</span>`);
+    }
+    if (parsed.time) {
+      chips.push(`<span class="ttq-chip">⏰ ${parsed.time}${parsed.timeend ? '–' + parsed.timeend : ''}</span>`);
+    }
+    if (parsed.priority) {
+      chips.push(`<span class="ttq-chip">${Constants.PRI_ICONS[parsed.priority]} ${parsed.priority}</span>`);
+    }
+    const area = parsed.areaId && AreaService.getById(parsed.areaId);
+    if (area) {
+      chips.push(`<span class="ttq-chip">${escapeHtml(area.icon)} ${escapeHtml(area.name)}</span>`);
+    }
+    return chips;
   }
 
   // ===== Task action helpers =====
@@ -365,7 +405,7 @@ const TasksView = (() => {
 
   return {
     renderSidebar, setList, filterAndRender,
-    openQuick, closeQuick, quickPickDate, quickPickTime, quickUpdateDate, quickUpdateTime, quickCyclePriority, quickKeyHandler, quickSave,
+    openQuick, closeQuick, quickPickDate, quickPickTime, quickUpdateDate, quickUpdateTime, quickCyclePriority, quickKeyHandler, quickSave, quickPreview,
     duplicateById, cyclePri
   };
 })();

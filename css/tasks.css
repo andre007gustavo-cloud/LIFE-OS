@@ -103,6 +103,13 @@
   width:100%;background:transparent;border:none;color:var(--text);
   font-size:15px;outline:none;font-family:inherit;margin-bottom:10px;
 }
+.tt-quick-preview{display:none;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tt-quick-preview.show{display:flex}
+.ttq-chip{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:2px 8px;border-radius:10px;font-size:11px;
+  background:var(--bg3);color:var(--text2);border:1px solid var(--border);
+}
 .tt-quick-meta{
   display:flex;gap:6px;flex-wrap:wrap;align-items:center;
 }

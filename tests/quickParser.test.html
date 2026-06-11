@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Testes — QuickParser</title>
+<style>
+  body{font-family:Consolas,monospace;background:#16161e;color:#ddd;padding:24px;font-size:13px}
+  h1{font-size:18px}
+  #summary{font-size:15px;font-weight:bold;margin:12px 0}
+  .pass{color:#4ade80}
+  .fail{color:#f87171}
+  table{border-collapse:collapse;width:100%}
+  td,th{border:1px solid #333;padding:6px 8px;text-align:left;vertical-align:top}
+  th{background:#222}
+  .diff{color:#fbbf24}
+</style>
+</head>
+<body>
+<h1>QuickParser — testes</h1>
+<div id="summary">Rodando…</div>
+<table id="results">
+  <tr><th>#</th><th>Entrada</th><th>Status</th><th>Detalhe</th></tr>
+</table>
+
+<script src="../js/core/utils.js"></script>
+<script src="../js/core/quickParser.js"></script>
+<script>
+// Data de referência fixa para os testes serem determinísticos:
+// 2026-06-11 é uma QUINTA-feira.
+const TODAY = '2026-06-11';
+
+const AREAS = [
+  { id: 'a1', name: 'Trabalho' },
+  { id: 'a2', name: 'Saúde' },
+  { id: 'a3', name: 'Vida Pessoal' }
+];
+
+// expected: só os campos que importam; os demais devem ser ''
+const CASES = [
+  ['ligar pro Caio amanhã 14h #trabalho !alta',
+    { name: 'ligar pro Caio', date: '2026-06-12', time: '14:00', priority: 'alta', areaId: 'a1' }],
+  ['pagar boleto dia 15', { name: 'pagar boleto', date: '2026-06-15' }],
+  ['reunião sexta 9h-10h30',
+    { name: 'reunião', date: '2026-06-12', time: '09:00', timeend: '10:30' }],
+  ['texto sem nada reconhecível', { name: 'texto sem nada reconhecível' }],
+  ['comprar pão hoje', { name: 'comprar pão', date: '2026-06-11' }],
+  ['depois de amanhã levar o carro', { name: 'levar o carro', date: '2026-06-13' }],
+  ['dentista 15/07', { name: 'dentista', date: '2026-07-15' }],
+  ['renovar seguro 10/01', { name: 'renovar seguro', date: '2027-01-10' }],
+  ['viagem 15/07/2027', { name: 'viagem', date: '2027-07-15' }],
+  ['academia segunda-feira 6h', { name: 'academia', date: '2026-06-15', time: '06:00' }],
+  ['feira sábado', { name: 'feira', date: '2026-06-13' }],
+  ['revisão quinta', { name: 'revisão', date: '2026-06-18' }], // hoje é quinta → próxima
+  ['pagar dia 31', { name: 'pagar', date: '2026-07-31' }],     // junho não tem 31
+  ['call 14:30', { name: 'call', time: '14:30' }],
+  ['call 14h30', { name: 'call', time: '14:30' }],
+  ['plantão 8h-12h', { name: 'plantão', time: '08:00', timeend: '12:00' }],
+  ['ler livro !!!', { name: 'ler livro', priority: 'alta' }],
+  ['lavar carro !!', { name: 'lavar carro', priority: 'media' }],
+  ['regar plantas !', { name: 'regar plantas', priority: 'baixa' }],
+  ['relatório !media', { name: 'relatório', priority: 'media' }],
+  ['relatório !média', { name: 'relatório', priority: 'media' }],
+  ['treino #saude', { name: 'treino', areaId: 'a2' }],          // acento-insensível
+  ['almoço #VidaPessoal', { name: 'almoço', areaId: 'a3' }],    // nome com espaço
+  ['organizar mesa #inexistente', { name: 'organizar mesa' }],  // token some, área ignorada
+  ['evento 25h', { name: 'evento 25h' }],                       // hora inválida fica no nome
+  ['urgente!!! agora', { name: 'urgente!!! agora' }]            // "!" colado não é prioridade
+];
+
+const EMPTY = { name: '', date: '', time: '', timeend: '', priority: '', areaId: '' };
+
+function run() {
+  const table = document.getElementById('results');
+  let passed = 0;
+
+  CASES.forEach(([input, partial], i) => {
+    const expected = { ...EMPTY, ...partial };
+    const got = QuickParser.parse(input, AREAS, TODAY);
+    const diffs = Object.keys(EMPTY)
+      .filter(k => got[k] !== expected[k])
+      .map(k => `${k}: esperado "${expected[k]}", veio "${got[k]}"`);
+    const ok = diffs.length === 0;
+    if (ok) passed++;
+
+    const tr = table.insertRow();
+    tr.insertCell().textContent = i + 1;
+    tr.insertCell().textContent = input;
+    const status = tr.insertCell();
+    status.textContent = ok ? '✔ PASS' : '✘ FAIL';
+    status.className = ok ? 'pass' : 'fail';
+    const detail = tr.insertCell();
+    detail.className = 'diff';
+    detail.textContent = diffs.join(' | ');
+  });
+
+  const summary = document.getElementById('summary');
+  summary.textContent = `${passed}/${CASES.length} testes passaram`;
+  summary.className = passed === CASES.length ? 'pass' : 'fail';
+}
+
+run();
+</script>
+</body>
+</html>

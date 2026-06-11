@@ -198,7 +198,8 @@
             <i class="ti ti-plus"></i> Adicionar tarefa
           </div>
           <div class="tt-quick-form" id="tt-quick-form">
-            <input class="tt-quick-input" id="tt-quick-input" placeholder="O que precisa ser feito?" onkeydown="ttQuickKey(event)">
+            <input class="tt-quick-input" id="tt-quick-input" placeholder="O que precisa ser feito? Ex.: ligar pro Caio amanhã 14h #trabalho !alta" onkeydown="ttQuickKey(event)" oninput="ttQuickPreview()">
+            <div class="tt-quick-preview" id="tt-quick-preview"></div>
             <div class="tt-quick-meta">
               <button class="tt-meta-btn" id="ttq-pri-btn" onclick="ttqCyclePriority()">
                 <i class="ti ti-flag" id="ttq-pri-icon"></i> <span id="ttq-pri-label">Prioridade</span>
@@ -596,6 +597,7 @@
 
 <script src="js/config/constants.js"></script>
 <script src="js/core/utils.js"></script>
+<script src="js/core/quickParser.js"></script>
 <script src="js/core/firebase.js"></script>
 <script src="js/core/storage.js"></script>
 <script src="js/core/state.js"></script>
