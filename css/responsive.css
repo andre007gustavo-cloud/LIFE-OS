@@ -36,6 +36,9 @@
 
   /* View padding for floating nav (taller to clear the floating pill) */
   .view.active,.view.active.padded{padding-bottom:90px!important}
+
+  /* iPhone notch: status bar translúcida deixa o conteúdo sob o relógio/notch */
+  .view.padded{padding-top:calc(16px + env(safe-area-inset-top,0px))}
   #view-tasks.active,#view-calendar.active,#view-areas.active{
     height:100dvh;height:100vh;padding-bottom:0!important;
   }
@@ -101,6 +104,7 @@
     width:100%!important;min-width:100%!important;
     z-index:200;border:none;
     box-shadow:-4px 0 20px #00000044;
+    padding-top:env(safe-area-inset-top,0px);
   }
   .tt-detail.closed{display:none}
 
@@ -134,15 +138,16 @@
   .proj-sidebar-section{display:none}
   .proj-workspace{flex:1;min-height:0}
 
-  /* Modals fullscreen */
+  /* Modals fullscreen (padding-top respeita o notch) */
   .modal{
     border-radius:0;max-height:100vh;height:100vh;
-    padding:16px 16px max(16px,env(safe-area-inset-bottom));
+    padding:calc(16px + env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom));
   }
   .overlay{align-items:flex-start}
   .note-modal{
     width:100%!important;max-width:100%!important;
     max-height:100vh;border-radius:0;height:100vh;
+    padding-top:calc(16px + env(safe-area-inset-top,0px));
   }
 
   .form-row{grid-template-columns:1fr}
