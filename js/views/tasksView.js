@@ -175,7 +175,24 @@ const TasksView = (() => {
       list.innerHTML = '<div class="empty"><i class="ti ti-checklist"></i><p>Nenhuma tarefa aqui</p></div>';
       return;
     }
-    list.innerHTML = tasks.map(taskItemHtml).join('');
+
+    // Modo dia difícil na lista "Hoje": só as 3 mais prioritárias, resto colapsado
+    const hardToday = AppState.ui.ttList === 'hoje' && HabitService.isHardDay(Utils.today());
+    if (hardToday && !AppState.ui.hardExpandedTasks && tasks.length > Constants.HARD_MODE.TASK_LIMIT) {
+      const top = tasks.slice(0, Constants.HARD_MODE.TASK_LIMIT);
+      const hidden = tasks.length - top.length;
+      list.innerHTML = top.map(taskItemHtml).join('')
+        + `<button class="hard-more-btn" onclick="ttHardExpand(true)">ver tudo (${hidden})</button>`;
+      return;
+    }
+
+    list.innerHTML = tasks.map(taskItemHtml).join('')
+      + (hardToday ? '<button class="hard-more-btn" onclick="ttHardExpand(false)">mostrar menos</button>' : '');
+  }
+
+  function hardExpand(expanded) {
+    AppState.ui.hardExpandedTasks = expanded;
+    filterAndRender();
   }
 
   function taskItemHtml(t) {
@@ -411,6 +428,6 @@ const TasksView = (() => {
   return {
     renderSidebar, setList, filterAndRender,
     openQuick, closeQuick, quickPickDate, quickPickTime, quickUpdateDate, quickUpdateTime, quickCyclePriority, quickKeyHandler, quickSave, quickPreview,
-    duplicateById, cyclePri
+    duplicateById, cyclePri, hardExpand
   };
 })();

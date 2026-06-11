@@ -14,10 +14,35 @@ const DashboardView = (() => {
     wirePomodoroOnce();
     const td = Utils.today();
     renderHeader(td);
+    renderHardMode(td);
     renderMetrics(td);
     renderTimeline(td);
     renderInbox();
     renderWeek(td);
+  }
+
+  // ===== Modo dia difícil =====
+
+  function renderHardMode(td) {
+    const active = HabitService.isHardDay(td);
+    document.getElementById('hard-mode-btn').classList.toggle('active', active);
+    document.getElementById('dash-hardmode').innerHTML = active
+      ? '<div class="hard-mode-banner"><i class="ti ti-shield-half"></i> Modo dia difícil ativo — só o essencial conta hoje</div>'
+      : '';
+  }
+
+  /** O modo NUNCA se ativa sozinho; sempre escolha do usuário (este toggle) */
+  function toggleHardMode() {
+    HabitService.toggleHardDay(Utils.today());
+    AppState.ui.hardExpandedDash = false;
+    AppState.ui.hardExpandedTasks = false;
+    Navigation.renderAll();
+  }
+
+  /** Expande/colapsa a timeline no modo dia difícil ("ver tudo"/"mostrar menos") */
+  function hardExpand(expanded) {
+    AppState.ui.hardExpandedDash = expanded;
+    renderTimeline(Utils.today());
   }
 
   // ===== Cabeçalho =====
@@ -71,7 +96,6 @@ const DashboardView = (() => {
     const month = FinanceService.summarize(
       FinanceService.forMonth(FinanceService.currentMonthPrefix()));
     const saldoColor = month.saldo >= 0 ? 'var(--emerald)' : 'var(--red)';
-    const highCount = TaskService.pending().filter(t => t.priority === 'alta').length;
 
     document.getElementById('dash-metrics').innerHTML =
       metricCardHtml({
@@ -89,12 +113,30 @@ const DashboardView = (() => {
         value: `<span style="color:${saldoColor}">${Utils.fmtMoney(month.saldo)}</span>`,
         context: `+${Utils.fmtMoney(month.receitas)} · −${Utils.fmtMoney(month.despesas)}`
       }) +
-      metricCardHtml({
-        icon: 'ti-flag', label: 'Alta prioridade',
-        value: String(highCount),
-        context: highCount === 1 ? 'tarefa pendente' : 'tarefas pendentes',
-        onclick: "showView('tasks');ttSetList('alta')"
-      });
+      metricCardHtml(habitsMetric(td));
+  }
+
+  /** Card "Hábitos hoje": cumpridos/devidos + melhor sequência ativa */
+  function habitsMetric(td) {
+    const habits = HabitService.getAll();
+    const due = habits.filter(h => HabitService.isDueOn(h, td));
+    const done = due.filter(h => HabitService.getLog(h.id, td)).length;
+    const best = habits
+      .map(h => ({ name: h.name, streak: HabitService.stats(h.id).streak }))
+      .filter(s => s.streak > 0)
+      .sort((a, b) => b.streak - a.streak)[0];
+
+    const context = !habits.length ? 'crie seu primeiro hábito'
+      : HabitService.isHardDay(td) ? 'só a versão mínima conta hoje'
+      : best ? `🔥 ${best.streak} ${best.streak === 1 ? 'dia' : 'dias'} — ${escapeHtml(best.name)}`
+      : 'nenhuma sequência ativa';
+
+    return {
+      icon: 'ti-repeat', label: 'Hábitos hoje',
+      value: due.length ? `${done}/${due.length}` : '—',
+      context,
+      onclick: "showView('habits')"
+    };
   }
 
   /** Card de métrica genérico (reutilizável para futuros cards, ex.: hábitos) */
@@ -132,13 +174,30 @@ const DashboardView = (() => {
       return;
     }
 
-    el.innerHTML =
-      (withTime.length
-        ? withTime.map(t => timelineItemHtml(t, pomo)).join('')
-        : '<div class="text-muted" style="padding:4px 10px">Nenhuma com horário hoje</div>')
+    const hard = HabitService.isHardDay(td);
+    el.innerHTML = hard && !AppState.ui.hardExpandedDash
+      ? hardTimelineHtml(withTime, noTime, pomo)
+      : fullTimelineHtml(withTime, noTime, pomo, hard);
+  }
+
+  function fullTimelineHtml(withTime, noTime, pomo, hard) {
+    return (withTime.length
+      ? withTime.map(t => timelineItemHtml(t, pomo)).join('')
+      : '<div class="text-muted" style="padding:4px 10px">Nenhuma com horário hoje</div>')
       + (noTime.length
         ? `<div class="dash-notime-label">Sem horário</div>` + noTime.map(noTimeItemHtml).join('')
-        : '');
+        : '')
+      + (hard ? '<button class="hard-more-btn" onclick="dashHardExpand(false)">mostrar menos</button>' : '');
+  }
+
+  /** Modo dia difícil: só as 3 tarefas pendentes mais prioritárias de hoje */
+  function hardTimelineHtml(withTime, noTime, pomo) {
+    const pending = [...withTime.filter(t => t.status !== 'concluida'), ...noTime]
+      .sort((a, b) => Constants.PRI_ORDER[a.priority] - Constants.PRI_ORDER[b.priority]);
+    const top = pending.slice(0, Constants.HARD_MODE.TASK_LIMIT);
+    const hidden = pending.length - top.length;
+    return top.map(t => t.start && !t.dateend ? timelineItemHtml(t, pomo) : noTimeItemHtml(t)).join('')
+      + (hidden > 0 ? `<button class="hard-more-btn" onclick="dashHardExpand(true)">ver tudo (${hidden})</button>` : '');
   }
 
   function timelineItemHtml(t, pomo) {
@@ -348,6 +407,7 @@ const DashboardView = (() => {
 
   return {
     render, openDay,
+    toggleHardMode, hardExpand,
     inboxToTask, inboxEditStart, inboxEditSave, inboxEditCancel, inboxEditKey, inboxDelete
   };
 })();

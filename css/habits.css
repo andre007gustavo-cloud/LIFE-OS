@@ -1,0 +1,115 @@
+/* ===================== HÁBITOS + MODO DIA DIFÍCIL ===================== */
+
+/* ===== Lista de hábitos ===== */
+.habit-row{
+  display:flex;align-items:center;gap:12px;
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);padding:12px 14px;margin-bottom:10px;
+}
+.habit-icon{
+  width:38px;height:38px;border-radius:10px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:19px;cursor:pointer;
+}
+.habit-info{flex:1;min-width:0;cursor:pointer}
+.habit-name{
+  font-size:14px;font-weight:600;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.habit-meta{
+  font-size:11px;color:var(--text3);margin-top:2px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.habit-meta .ti{font-size:12px;vertical-align:-1px}
+.habit-streak{color:var(--amber)}
+.habit-shields{color:var(--blue)}
+.habit-mingoal{font-size:12px;color:var(--accent2);margin-top:3px;font-weight:500}
+
+/* Grade dos últimos 7 dias */
+.habit-week{display:flex;gap:4px;flex-shrink:0}
+.hd{
+  width:16px;height:16px;border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+}
+.hd .ti{font-size:10px;color:#fff}
+.hd-done{background:var(--green)}
+.hd-min{background:#22C55E55}
+.hd-shield{background:var(--blue)}
+.hd-fail{background:#F8717133}
+.hd-skip{border:1px dashed var(--border)}
+.hd-pending{border:1px solid var(--text3)}
+
+/* Botão de marcar hoje */
+.habit-check{
+  width:38px;height:38px;border-radius:50%;flex-shrink:0;
+  border:2px solid var(--border);background:transparent;color:var(--text3);
+  font-size:18px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;user-select:none;touch-action:manipulation;
+}
+.habit-check:hover{border-color:var(--green);color:var(--green)}
+.habit-check.done{background:var(--green);border-color:var(--green);color:#fff}
+.habit-check.minimal{background:#22C55E55;border-color:var(--green);color:#fff}
+.habit-check.shielded{background:var(--blue);border-color:var(--blue);color:#fff}
+.habit-check.notdue{opacity:.3;cursor:default}
+
+/* Menu de toque longo (versão mínima / desmarcar) */
+#habit-menu{
+  position:fixed;z-index:400;background:var(--bg2);
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  box-shadow:0 8px 30px #00000055;overflow:hidden;min-width:160px;
+}
+#habit-menu button{
+  display:block;width:100%;text-align:left;padding:10px 14px;
+  background:none;border:none;color:var(--text);
+  font-size:13px;cursor:pointer;font-family:inherit;
+}
+#habit-menu button:hover{background:var(--bg3)}
+
+/* Sugestões do empty state */
+.habit-suggestions{
+  display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px;
+}
+
+/* Hint de formulário (campo versão mínima) */
+.form-hint{font-size:11px;color:var(--text3);margin-top:4px}
+
+/* Dias da semana (frequência custom) */
+.h-days{display:flex;gap:6px;flex-wrap:wrap}
+.h-day-chip{
+  width:42px;padding:6px 0;border-radius:var(--radius-sm);text-align:center;
+  border:1px solid var(--border);background:transparent;color:var(--text2);
+  font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;
+}
+.h-day-chip.active{background:var(--acc-dim);border-color:var(--accent);color:var(--accent2)}
+
+/* ===== Modo dia difícil ===== */
+.hard-mode-banner{
+  display:flex;align-items:center;gap:8px;
+  background:#7C3AED22;border:1px solid #7C3AED55;color:#C4B5FD;
+  border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;
+  font-size:13px;
+}
+body.light .hard-mode-banner{background:#7C3AED14;color:#6D28D9}
+
+#hard-mode-btn.active{
+  background:#7C3AED22;border-color:#7C3AED;color:#C4B5FD;
+}
+body.light #hard-mode-btn.active{background:#7C3AED14;color:#6D28D9}
+
+/* "ver tudo (N)" / "mostrar menos" das listas colapsadas */
+.hard-more-btn{
+  display:block;width:100%;margin-top:8px;padding:8px;
+  background:transparent;border:1px dashed var(--border);
+  border-radius:var(--radius-sm);color:var(--text3);
+  font-size:12px;cursor:pointer;transition:all .15s;font-family:inherit;
+}
+.hard-more-btn:hover{border-color:var(--accent);color:var(--text)}
+
+/* ===== Responsivo ===== */
+@media(max-width:600px){
+  .hd{width:13px;height:13px}
+  .hd .ti{font-size:8px}
+  .habit-week{gap:3px}
+  #hard-mode-btn .hm-label{display:none}
+}

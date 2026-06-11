@@ -51,6 +51,7 @@
   <link rel="stylesheet" href="css/tasks.css">
   <link rel="stylesheet" href="css/calendar-finance.css">
   <link rel="stylesheet" href="css/projects.css">
+  <link rel="stylesheet" href="css/habits.css">
   <link rel="stylesheet" href="css/responsive.css">
 </head>
 <body>
@@ -96,6 +97,9 @@
     <button class="nav-btn" id="nav-areas" onclick="showView('areas')">
       <i class="ti ti-briefcase"></i><span class="nav-label">Projetos</span>
     </button>
+    <button class="nav-btn" id="nav-habits" onclick="showView('habits')">
+      <i class="ti ti-repeat"></i><span class="nav-label">Hábitos</span>
+    </button>
     <button class="nav-btn" onclick="toggleTheme()" style="margin-left:auto" title="Alternar tema">
       <i class="ti ti-sun" id="theme-icon"></i>
     </button>
@@ -109,10 +113,17 @@
         <div class="dash-greeting" id="dash-greeting">Olá!</div>
         <div class="dash-subtitle" id="dash-subtitle"></div>
       </div>
-      <button class="btn btn-primary" onclick="openTaskModal()">
-        <i class="ti ti-plus"></i> Adicionar
-      </button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-ghost" id="hard-mode-btn" onclick="dashToggleHardMode()" title="Modo dia difícil — só o essencial conta hoje">
+          <i class="ti ti-shield-half"></i> <span class="hm-label">Dia difícil</span>
+        </button>
+        <button class="btn btn-primary" onclick="openTaskModal()">
+          <i class="ti ti-plus"></i> Adicionar
+        </button>
+      </div>
     </div>
+
+    <div id="dash-hardmode"></div>
 
     <div class="metric-grid" id="dash-metrics"></div>
 
@@ -334,6 +345,17 @@
       </div>
 
     </div>
+  </div>
+
+  <!-- ========== HABITS VIEW ========== -->
+  <div class="view padded" id="view-habits">
+    <div class="section-title">
+      <span><i class="ti ti-repeat"></i> Hábitos</span>
+      <button class="btn btn-primary btn-sm" onclick="HabitsView.openModal()">
+        <i class="ti ti-plus"></i> Novo
+      </button>
+    </div>
+    <div id="habits-list"></div>
   </div>
 
   <!-- ========== FAB ========== -->
@@ -571,6 +593,56 @@
   </div>
 </div>
 
+<!-- ========== MODAL: HABIT ========== -->
+<div class="overlay" id="habit-modal">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="habit-modal-title">Novo Hábito</span>
+      <button class="modal-close" onclick="closeModal('habit-modal')">×</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Nome</label>
+        <input class="form-input" id="h-name" placeholder="Ex: Treino">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ícone (emoji)</label>
+        <input class="form-input" id="h-icon" placeholder="✅">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Cor</label>
+      <div id="h-color-picker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Frequência</label>
+      <select class="form-select" id="h-freq" onchange="HabitsView.onFreqChange()">
+        <option value="daily">Todos os dias</option>
+        <option value="weekdays">Dias de semana (seg–sex)</option>
+        <option value="custom">Dias específicos</option>
+      </select>
+    </div>
+    <div class="form-group" id="h-days-group" style="display:none">
+      <label class="form-label">Dias da semana</label>
+      <div class="h-days" id="h-days"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Versão mínima</label>
+      <input class="form-input" id="h-minversion" placeholder="Ex: 1 flexão">
+      <div class="form-hint">O que conta como feito num dia péssimo? Garante a sequência mesmo no pior dia.</div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:space-between">
+      <button class="btn btn-ghost" id="h-archive-btn" onclick="HabitsView.archive()" style="color:var(--red);display:none">
+        <i class="ti ti-archive"></i> Arquivar
+      </button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="btn btn-ghost" onclick="closeModal('habit-modal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="HabitsView.save()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ========== NOTE EDITOR OVERLAY ========== -->
 <div class="note-overlay" id="note-overlay" onclick="noteOverlayClick(event)">
   <div class="note-modal">
@@ -626,6 +698,7 @@
 <script src="js/services/projectService.js"></script>
 <script src="js/services/financeService.js"></script>
 <script src="js/services/pomodoroService.js"></script>
+<script src="js/services/habitService.js"></script>
 
 <script src="js/ui/navigation.js"></script>
 <script src="js/ui/theme.js"></script>
@@ -649,6 +722,7 @@
 <script src="js/views/calendarView.js"></script>
 <script src="js/views/financeView.js"></script>
 <script src="js/views/areasView.js"></script>
+<script src="js/views/habitsView.js"></script>
 
 <script src="js/app.js"></script>
 <script src="js/pwa.js"></script>

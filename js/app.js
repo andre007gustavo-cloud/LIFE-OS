@@ -86,6 +86,7 @@
     Navigation.register('calendar', CalendarView.render);
     Navigation.register('finance', FinanceView.render);
     Navigation.register('areas', AreasView.render);
+    Navigation.register('habits', HabitsView.render);
 
     // Expõe funções globais para onclick inline
     exposeGlobals();
@@ -103,6 +104,9 @@
     }
     if (document.getElementById('view-areas').classList.contains('active')) {
       AreasView.render();
+    }
+    if (document.getElementById('view-habits').classList.contains('active')) {
+      HabitsView.render();
     }
   }
 
@@ -141,6 +145,11 @@
 
     // --- Dashboard ---
     window.dashOpenDay        = DashboardView.openDay;
+    window.dashToggleHardMode = DashboardView.toggleHardMode;
+    window.dashHardExpand     = DashboardView.hardExpand;
+
+    // --- Habits ---
+    window.HabitsView         = HabitsView;
 
     // --- Tasks (legacy modal + actions) ---
     window.openTaskModal       = TaskModal.open;
@@ -170,6 +179,7 @@
     window.ttqCyclePriority     = TasksView.quickCyclePriority;
     window.ttCyclePri           = TasksView.cyclePri;
     window.ttDupTaskById        = TasksView.duplicateById;
+    window.ttHardExpand         = TasksView.hardExpand;
 
     // --- Task detail panel ---
     window.ttOpenDetail         = TaskDetail.open;

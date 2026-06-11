@@ -60,6 +60,17 @@ const Constants = (() => {
     WEEK_DAY_NAMES_SHORT: ['D', 'S', 'T', 'Q', 'Q', 'S', 'S']
   };
 
+  /** Hábitos: regras de escudo (proteção de sequência) */
+  const HABITS = {
+    SHIELD_EVERY: 7,   // cumprimentos consecutivos para ganhar 1 escudo
+    SHIELD_MAX: 3      // máximo de escudos acumulados
+  };
+
+  /** Modo dia difícil */
+  const HARD_MODE = {
+    TASK_LIMIT: 3      // máximo de tarefas visíveis nas listas de hoje
+  };
+
   /** Default storage key */
   const STORAGE_KEY = 'lifeos';
   const THEME_KEY = 'lifeos-theme';
@@ -68,6 +79,9 @@ const Constants = (() => {
   const SEED_DATA = {
     tasks: [],
     inbox: [],
+    habits: [],
+    habitLogs: [],
+    hardModeDates: [],
     areas: [
       { id: 'a1', name: 'Trabalho', icon: '💼', color: '#7c6fff',
         projects: [{ id: 'p1', name: 'Geral', status: 'ativo', desc: '' }] },
@@ -96,6 +110,8 @@ const Constants = (() => {
     POMO_TIMES,
     TIME_GRID,
     CALENDAR,
+    HABITS,
+    HARD_MODE,
     STORAGE_KEY,
     THEME_KEY,
     SEED_DATA

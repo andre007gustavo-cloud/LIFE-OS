@@ -43,9 +43,17 @@ const AppState = (() => {
     activeProjectId: null,
     activeProjTab: 'overview',
 
+    // Habits
+    habitEditId: null,
+
+    // Modo dia difícil: listas expandidas via "ver tudo" (só nesta sessão)
+    hardExpandedDash: false,
+    hardExpandedTasks: false,
+
     // Color pickers
     areaColorSel: Constants.COLORS[0],
     npColorSel: Constants.COLORS[0],
+    habitColorSel: Constants.COLORS[0],
 
     // Day-popover state
     popoverDate: '',

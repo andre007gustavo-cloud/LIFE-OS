@@ -27,6 +27,7 @@ const Navigation = (() => {
     if (viewRenderers.dashboard) viewRenderers.dashboard();
     if (viewRenderers.tasks) viewRenderers.tasks();
     if (viewRenderers.calendar) viewRenderers.calendar();
+    if (viewRenderers.habits) viewRenderers.habits();
   }
 
   return { register, showView, renderAll };
