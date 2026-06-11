@@ -348,7 +348,8 @@ const TasksView = (() => {
       priority: parsed.priority || AppState.ui.ttQuickPri,
       date: parsed.date || AppState.ui.ttQuickDate || Utils.today(),
       start: parsed.time || AppState.ui.ttQuickTime || '',
-      end: parsed.timeend || ''
+      end: parsed.timeend || '',
+      recurrence: parsed.recurrence || ''
     });
 
     closeQuick();
@@ -379,6 +380,10 @@ const TasksView = (() => {
     }
     if (parsed.time) {
       chips.push(`<span class="ttq-chip">⏰ ${parsed.time}${parsed.timeend ? '–' + parsed.timeend : ''}</span>`);
+    }
+    if (parsed.recurrence) {
+      const labels = { daily: 'diária', weekly: 'semanal', monthly: 'mensal' };
+      chips.push(`<span class="ttq-chip">🔁 ${labels[parsed.recurrence]}</span>`);
     }
     if (parsed.priority) {
       chips.push(`<span class="ttq-chip">${Constants.PRI_ICONS[parsed.priority]} ${parsed.priority}</span>`);

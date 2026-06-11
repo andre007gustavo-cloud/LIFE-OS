@@ -17,6 +17,8 @@ const QuickParser = (() => {
   // Hora exige sufixo "h" ou ":" para não confundir com número solto
   const TIME_ATOM = '(\\d{1,2})(?:h(\\d{2})?|:(\\d{2}))';
 
+  const WEEKDAY_ATOM = '(domingo|segunda|ter[cç]a|quarta|quinta|sexta|s[aá]bado)(?:-feira)?';
+
   /** lowercase + sem acentos, para comparações insensíveis */
   function normalize(s) {
     return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -68,6 +70,35 @@ const QuickParser = (() => {
     return areaId;
   }
 
+  // ===== Recorrência =====
+
+  /**
+   * "toda sexta" / "recorrente na sexta" → weekly (com data implícita na
+   * próxima sexta); "todo dia 15" → monthly no dia 15; "todo dia" → daily;
+   * "toda semana" → weekly; "todo mês" → monthly.
+   */
+  function parseRecurrence(state, todayISO) {
+    const weekday = extract(state,
+      new RegExp('\\s(?:tod[oa]|recorrente(?:\\s+(?:n[oa]|toda|todo|em))?)\\s+' + WEEKDAY_ATOM + '(?=\\s)', 'i'),
+      m => nextWeekday(todayISO, WEEKDAYS[normalize(m[1])]));
+    if (weekday) return { recurrence: 'weekly', impliedDate: weekday };
+
+    const dayOfMonth = extract(state, /\stodo dia (\d{1,2})(?=\s)/i,
+      m => nextDayOfMonth(todayISO, +m[1]));
+    if (dayOfMonth) return { recurrence: 'monthly', impliedDate: dayOfMonth };
+
+    if (extract(state, /\s(?:tod[oa]s?\s+(?:os\s+|as\s+)?dias?|diariamente)(?=\s)/i, () => true)) {
+      return { recurrence: 'daily', impliedDate: '' };
+    }
+    if (extract(state, /\s(?:toda semana|semanalmente)(?=\s)/i, () => true)) {
+      return { recurrence: 'weekly', impliedDate: '' };
+    }
+    if (extract(state, /\s(?:todo m[eê]s|mensalmente)(?=\s)/i, () => true)) {
+      return { recurrence: 'monthly', impliedDate: '' };
+    }
+    return { recurrence: '', impliedDate: '' };
+  }
+
   // ===== Data =====
 
   function parseDate(state, todayISO) {
@@ -83,8 +114,7 @@ const QuickParser = (() => {
       m => nextDayOfMonth(todayISO, +m[1]));
     if (dayOfMonth) return dayOfMonth;
 
-    const weekday = extract(state,
-      /\s(domingo|segunda|ter[cç]a|quarta|quinta|sexta|s[aá]bado)(?:-feira)?(?=\s)/i,
+    const weekday = extract(state, new RegExp('\\s' + WEEKDAY_ATOM + '(?=\\s)', 'i'),
       m => nextWeekday(todayISO, WEEKDAYS[normalize(m[1])]));
     return weekday || '';
   }
@@ -154,17 +184,20 @@ const QuickParser = (() => {
    * @param {string} text     texto digitado pelo usuário
    * @param {Array}  areas    áreas existentes ({ id, name }) para casar "#nome"
    * @param {string} todayISO data de referência (default: hoje) — injetável p/ testes
-   * @returns {{name, date, time, timeend, priority, areaId}} campos não
-   *          reconhecidos voltam como string vazia
+   * @returns {{name, date, time, timeend, priority, areaId, recurrence}}
+   *          campos não reconhecidos voltam como string vazia;
+   *          recurrence é '', 'daily', 'weekly' ou 'monthly'
    */
   function parse(text, areas = [], todayISO = Utils.today()) {
     const state = { text: ' ' + String(text || '') + ' ' };
     const priority = parsePriority(state);
     const areaId = parseArea(state, areas);
-    const date = parseDate(state, todayISO);
+    // Recorrência antes da data: "toda sexta" consome o dia da semana
+    const { recurrence, impliedDate } = parseRecurrence(state, todayISO);
+    const date = parseDate(state, todayISO) || impliedDate;
     const { time, timeend } = parseTime(state);
     const name = state.text.replace(/\s+/g, ' ').trim();
-    return { name, date, time, timeend, priority, areaId };
+    return { name, date, time, timeend, priority, areaId, recurrence };
   }
 
   return { parse };

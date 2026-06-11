@@ -64,10 +64,24 @@ const CASES = [
   ['almoço #VidaPessoal', { name: 'almoço', areaId: 'a3' }],    // nome com espaço
   ['organizar mesa #inexistente', { name: 'organizar mesa' }],  // token some, área ignorada
   ['evento 25h', { name: 'evento 25h' }],                       // hora inválida fica no nome
-  ['urgente!!! agora', { name: 'urgente!!! agora' }]            // "!" colado não é prioridade
+  ['urgente!!! agora', { name: 'urgente!!! agora' }],           // "!" colado não é prioridade
+  // ===== Recorrência =====
+  ['pagar internet toda sexta',
+    { name: 'pagar internet', recurrence: 'weekly', date: '2026-06-12' }],
+  ['backup recorrente na sexta',
+    { name: 'backup', recurrence: 'weekly', date: '2026-06-12' }],
+  ['missa todo domingo', { name: 'missa', recurrence: 'weekly', date: '2026-06-14' }],
+  ['treino toda segunda 7h',
+    { name: 'treino', recurrence: 'weekly', date: '2026-06-15', time: '07:00' }],
+  ['remédio todo dia', { name: 'remédio', recurrence: 'daily' }],
+  ['aluguel todo dia 5', { name: 'aluguel', recurrence: 'monthly', date: '2026-07-05' }],
+  ['fatura todo mês', { name: 'fatura', recurrence: 'monthly' }],
+  ['limpeza toda semana', { name: 'limpeza', recurrence: 'weekly' }],
+  ['yoga toda sexta-feira 18h #saude',
+    { name: 'yoga', recurrence: 'weekly', date: '2026-06-12', time: '18:00', areaId: 'a2' }]
 ];
 
-const EMPTY = { name: '', date: '', time: '', timeend: '', priority: '', areaId: '' };
+const EMPTY = { name: '', date: '', time: '', timeend: '', priority: '', areaId: '', recurrence: '' };
 
 function run() {
   const table = document.getElementById('results');
