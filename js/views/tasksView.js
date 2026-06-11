@@ -241,8 +241,6 @@ const TasksView = (() => {
 
   // ===== Quick Add =====
 
-  const QUICK_PRI_CYCLE = ['nenhuma', 'alta', 'media', 'baixa'];
-
   function openQuick() {
     const form = document.getElementById('tt-quick-form');
     form.classList.add('open');
@@ -311,7 +309,7 @@ const TasksView = (() => {
 
   function quickCyclePriority() {
     AppState.ui.ttqPriIdx = (AppState.ui.ttqPriIdx + 1) % 4;
-    AppState.ui.ttQuickPri = QUICK_PRI_CYCLE[AppState.ui.ttqPriIdx];
+    AppState.ui.ttQuickPri = Constants.PRI_CYCLE[AppState.ui.ttqPriIdx];
     const pri = AppState.ui.ttQuickPri;
     document.getElementById('ttq-pri-icon').style.color = Constants.PRI_COLORS[pri];
     document.getElementById('ttq-pri-label').textContent = pri === 'nenhuma' ? 'Prioridade' : pri;

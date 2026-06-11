@@ -8,6 +8,18 @@ const CalendarView = (() => {
 
   const escapeHtml = Utils.escapeHtml;
 
+  /** Tarefa real no dia OU ocorrência futura projetada da recorrência */
+  function taskOnDay(t, iso) {
+    return Utils.taskCoversDay(t, iso) || Utils.taskRecursOnDay(t, iso);
+  }
+
+  /** Badge ↻ para ocorrências projetadas (recorrência futura, não a tarefa real) */
+  function recBadge(t, iso) {
+    return Utils.taskRecursOnDay(t, iso)
+      ? '<i class="ti ti-refresh" style="font-size:9px;opacity:.75"></i> '
+      : '';
+  }
+
   // ===== Top-level render =====
 
   function render() {
@@ -163,7 +175,7 @@ const CalendarView = (() => {
       const isToday = iso === todayISO;
       const isSelected = iso === selISO;
       const hasTasks = TaskService.getAll()
-        .some(t => Utils.taskCoversDay(t, iso) && t.status !== 'concluida');
+        .some(t => taskOnDay(t, iso) && t.status !== 'concluida');
 
       html += `<div class="mini-day-wrap">
         <div class="mini-day${isToday ? ' today-mini' : ''}${isSelected ? ' selected' : ''}"
@@ -189,40 +201,40 @@ const CalendarView = (() => {
 
   function renderDay() {
     const iso = isoOf(AppState.ui.calDate);
-    const tasks = getFilteredTasks(t => Utils.taskCoversDay(t, iso));
+    const tasks = getFilteredTasks(t => taskOnDay(t, iso));
     const allDay = tasks.filter(t => !t.start);
     const timed = tasks.filter(t => t.start && !t.dateend);
 
     document.getElementById('day-scroll').innerHTML =
-      buildAllDayBlock(allDay) +
+      buildAllDayBlock(allDay, iso) +
       buildTimeGrid(timed, iso) +
-      buildNoTimeBlock(allDay);
+      buildNoTimeBlock(allDay, iso);
 
     scrollToRelevantHour(iso);
   }
 
-  function buildAllDayBlock(allDay) {
+  function buildAllDayBlock(allDay, iso) {
     if (!allDay.length) return '';
     return `<div class="day-allday">
       <div class="day-allday-title">Dia inteiro / sem horário (${allDay.length})</div>
-      ${allDay.slice(0, 5).map(t => taskChipForDay(t)).join('')}
+      ${allDay.slice(0, 5).map(t => taskChipForDay(t, iso)).join('')}
     </div>`;
   }
 
-  function buildNoTimeBlock(allDay) {
+  function buildNoTimeBlock(allDay, iso) {
     if (allDay.length <= 5) return '';
     return `<div class="no-time-section">
       <div class="no-time-title">+${allDay.length - 5} sem horário</div>
-      ${allDay.slice(5).map(t => taskChipForDay(t)).join('')}
+      ${allDay.slice(5).map(t => taskChipForDay(t, iso)).join('')}
     </div>`;
   }
 
-  function taskChipForDay(t) {
+  function taskChipForDay(t, iso) {
     const area = AreaService.getById(t.area);
     return `<div style="display:flex;align-items:center;gap:6px;padding:4px 0;cursor:pointer"
                  onclick="ttOpenDetail('${t.id}');showView('tasks')">
       <span>${Constants.PRI_ICONS[t.priority]}</span>
-      <span style="flex:1;font-size:13px">${escapeHtml(t.name)}</span>
+      <span style="flex:1;font-size:13px">${recBadge(t, iso)}${escapeHtml(t.name)}</span>
       ${area ? `<span style="font-size:11px;color:${area.color}">${escapeHtml(area.icon)}</span>` : ''}
     </div>`;
   }
@@ -251,13 +263,13 @@ const CalendarView = (() => {
       </div>`;
     }
 
-    html += renderTimeBlocks(timed);
+    html += renderTimeBlocks(timed, iso);
     html += renderNowLine(iso, startHour);
     html += '</div>';
     return html;
   }
 
-  function renderTimeBlocks(tasks) {
+  function renderTimeBlocks(tasks, iso) {
     const columns = assignColumns(tasks);
     const PX_PER_MIN = Constants.TIME_GRID.PX_PER_MIN;
     const MIN_H = Constants.TIME_GRID.MIN_BLOCK_HEIGHT_MIN;
@@ -281,7 +293,7 @@ const CalendarView = (() => {
         return `<div class="time-block"
                      style="top:${top}px;height:${height - 2}px;left:${leftPct}%;width:calc(${widthPct}% - 2px);background:${color}18;border-left-color:${color}"
                      onclick="ttOpenDetail('${t.id}');showView('tasks')">
-          <div class="time-block-name">${escapeHtml(t.name)}</div>
+          <div class="time-block-name">${recBadge(t, iso)}${escapeHtml(t.name)}</div>
           <div class="time-block-meta">${t.start}${t.end ? '–' + t.end : ''}</div>
         </div>`;
       }).join('') +
@@ -354,7 +366,7 @@ const CalendarView = (() => {
       const day = new Date(start);
       day.setDate(day.getDate() + i);
       const iso = isoOf(day);
-      const dayTasks = getFilteredTasks(t => Utils.taskCoversDay(t, iso))
+      const dayTasks = getFilteredTasks(t => taskOnDay(t, iso))
         .filter(t => t.status !== 'concluida');
 
       html += `<div class="week-col${iso === todayISO ? ' today-col' : ''}">
@@ -362,7 +374,7 @@ const CalendarView = (() => {
         ${dayTasks.slice(0, 5).map(t => {
           const c = taskColor(t);
           return `<div class="week-task-chip" style="background:${c}22;color:${c}"
-               onclick="ttOpenDetail('${t.id}');showView('tasks')">${escapeHtml(t.name)}</div>`;
+               onclick="ttOpenDetail('${t.id}');showView('tasks')">${recBadge(t, iso)}${escapeHtml(t.name)}</div>`;
         }).join('')}
         ${dayTasks.length > 5 ? `<div style="font-size:10px;color:var(--text3);text-align:center;margin-top:4px;cursor:pointer"
              onclick="AppState.ui.calDate=Utils.parseISO('${iso}');setCalView('day')">+${dayTasks.length - 5}</div>` : ''}
@@ -423,7 +435,7 @@ const CalendarView = (() => {
           const tc = taskColor(t);
           html += `<div class="month-chip" style="background:${tc}22;color:${tc}"
                        onclick="event.stopPropagation();ttOpenDetail('${t.id}');showView('tasks')">
-            ${t.start ? t.start + ' ' : ''}${escapeHtml(t.name)}
+            ${recBadge(t, iso)}${t.start ? t.start + ' ' : ''}${escapeHtml(t.name)}
           </div>`;
         });
         if (hidden > 0) {
@@ -457,18 +469,18 @@ const CalendarView = (() => {
       const day = prevMonthDays - i;
       const iso = isoFor(prevMonth.getFullYear(), prevMonth.getMonth(), day);
       grid.push({ day, iso, month: prevMonth.getMonth(),
-                  tasks: getFilteredTasks(t => Utils.taskCoversDay(t, iso)) });
+                  tasks: getFilteredTasks(t => taskOnDay(t, iso)) });
     }
     for (let day = 1; day <= daysInMonth; day++) {
       const iso = isoFor(year, month, day);
       grid.push({ day, iso, month,
-                  tasks: getFilteredTasks(t => Utils.taskCoversDay(t, iso)) });
+                  tasks: getFilteredTasks(t => taskOnDay(t, iso)) });
     }
     while (grid.length % 7 !== 0) {
       const next = new Date(year, month + 1, grid.length - firstDay - daysInMonth + 1);
       const iso = isoOf(next);
       grid.push({ day: next.getDate(), iso, month: next.getMonth(),
-                  tasks: getFilteredTasks(t => Utils.taskCoversDay(t, iso)) });
+                  tasks: getFilteredTasks(t => taskOnDay(t, iso)) });
     }
     return grid;
   }
@@ -555,8 +567,6 @@ const CalendarView = (() => {
 
   // ===== Day popover (quick-add from month view) =====
 
-  const PRI_CYCLE = ['nenhuma', 'alta', 'media', 'baixa'];
-
   function showDayPopover(iso, event) {
     event.stopPropagation();
     closeDayPopover();
@@ -565,7 +575,8 @@ const CalendarView = (() => {
     AppState.ui.popoverPri = 'nenhuma';
     AppState.ui.popoverPriIdx = 0;
 
-    const tasks = TaskService.forDay(iso).filter(t => t.status !== 'concluida');
+    const tasks = TaskService.getAll()
+      .filter(t => taskOnDay(t, iso) && t.status !== 'concluida');
     const popover = document.createElement('div');
     popover.className = 'cal-popover';
     popover.id = 'cal-popover';
@@ -585,7 +596,7 @@ const CalendarView = (() => {
           <div style="display:flex;align-items:center;gap:6px;padding:4px 0;cursor:pointer;font-size:12px"
                onclick="ttOpenDetail('${t.id}');showView('tasks');closeDayPopover()">
             <span>${Constants.PRI_ICONS[t.priority]}</span>
-            <span style="flex:1">${escapeHtml(t.name)}</span>
+            <span style="flex:1">${recBadge(t, iso)}${escapeHtml(t.name)}</span>
           </div>`).join('') : '<div style="font-size:12px;color:var(--text3);text-align:center;padding:8px">Nenhuma tarefa</div>'}
       </div>
       <div class="cal-popover-footer">
@@ -621,7 +632,7 @@ const CalendarView = (() => {
 
   function popCyclePri() {
     AppState.ui.popoverPriIdx = (AppState.ui.popoverPriIdx + 1) % 4;
-    AppState.ui.popoverPri = PRI_CYCLE[AppState.ui.popoverPriIdx];
+    AppState.ui.popoverPri = Constants.PRI_CYCLE[AppState.ui.popoverPriIdx];
     const pri = AppState.ui.popoverPri;
     document.getElementById('pop-pri-icon').style.color = Constants.PRI_COLORS[pri];
     document.getElementById('pop-pri-label').textContent = pri === 'nenhuma' ? 'Prioridade' : pri;

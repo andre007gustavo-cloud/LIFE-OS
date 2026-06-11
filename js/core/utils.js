@@ -76,6 +76,24 @@ const Utils = (() => {
     return isoDate >= task.date && isoDate <= task.dateend;
   }
 
+  /**
+   * Projeção de recorrência: a tarefa pendente "cai" neste dia FUTURO?
+   * Usada pelo calendário para mostrar as próximas ocorrências (ex.: toda
+   * quinta) sem criar tarefas reais. Multi-dia não é projetada (só o span real).
+   */
+  function taskRecursOnDay(task, isoDate) {
+    if (!task.recurrence || !task.date) return false;
+    if (task.status === 'concluida') return false;
+    if (task.dateend && task.dateend !== task.date) return false;
+    if (isoDate <= task.date) return false; // o próprio dia já vem de taskCoversDay
+    if (task.recurrence === 'daily') return true;
+    const start = parseISO(task.date);
+    const day = parseISO(isoDate);
+    if (task.recurrence === 'weekly') return start.getDay() === day.getDay();
+    if (task.recurrence === 'monthly') return start.getDate() === day.getDate();
+    return false;
+  }
+
   // ===== File helpers =====
 
   function formatFileSize(bytes) {
@@ -148,6 +166,7 @@ const Utils = (() => {
     timeToMins,
     fmtMoney,
     taskCoversDay,
+    taskRecursOnDay,
     formatFileSize,
     getFileType,
     isMobile,

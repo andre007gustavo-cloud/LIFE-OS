@@ -28,6 +28,9 @@ const Constants = (() => {
     nenhuma: 3
   };
 
+  /** Ordem do ciclo rápido de prioridade (clique no ícone de bandeira) */
+  const PRI_CYCLE = ['nenhuma', 'alta', 'media', 'baixa'];
+
   /** Priority CSS color variables */
   const PRI_COLORS = {
     alta: 'var(--red)',
@@ -87,6 +90,7 @@ const Constants = (() => {
     COLORS,
     PRI_ICONS,
     PRI_ORDER,
+    PRI_CYCLE,
     PRI_COLORS,
     POMO_TIMES,
     TIME_GRID,

@@ -6,8 +6,6 @@
 
 const TaskService = (() => {
 
-  const PRI_CYCLE = ['nenhuma', 'alta', 'media', 'baixa'];
-
   function getAll() {
     return AppState.getDB().tasks;
   }
@@ -68,7 +66,7 @@ const TaskService = (() => {
   function cyclePriority(id) {
     const t = getById(id);
     if (!t) return;
-    const cycle = ['nenhuma', 'alta', 'media', 'baixa'];
+    const cycle = Constants.PRI_CYCLE;
     t.priority = cycle[(cycle.indexOf(t.priority) + 1) % cycle.length];
     AppState.persist();
   }
