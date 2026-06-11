@@ -5,14 +5,23 @@
 
 const MobileSidebar = (() => {
 
+  let _closeTimer = null;
+
   function open() {
     if (!Utils.isMobile()) return;
     const panel = document.getElementById('mobile-sidebar-panel');
     const overlay = document.getElementById('mobile-sidebar-overlay');
-    const sidebar = document.querySelector('.tt-sidebar');
-    if (!panel || !sidebar) return;
+    if (!panel || !overlay) return;
 
+    // Limpa o clone antigo ANTES de buscar a sidebar: o clone mantém a classe
+    // .tt-sidebar e o painel vem antes no DOM, então sem isso o querySelector
+    // encontraria o clone morto (sem onclick) e o menu abriria sem cliques.
+    if (_closeTimer) clearTimeout(_closeTimer);
     panel.innerHTML = '';
+
+    const sidebar = document.querySelector('.tt-sidebar');
+    if (!sidebar) return;
+
     const clone = cloneAndRewireSidebar(sidebar);
     panel.appendChild(clone);
 
@@ -27,7 +36,12 @@ const MobileSidebar = (() => {
     if (!panel || !overlay) return;
     panel.style.transform = 'translateX(-100%)';
     overlay.style.display = 'none';
-    setTimeout(() => panel.style.display = 'none', 260);
+    _closeTimer = setTimeout(() => {
+      panel.style.display = 'none';
+      // Remove o clone para os re-renders voltarem a atualizar a sidebar real
+      // (IDs duplicados no clone capturam os getElementById enquanto ele existe)
+      panel.innerHTML = '';
+    }, 260);
   }
 
   /** Update the menu button visibility based on viewport */
