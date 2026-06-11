@@ -13,25 +13,37 @@ const Utils = (() => {
   }
 
   // ===== Date helpers (ISO format YYYY-MM-DD) =====
+  // Sempre em horário LOCAL: toISOString()/new Date("YYYY-MM-DD") usam UTC
+  // e deslocam o dia (ex.: às 21h em UTC-3, o "hoje" UTC já é amanhã).
+
+  /** Date → "YYYY-MM-DD" usando o fuso local */
+  function toISO(d) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
+  /** "YYYY-MM-DD" → Date à meia-noite local */
+  function parseISO(dateStr) {
+    return new Date(dateStr + 'T00:00:00');
+  }
 
   function today() {
-    return new Date().toISOString().split('T')[0];
+    return toISO(new Date());
   }
 
   function tomorrow() {
     const d = new Date();
     d.setDate(d.getDate() + 1);
-    return d.toISOString().split('T')[0];
+    return toISO(d);
   }
 
   function addDays(dateStr, days) {
-    const d = new Date(dateStr);
+    const d = parseISO(dateStr);
     d.setDate(d.getDate() + days);
-    return d.toISOString().split('T')[0];
+    return toISO(d);
   }
 
   function daysBetween(d1, d2) {
-    return Math.round((new Date(d2) - new Date(d1)) / 86400000) + 1;
+    return Math.round((parseISO(d2) - parseISO(d1)) / 86400000) + 1;
   }
 
   function fmtDate(dateStr) {
@@ -113,6 +125,8 @@ const Utils = (() => {
 
   return {
     uid,
+    toISO,
+    parseISO,
     today,
     tomorrow,
     addDays,

@@ -1,3 +1,4 @@
 {
-    "liveServer.settings.host": "localhost"
+    "liveServer.settings.host": "localhost",
+    "claudeCode.useTerminal": true
 }

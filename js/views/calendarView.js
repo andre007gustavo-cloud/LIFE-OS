@@ -179,7 +179,7 @@ const CalendarView = (() => {
   }
 
   function miniCalSelect(iso) {
-    AppState.ui.calDate = new Date(iso);
+    AppState.ui.calDate = Utils.parseISO(iso);
     document.getElementById('cal-title').textContent = formatTitle('day');
     renderMiniCal();
     renderDay();
@@ -363,7 +363,7 @@ const CalendarView = (() => {
                onclick="ttOpenDetail('${t.id}');showView('tasks')">${t.name}</div>`;
         }).join('')}
         ${dayTasks.length > 5 ? `<div style="font-size:10px;color:var(--text3);text-align:center;margin-top:4px;cursor:pointer"
-             onclick="AppState.ui.calDate=new Date('${iso}');setCalView('day')">+${dayTasks.length - 5}</div>` : ''}
+             onclick="AppState.ui.calDate=Utils.parseISO('${iso}');setCalView('day')">+${dayTasks.length - 5}</div>` : ''}
       </div>`;
     });
     html += '</div>';
@@ -426,7 +426,7 @@ const CalendarView = (() => {
         });
         if (hidden > 0) {
           html += `<div class="month-more"
-                        onclick="event.stopPropagation();AppState.ui.calDate=new Date('${iso}');setCalView('day')">
+                        onclick="event.stopPropagation();AppState.ui.calDate=Utils.parseISO('${iso}');setCalView('day')">
             +${hidden} mais
           </div>`;
         }
@@ -569,7 +569,7 @@ const CalendarView = (() => {
     popover.id = 'cal-popover';
     popover.innerHTML = `
       <div class="cal-popover-header">
-        <div class="cal-popover-date">${new Date(iso).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+        <div class="cal-popover-date">${Utils.parseISO(iso).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
         <button class="cal-popover-close" onclick="closeDayPopover()">×</button>
       </div>
       <input class="cal-popover-input" id="pop-input" placeholder="Adicionar tarefa..." onkeydown="popKeyDown(event)">
@@ -645,7 +645,7 @@ const CalendarView = (() => {
   }
 
   function popOpenFull() {
-    AppState.ui.calDate = new Date(AppState.ui.popoverDate);
+    AppState.ui.calDate = Utils.parseISO(AppState.ui.popoverDate);
     closeDayPopover();
     setView('day');
   }
@@ -653,7 +653,7 @@ const CalendarView = (() => {
   // ===== Internal date helpers =====
 
   function isoOf(date) {
-    return date.toISOString().split('T')[0];
+    return Utils.toISO(date);
   }
 
   function isoFor(year, month, day) {

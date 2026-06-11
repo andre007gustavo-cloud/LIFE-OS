@@ -179,9 +179,9 @@ const TaskService = (() => {
     } else if (task.recurrence === 'weekly') {
       next.date = Utils.addDays(task.date, 7);
     } else if (task.recurrence === 'monthly') {
-      const d = new Date(task.date);
+      const d = Utils.parseISO(task.date);
       d.setMonth(d.getMonth() + 1);
-      next.date = d.toISOString().split('T')[0];
+      next.date = Utils.toISO(d);
     }
     return next;
   }
