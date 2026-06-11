@@ -24,6 +24,31 @@
 .stat.amber .stat-val{color:var(--amber)}
 .stat.purple .stat-val{color:var(--accent2)}
 
+/* ===== Inbox card (dashboard) ===== */
+.inbox-badge{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:18px;height:18px;padding:0 5px;margin-left:6px;
+  border-radius:9px;background:var(--accent);color:#fff;
+  font-size:11px;font-weight:700;vertical-align:middle;
+}
+.inbox-item{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 4px;border-bottom:1px solid var(--border);
+}
+.inbox-item:last-child{border-bottom:none}
+.inbox-item-body{flex:1;min-width:0}
+.inbox-item-text{font-size:14px;color:var(--text);word-break:break-word}
+.inbox-item-meta{
+  font-size:11px;color:var(--text3);margin-top:2px;
+  display:flex;align-items:center;gap:4px;
+}
+.inbox-item-actions{display:flex;gap:2px;flex-shrink:0}
+.inbox-edit-input{
+  flex:1;background:var(--bg3);border:1px solid var(--accent);
+  border-radius:var(--radius-sm);padding:6px 8px;
+  color:var(--text);font-size:14px;font-family:inherit;outline:none;min-width:0;
+}
+
 /* ===== Buttons ===== */
 .btn{
   display:inline-flex;align-items:center;gap:6px;

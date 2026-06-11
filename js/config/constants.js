@@ -67,6 +67,7 @@ const Constants = (() => {
   /** Default seed data for first-time users */
   const SEED_DATA = {
     tasks: [],
+    inbox: [],
     areas: [
       { id: 'a1', name: 'Trabalho', icon: '💼', color: '#7c6fff',
         projects: [{ id: 'p1', name: 'Geral', status: 'ativo', desc: '' }] },

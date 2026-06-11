@@ -65,6 +65,7 @@
   function initializeApp() {
     MobileSidebar.init();
     Modal.wireBackdropClicks();
+    InboxCapture.init();
 
     // Close day-popover quando clica fora
     document.addEventListener('click', e => {
@@ -122,6 +123,18 @@
     // --- Login/Logout ---
     window.loginWithGoogle  = LoginScreen.login;
     window.logoutUser       = LoginScreen.logout;
+
+    // --- Inbox (captura GTD + card do dashboard) ---
+    window.inboxToggleCapture = InboxCapture.toggle;
+    window.inboxCaptureSave   = InboxCapture.save;
+    window.inboxCaptureKey    = InboxCapture.keyHandler;
+    window.inboxStartVoice    = InboxCapture.startVoice;
+    window.inboxToTask        = DashboardView.inboxToTask;
+    window.inboxEditStart     = DashboardView.inboxEditStart;
+    window.inboxEditSave      = DashboardView.inboxEditSave;
+    window.inboxEditCancel    = DashboardView.inboxEditCancel;
+    window.inboxEditKey       = DashboardView.inboxEditKey;
+    window.inboxDelete        = DashboardView.inboxDelete;
 
     // --- Tasks (legacy modal + actions) ---
     window.openTaskModal       = TaskModal.open;

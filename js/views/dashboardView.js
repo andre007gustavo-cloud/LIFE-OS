@@ -14,6 +14,7 @@ const DashboardView = (() => {
         { weekday: 'long', day: 'numeric', month: 'long' });
 
     renderStats(td);
+    renderInbox();
     renderTodayAgenda(td);
     renderNoTime(td);
     renderHighPriority();
@@ -61,6 +62,101 @@ const DashboardView = (() => {
     document.getElementById('dash-notime').innerHTML = noTime.length
       ? noTime.map(taskRowHtml).join('')
       : '<div class="text-muted">Tudo planejado! ✅</div>';
+  }
+
+  // ===== Caixa de entrada (GTD) =====
+
+  function renderInbox() {
+    const items = InboxService.getAll();
+    const badge = document.getElementById('dash-inbox-badge');
+    badge.textContent = items.length || '';
+    badge.style.display = items.length ? 'inline-flex' : 'none';
+
+    document.getElementById('dash-inbox').innerHTML = items.length
+      ? items.map(inboxItemHtml).join('')
+      : '<div class="text-muted">Nada por processar 🧘</div>';
+
+    const editInput = document.getElementById('inbox-edit-input');
+    if (editInput) { editInput.focus(); editInput.select(); }
+  }
+
+  function inboxItemHtml(item) {
+    if (AppState.ui.inboxEditId === item.id) return inboxEditHtml(item);
+
+    const when = Utils.fmtDate(Utils.toISO(new Date(item.createdAt)));
+    const srcIcon = item.source === 'voz' ? 'ti-microphone' : 'ti-keyboard';
+
+    return `<div class="inbox-item">
+      <div class="inbox-item-body">
+        <div class="inbox-item-text">${escapeHtml(item.text)}</div>
+        <div class="inbox-item-meta"><i class="ti ${srcIcon}"></i> ${when}</div>
+      </div>
+      <div class="inbox-item-actions">
+        <button class="icon-btn" title="Virar tarefa" style="color:var(--green)" onclick="inboxToTask('${item.id}')"><i class="ti ti-checkbox"></i></button>
+        <button class="icon-btn" title="Editar" onclick="inboxEditStart('${item.id}')"><i class="ti ti-pencil"></i></button>
+        <button class="icon-btn" title="Excluir" style="color:var(--red)" onclick="inboxDelete('${item.id}')"><i class="ti ti-trash"></i></button>
+      </div>
+    </div>`;
+  }
+
+  function inboxEditHtml(item) {
+    return `<div class="inbox-item editing">
+      <input class="inbox-edit-input" id="inbox-edit-input"
+             value="${Utils.escapeAttr(item.text)}"
+             onkeydown="inboxEditKey(event,'${item.id}')">
+      <div class="inbox-item-actions">
+        <button class="icon-btn" title="Salvar" style="color:var(--green)" onclick="inboxEditSave('${item.id}')"><i class="ti ti-check"></i></button>
+        <button class="icon-btn" title="Cancelar" onclick="inboxEditCancel()"><i class="ti ti-x"></i></button>
+      </div>
+    </div>`;
+  }
+
+  // ===== Ações da caixa de entrada =====
+
+  function inboxToTask(id) {
+    const item = InboxService.getById(id);
+    if (!item) return;
+    // Aproveita datas/prioridade/área/recorrência ditas na captura
+    const parsed = QuickParser.parse(item.text, AreaService.getAll());
+    const task = TaskService.create({
+      name: parsed.name || item.text,
+      area: parsed.areaId,
+      priority: parsed.priority || 'nenhuma',
+      date: parsed.date || '',
+      start: parsed.time || '',
+      end: parsed.timeend || '',
+      recurrence: parsed.recurrence || ''
+    });
+    InboxService.remove(id);
+    Modal.toast('✓ Tarefa criada: ' + task.name);
+    Navigation.renderAll();
+  }
+
+  function inboxEditStart(id) {
+    AppState.ui.inboxEditId = id;
+    renderInbox();
+  }
+
+  function inboxEditSave(id) {
+    const text = document.getElementById('inbox-edit-input').value.trim();
+    if (text) InboxService.update(id, text);
+    AppState.ui.inboxEditId = null;
+    renderInbox();
+  }
+
+  function inboxEditCancel() {
+    AppState.ui.inboxEditId = null;
+    renderInbox();
+  }
+
+  function inboxEditKey(e, id) {
+    if (e.key === 'Enter') inboxEditSave(id);
+    if (e.key === 'Escape') inboxEditCancel();
+  }
+
+  function inboxDelete(id) {
+    InboxService.remove(id);
+    renderInbox();
   }
 
   function renderHighPriority() {
@@ -119,5 +215,8 @@ const DashboardView = (() => {
     </div>`;
   }
 
-  return { render };
+  return {
+    render,
+    inboxToTask, inboxEditStart, inboxEditSave, inboxEditCancel, inboxEditKey, inboxDelete
+  };
 })();

@@ -110,6 +110,11 @@
     <div class="grid3" id="dash-stats"></div>
 
     <div class="card">
+      <div class="card-title">📥 Caixa de entrada <span class="inbox-badge" id="dash-inbox-badge"></span></div>
+      <div id="dash-inbox"></div>
+    </div>
+
+    <div class="card">
       <div class="card-title">⏰ Hoje com horário</div>
       <div id="dash-today"></div>
     </div>
@@ -328,6 +333,14 @@
 
   <!-- ========== FAB ========== -->
   <button id="fab" onclick="openTaskModal()" title="Nova Tarefa"><i class="ti ti-plus"></i></button>
+
+  <!-- ========== INBOX: captura rápida universal ========== -->
+  <button id="inbox-fab" onclick="inboxToggleCapture()" title="Capturar na caixa de entrada"><i class="ti ti-inbox"></i></button>
+  <div id="inbox-capture">
+    <input id="inbox-capture-input" placeholder="Capturar pensamento..." onkeydown="inboxCaptureKey(event)">
+    <button class="icon-btn" id="inbox-mic-btn" onclick="inboxStartVoice()" title="Falar"><i class="ti ti-microphone"></i></button>
+    <button class="icon-btn" onclick="inboxCaptureSave()" title="Salvar" style="color:var(--accent2)"><i class="ti ti-check"></i></button>
+  </div>
 
 </div><!-- /#app -->
 
@@ -604,6 +617,7 @@
 
 <script src="js/services/taskService.js"></script>
 <script src="js/services/areaService.js"></script>
+<script src="js/services/inboxService.js"></script>
 <script src="js/services/projectService.js"></script>
 <script src="js/services/financeService.js"></script>
 <script src="js/services/pomodoroService.js"></script>
@@ -622,6 +636,7 @@
 <script src="js/components/fileHandler.js"></script>
 <script src="js/components/pomodoroUI.js"></script>
 <script src="js/components/loginScreen.js"></script>
+<script src="js/components/inboxCapture.js"></script>
 
 <script src="js/views/dashboardView.js"></script>
 <script src="js/views/tasksView.js"></script>

@@ -170,3 +170,39 @@ nav{
   z-index:200;transition:all .2s;
 }
 #fab:hover{transform:scale(1.1);background:var(--accent2)}
+
+/* ===== Inbox: captura rápida universal ===== */
+#inbox-fab{
+  position:fixed;bottom:24px;right:88px;
+  width:52px;height:52px;border-radius:50%;
+  background:var(--bg2);border:1px solid var(--border);color:var(--accent2);
+  font-size:22px;cursor:pointer;
+  box-shadow:0 4px 20px #00000033;
+  display:flex;align-items:center;justify-content:center;
+  z-index:200;transition:all .2s;
+}
+#inbox-fab:hover{transform:scale(1.1);border-color:var(--accent)}
+#inbox-capture{
+  position:fixed;bottom:88px;right:24px;z-index:201;
+  display:none;align-items:center;gap:6px;
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);padding:10px 12px;
+  box-shadow:0 8px 30px #00000055;
+  width:min(340px,calc(100vw - 48px));
+}
+#inbox-capture.open{display:flex}
+#inbox-capture input{
+  flex:1;background:transparent;border:none;outline:none;
+  color:var(--text);font-size:14px;font-family:inherit;min-width:0;
+}
+#inbox-mic-btn.listening{color:var(--red);animation:inbox-pulse 1s infinite}
+@keyframes inbox-pulse{50%{opacity:.4}}
+
+/* ===== Toast genérico ===== */
+.app-toast{
+  position:fixed;bottom:100px;left:50%;transform:translateX(-50%);
+  background:var(--bg3);color:var(--text);border:1px solid var(--border);
+  padding:10px 16px;border-radius:10px;font-size:13px;z-index:9999;
+  max-width:calc(100vw - 32px);text-align:center;
+  box-shadow:0 4px 16px #00000066;
+}

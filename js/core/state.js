@@ -16,6 +16,7 @@ const AppState = (() => {
   const ui = {
     // Task editing
     editTaskId: null,
+    inboxEditId: null,
     areaEditId: null,
     editProjectId: null,
     editNoteId: null,

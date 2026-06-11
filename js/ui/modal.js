@@ -22,5 +22,14 @@ const Modal = (() => {
     });
   }
 
-  return { open, close, wireBackdropClicks };
+  /** Toast discreto de confirmação (some sozinho) */
+  function toast(message) {
+    const el = document.createElement('div');
+    el.className = 'app-toast';
+    el.textContent = message;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2500);
+  }
+
+  return { open, close, wireBackdropClicks, toast };
 })();

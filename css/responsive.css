@@ -50,6 +50,9 @@
 
   /* FAB repositioned above floating nav */
   #fab{bottom:90px;right:16px;width:46px;height:46px;font-size:20px}
+  #inbox-fab{bottom:90px;right:72px;width:46px;height:46px;font-size:19px}
+  #inbox-capture{bottom:146px;right:16px}
+  .app-toast{bottom:150px}
 
   /* ===== Calendar fullscreen (iOS-like) ===== */
   #view-calendar.active{

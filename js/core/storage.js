@@ -61,7 +61,8 @@ const Storage = (() => {
           areas: data.areas || [],
           projects: data.projects || [],
           finance: data.finance || [],
-          finCats: data.finCats || []
+          finCats: data.finCats || [],
+          inbox: data.inbox || []
         };
       }
     } catch (err) {
@@ -82,6 +83,7 @@ const Storage = (() => {
         projects: db.projects || [],
         finance: db.finance || [],
         finCats: db.finCats || [],
+        inbox: db.inbox || [],
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       // Aguarda um pouco antes de voltar a escutar updates remotos
@@ -137,7 +139,8 @@ const Storage = (() => {
           areas: data.areas || [],
           projects: data.projects || [],
           finance: data.finance || [],
-          finCats: data.finCats || []
+          finCats: data.finCats || [],
+          inbox: data.inbox || []
         });
       }
     });
