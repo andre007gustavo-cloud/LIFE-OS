@@ -238,6 +238,12 @@ body.light .cmdk-item.selected .cmdk-item-section{color:#4338CA}
 .fb-switch input:checked+.fb-switch-slider::before{transform:translateX(16px)}
 
 /* Linhas do modal de configurações */
+.fbset-section{
+  font-size:12px;font-weight:600;color:var(--text2);
+  text-transform:uppercase;letter-spacing:.5px;
+  margin:18px 0 4px;
+}
+.fbset-section:first-child{margin-top:0}
 .fbset-row{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--border)}
 .fbset-row:last-child{border-bottom:none}
 .fbset-icon{font-size:18px;color:var(--text2);width:22px;text-align:center;flex-shrink:0}

@@ -20,8 +20,14 @@ const ReviewView = (() => {
   function render() {
     const root = document.getElementById('review-root');
     if (!root) return;
+    // body.rv-flow esconde os FABs flutuantes, que cobririam o rodapé do fluxo
+    document.body.classList.toggle('rv-flow', !!flow);
     root.innerHTML = flow ? flowHtml() : summaryHtml();
     if (flow && flow.step === 4) prefillGoals();
+  }
+
+  function isFlowActive() {
+    return !!flow;
   }
 
   // ===== Modo resumo =====
@@ -435,7 +441,7 @@ const ReviewView = (() => {
   }
 
   return {
-    render, start, exit, next, back, finish,
+    render, start, exit, next, back, finish, isFlowActive,
     inboxToTask, inboxToProject, inboxDiscard, deferInbox,
     overdueToday, overdueReschedule, overdueArchive,
     projectKeep, projectPause, projectArchive,

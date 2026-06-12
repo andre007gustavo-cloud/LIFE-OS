@@ -21,8 +21,13 @@ const NextUpBar = (() => {
   function stop() {
     if (timer) clearInterval(timer);
     timer = null;
-    const el = document.getElementById('nextup-bar');
+    hide(document.getElementById('nextup-bar'));
+  }
+
+  /** Some e avisa o CSS (body.has-nextup compensa o recuo do notch nas views) */
+  function hide(el) {
     if (el) el.style.display = 'none';
+    document.body.classList.remove('has-nextup');
   }
 
   // ===== Seleção do próximo compromisso =====
@@ -69,16 +74,17 @@ const NextUpBar = (() => {
     const el = document.getElementById('nextup-bar');
     if (!el) return;
     // Modo Agora é silêncio visual: a faixa não aparece lá
-    if (document.body.classList.contains('now-mode')) { el.style.display = 'none'; return; }
+    if (document.body.classList.contains('now-mode')) { hide(el); return; }
 
     const pick = pickNext();
-    if (!pick) { el.style.display = 'none'; currentId = null; return; }
+    if (!pick) { hide(el); currentId = null; return; }
 
     currentId = pick.t.id;
     const color = countColor(Math.round(pick.delta));
     const human = Utils.humanDuration(pick.delta * 60000);
 
     el.style.display = 'flex';
+    document.body.classList.add('has-nextup');
     el.innerHTML = `<div class="nextup-inner" onclick="NextUpBar.openTask()" title="Abrir tarefa">
       <i class="ti ti-clock"></i>
       <span class="nextup-text">Próximo: <strong>${escapeHtml(pick.t.name)}</strong>

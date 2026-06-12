@@ -164,8 +164,25 @@
   .metric-grid{grid-template-columns:1fr 1fr}
   .dash-grid{grid-template-columns:1fr}
 
-  /* Nav mobile compacta: só avatar com pontinho de sync + sair */
+  /* Nav mobile compacta: só o avatar (abre Configurações, onde ficam
+     tema e sair) — com tema/engrenagem/sair a barra estoura a largura */
   #user-info .user-name,#user-info .sync-label{display:none}
+  #user-info .icon-btn{display:none}
+  #theme-btn{display:none}
+
+  /* Faixa "próximo compromisso": é o primeiro elemento da página no mobile
+     (a nav vai pro rodapé) — sem o recuo ela fica ilegível sob o relógio/notch */
+  .nextup-bar{
+    height:auto;min-height:32px;
+    padding-top:calc(6px + env(safe-area-inset-top,0px));
+    padding-bottom:6px;
+  }
+  /* Com a faixa visível o notch já foi compensado por ela — remove o recuo
+     duplicado das views para o conteúdo não descer demais */
+  body.has-nextup .view.padded{padding-top:16px}
+  body.has-nextup #view-tasks.active,
+  body.has-nextup #view-areas.active,
+  body.has-nextup #view-calendar.active{padding-top:0!important}
 }
 
 /* ===== Small mobile (≤480px) ===== */

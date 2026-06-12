@@ -57,7 +57,8 @@ const LoginScreen = (() => {
       .map(part => part[0]).join('').toUpperCase();
 
     el.innerHTML = `
-      <div class="user-avatar-initials">${Utils.escapeHtml(initials)}</div>
+      <div class="user-avatar-initials" onclick="openSettingsModal()" title="Configurações"
+           style="cursor:pointer">${Utils.escapeHtml(initials)}</div>
       <div class="user-block-info">
         <div class="user-name">${Utils.escapeHtml(firstName)}</div>
         <div class="sync-indicator">

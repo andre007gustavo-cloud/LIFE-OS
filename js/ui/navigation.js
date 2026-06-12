@@ -21,6 +21,10 @@ const Navigation = (() => {
     // Modo Agora esconde a nav e a faixa de próximo compromisso (silêncio visual)
     document.body.classList.toggle('now-mode', viewName === 'now');
 
+    // FABs voltam ao sair da revisão guiada (o fluxo continua aberto em memória)
+    document.body.classList.toggle('rv-flow',
+      viewName === 'review' && typeof ReviewView !== 'undefined' && ReviewView.isFlowActive());
+
     const renderer = viewRenderers[viewName];
     if (renderer) renderer();
 

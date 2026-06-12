@@ -26,26 +26,59 @@ const SettingsModal = (() => {
   ];
 
   function open() {
-    renderRows();
+    renderBody();
     Modal.open('settings-modal');
   }
 
-  function renderRows() {
+  function renderBody() {
+    document.getElementById('settings-body').innerHTML =
+      '<div class="fbset-section">Feedback sensorial</div>'
+      + SETTINGS.map(feedbackRowHtml).join('')
+      + appearanceHtml()
+      + accountHtml();
+  }
+
+  function feedbackRowHtml(s) {
     const prefs = Feedback.getPrefs();
-    document.getElementById('settings-body').innerHTML = SETTINGS.map(s => `
-      <div class="fbset-row" id="fbset-row-${s.key}">
-        <i class="ti ${s.icon} fbset-icon"></i>
+    return `<div class="fbset-row" id="fbset-row-${s.key}">
+      <i class="ti ${s.icon} fbset-icon"></i>
+      <div class="fbset-info">
+        <div class="fbset-label">${s.label}</div>
+        <div class="fbset-hint">${s.hint}</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="SettingsModal.test('${s.key}')">Testar</button>
+      <label class="fb-switch">
+        <input type="checkbox" ${prefs[s.key] ? 'checked' : ''}
+               onchange="SettingsModal.toggle('${s.key}', this.checked)">
+        <span class="fb-switch-slider"></span>
+      </label>
+    </div>`;
+  }
+
+  /** No mobile o botão de tema sai da nav — fica acessível aqui */
+  function appearanceHtml() {
+    return `<div class="fbset-section">Aparência</div>
+      <div class="fbset-row">
+        <i class="ti ti-contrast fbset-icon"></i>
         <div class="fbset-info">
-          <div class="fbset-label">${s.label}</div>
-          <div class="fbset-hint">${s.hint}</div>
+          <div class="fbset-label">Tema</div>
+          <div class="fbset-hint">Alternar entre claro e escuro</div>
         </div>
-        <button class="btn btn-ghost btn-sm" onclick="SettingsModal.test('${s.key}')">Testar</button>
-        <label class="fb-switch">
-          <input type="checkbox" ${prefs[s.key] ? 'checked' : ''}
-                 onchange="SettingsModal.toggle('${s.key}', this.checked)">
-          <span class="fb-switch-slider"></span>
-        </label>
-      </div>`).join('');
+        <button class="btn btn-ghost btn-sm" onclick="toggleTheme()">Alternar</button>
+      </div>`;
+  }
+
+  /** No mobile o botão de sair também sai da nav — fica acessível aqui */
+  function accountHtml() {
+    return `<div class="fbset-section">Conta</div>
+      <div class="fbset-row">
+        <i class="ti ti-logout fbset-icon"></i>
+        <div class="fbset-info">
+          <div class="fbset-label">Sessão</div>
+          <div class="fbset-hint">Desconectar desta conta</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="logoutUser()">Sair</button>
+      </div>`;
   }
 
   function toggle(key, checked) {

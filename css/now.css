@@ -26,7 +26,11 @@ body.now-mode #inbox-fab { display: none !important; }
 
 /* ===== View Modo Agora ===== */
 #view-now.active { display: flex; flex-direction: column; min-height: 100vh; }
-.now-header { padding: 16px; display: flex; align-items: center; justify-content: space-between; }
+/* iPhone: sem o recuo do notch a seta de voltar fica sob o relógio e não recebe toques */
+.now-header {
+  padding: calc(16px + env(safe-area-inset-top, 0px)) 16px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+}
 .now-free-btn {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 9px 16px; border-radius: 999px;
