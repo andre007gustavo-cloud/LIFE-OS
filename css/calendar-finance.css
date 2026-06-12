@@ -59,15 +59,15 @@
 .month-span-layer{position:relative;min-height:20px}
 .span-placeholder{height:20px;margin-bottom:2px}
 .month-span{
-  height:18px;border-radius:3px;font-size:11px;font-weight:600;
+  height:20px;border-radius:5px;font-size:11.5px;font-weight:500;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   cursor:pointer;display:flex;align-items:center;
-  padding:0 6px;margin-bottom:2px;transition:opacity .12s;
+  padding:0 8px;margin-bottom:3px;transition:opacity .12s;
 }
 .month-span:hover{opacity:.8}
-.month-span.span-left{border-radius:4px 0 0 4px;padding-left:6px}
-.month-span.span-right{border-radius:0 4px 4px 0}
-.month-span.span-alone{border-radius:4px}
+.month-span.span-left{border-radius:5px 0 0 5px;padding-left:8px}
+.month-span.span-right{border-radius:0 5px 5px 0}
+.month-span.span-alone{border-radius:5px}
 .month-span.span-mid{border-radius:0;padding-left:2px}
 
 /* Priority/area colors */
@@ -77,9 +77,10 @@
 .month-span.col-nenhuma,.month-chip.nenhuma{background:var(--bg4);color:var(--text2)}
 
 .month-chip{
-  font-size:11px;padding:2px 5px;border-radius:3px;margin-bottom:2px;
+  font-size:11.5px;padding:3px 8px;border-radius:5px;margin:0 1px 3px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  cursor:pointer;display:block;font-weight:500;transition:opacity .1s;
+  cursor:pointer;display:block;font-weight:500;line-height:1.45;
+  transition:opacity .12s;
 }
 .month-chip:hover{opacity:.75}
 .month-more{
@@ -100,8 +101,8 @@
 }
 .week-col.today-col{border-color:var(--accent);background:var(--acc-dim)}
 .week-task-chip{
-  font-size:11px;padding:3px 6px;border-radius:4px;
-  margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;
+  font-size:11.5px;padding:4px 8px;border-radius:5px;
+  margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;
   white-space:nowrap;cursor:pointer;font-weight:500;
 }
 .week-task-chip.alta{background:#f8717122;color:var(--red)}

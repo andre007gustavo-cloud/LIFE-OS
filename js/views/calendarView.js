@@ -383,7 +383,7 @@ const CalendarView = (() => {
         <div class="week-col-title">${name}<br>${day.getDate()}</div>
         ${dayTasks.slice(0, 5).map(t => {
           const c = taskColor(t);
-          return `<div class="week-task-chip" style="background:${c}22;color:var(--text)"
+          return `<div class="week-task-chip" style="background:${c}2e;color:var(--text)"
                onclick="ttOpenDetail('${t.id}');showView('tasks')">${recBadge(t, iso)}${escapeHtml(t.name)}</div>`;
         }).join('')}
         ${dayTasks.length > 5 ? `<div style="font-size:10px;color:var(--text3);text-align:center;margin-top:4px;cursor:pointer"
@@ -443,7 +443,7 @@ const CalendarView = (() => {
 
         singleVisible.forEach(t => {
           const tc = taskColor(t);
-          html += `<div class="month-chip" style="background:${tc}22;color:var(--text)"
+          html += `<div class="month-chip" style="background:${tc}2e;color:var(--text)"
                        onclick="event.stopPropagation();ttOpenDetail('${t.id}');showView('tasks')">
             ${recBadge(t, iso)}${t.start ? t.start + ' ' : ''}${escapeHtml(t.name)}
           </div>`;
