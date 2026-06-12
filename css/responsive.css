@@ -196,6 +196,10 @@
   .nav-btn{min-width:40px;padding:4px}
   .nav-btn i{font-size:22px}
 
+  /* Avatar cabe no pill-nav sem labels (22px ícone + 8px padding = 30px interno) */
+  .user-avatar-initials{width:24px;height:24px;font-size:10px}
+  #user-info{margin-left:0}
+
   .week-grid{grid-template-columns:repeat(3,1fr)}
 
   .month-day{min-height:56px;padding:2px 1px}
