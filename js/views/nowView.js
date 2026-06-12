@@ -14,6 +14,7 @@ const NowView = (() => {
   let lastSig = '';         // assinatura do pomodoro para detectar mudança estrutural
   let wired = false;
   let pomoPanelOpen = false; // painel de pomodoro expandido ("+")
+  let freeFocus = false;     // foco livre ativo (pomodoro avulso, sem tarefa)
 
   function init() {
     if (wired) return;
@@ -81,6 +82,16 @@ const NowView = (() => {
     const root = document.getElementById('now-root');
     if (!root) return;
     const td = Utils.today();
+    const pomo = PomodoroService.getState();
+
+    // Foco livre (pomodoro avulso) tem precedência: é o que está acontecendo agora
+    if (isFreeFocus(pomo)) {
+      lastSig = pomoSignature(pomo);
+      current = null;
+      root.innerHTML = freeFocusHtml(pomo);
+      return;
+    }
+
     const pool = candidatePool(td);
     current = pickFromPool(pool);
 
@@ -89,7 +100,6 @@ const NowView = (() => {
       return;
     }
 
-    const pomo = PomodoroService.getState();
     lastSig = pomoSignature(pomo);
     const remaining = TaskService.forDay(td).filter(Utils.isTaskOpen).length;
     root.innerHTML = taskHtml(current, pomo, remaining);
@@ -103,9 +113,27 @@ const NowView = (() => {
     return `<div class="now-empty">
       <div class="now-empty-emoji">${hardDone ? '🌙' : '🎉'}</div>
       <div class="now-empty-msg">${msg}</div>
-      <button class="now-btn now-btn-ghost" onclick="NowView.exit()">
-        <i class="ti ti-arrow-left"></i> Voltar ao painel
-      </button>
+      <div class="now-empty-actions">
+        <button class="now-btn now-btn-skip" onclick="NowView.enterFreeFocus()">
+          <i class="ti ti-coffee"></i> Foco livre
+        </button>
+        <button class="now-btn now-btn-ghost" onclick="NowView.exit()">
+          <i class="ti ti-arrow-left"></i> Voltar ao painel
+        </button>
+      </div>
+    </div>`;
+  }
+
+  /** Pomodoro avulso (sem tarefa): só o cronômetro e o tempo */
+  function freeFocusHtml(pomo) {
+    return `<div class="now-task">
+      <div class="now-name now-name-free">Foco livre</div>
+      <div class="now-meta">sem tarefa — só o tempo</div>
+      ${pomoPanelHtml(pomo)}
+      <div class="now-actions">
+        <button class="now-btn now-btn-skip" onclick="NowView.endFreeFocus()"><i class="ti ti-square"></i> Encerrar foco</button>
+        <button class="now-btn now-btn-ghost" onclick="NowView.exit()"><i class="ti ti-arrow-left"></i> Voltar</button>
+      </div>
     </div>`;
   }
 
@@ -220,12 +248,13 @@ const NowView = (() => {
     render();
   }
 
-  /** Play/pausa do modo atual; vincula a tarefa ao iniciar/retomar */
+  /** Play/pausa do modo atual; no foco livre não vincula tarefa */
   function pomoToggle() {
-    if (!current) return;
-    pomoPanelOpen = true;
     const pomo = PomodoroService.getState();
+    const free = isFreeFocus(pomo) || !current;
+    pomoPanelOpen = true;
     if (pomo.running) PomodoroService.toggle();
+    else if (free) PomodoroService.toggle();        // avulso (sem tarefa)
     else PomodoroService.toggle(current.id);
     render();
   }
@@ -237,8 +266,34 @@ const NowView = (() => {
     render();
   }
 
+  // ===== Foco livre (pomodoro avulso) =====
+
+  /** Sessão de pomodoro sem tarefa em andamento? (ou modo livre explícito) */
+  function isFreeFocus(pomo = PomodoroService.getState()) {
+    return freeFocus || (sessionActive(pomo) && !pomo.taskId);
+  }
+
+  /** Entra no foco livre: retoma um avulso em curso ou inicia um novo */
+  function enterFreeFocus() {
+    freeFocus = true;
+    pomoPanelOpen = true;
+    const pomo = PomodoroService.getState();
+    if (!(sessionActive(pomo) && !pomo.taskId)) {
+      PomodoroService.reset();        // garante que não fica vinculado a tarefa
+      PomodoroService.setMode('work');
+      PomodoroService.toggle();       // inicia avulso
+    }
+    render();
+  }
+
+  function endFreeFocus() {
+    freeFocus = false;
+    PomodoroService.reset();
+    advance();
+  }
+
   function done() {
-    if (!current) return;
+    if (!current || isFreeFocus()) return;
     const id = current.id;
     releaseTimerIfLinked(id);
     TaskService.toggle(id);               // conclui (celebração virá na Fase 8)
@@ -246,7 +301,7 @@ const NowView = (() => {
   }
 
   function skip() {
-    if (!current) return;
+    if (!current || isFreeFocus()) return;
     const id = current.id;
     releaseTimerIfLinked(id);
     TaskService.updateField(id, 'date', Utils.tomorrow());
@@ -267,6 +322,7 @@ const NowView = (() => {
 
   function exit() {
     pomoPanelOpen = false;
+    freeFocus = false;
     Navigation.showView('dashboard');
   }
 
@@ -293,6 +349,7 @@ const NowView = (() => {
 
   return {
     init, render, done, skip, exit,
-    startFocus, openPomoPanel, pomoMode, pomoToggle, pomoAdjust
+    startFocus, openPomoPanel, pomoMode, pomoToggle, pomoAdjust,
+    enterFreeFocus, endFreeFocus
   };
 })();

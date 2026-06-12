@@ -26,7 +26,15 @@ body.now-mode #inbox-fab { display: none !important; }
 
 /* ===== View Modo Agora ===== */
 #view-now.active { display: flex; flex-direction: column; min-height: 100vh; }
-.now-header { padding: 16px; }
+.now-header { padding: 16px; display: flex; align-items: center; justify-content: space-between; }
+.now-free-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 16px; border-radius: 999px;
+  background: var(--bg2); border: 1px solid var(--border); color: var(--text2);
+  font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: all .15s;
+}
+.now-free-btn:hover { border-color: var(--accent); color: var(--text); }
 .now-back {
   width: 40px; height: 40px; border-radius: 50%;
   background: var(--bg2); border: 1px solid var(--border); color: var(--text2);
@@ -152,6 +160,8 @@ body.now-mode #inbox-fab { display: none !important; }
 .now-empty { display: flex; flex-direction: column; align-items: center; gap: 18px; }
 .now-empty-emoji { font-size: 52px; }
 .now-empty-msg { font-size: 20px; font-weight: 500; color: var(--text2); max-width: 420px; }
+.now-empty-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.now-name-free { color: var(--text2); font-style: italic; }
 
 @media (max-width: 720px) {
   .now-name { font-size: 26px; }
