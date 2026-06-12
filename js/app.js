@@ -89,6 +89,9 @@
     document.addEventListener('click', e => {
       if (e.target.closest('.month-day')) return;
       if (e.target.closest('.cal-popover')) return;
+      // Clique dentro do date picker (ou nele aberto — o alvo pode se desanexar no re-render)
+      if (e.target.closest('#date-popover')) return;
+      if (document.getElementById('date-popover')?.classList.contains('open')) return;
       CalendarView.closeDayPopover();
     });
 

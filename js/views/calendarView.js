@@ -618,17 +618,7 @@ const CalendarView = (() => {
 
     document.body.appendChild(popover);
     positionPopover(popover, event);
-    setTimeout(() => {
-      document.getElementById('pop-input').focus();
-      document.addEventListener('mousedown', onPopDocDown);
-    }, 30);
-  }
-
-  function onPopDocDown(e) {
-    if (e.target.closest('#cal-popover')) return;
-    if (e.target.closest('#date-popover')) return;
-    if (e.target.closest('.month-day')) return; // troca de dia tratada à parte
-    closeDayPopover();
+    setTimeout(() => document.getElementById('pop-input').focus(), 30);
   }
 
   /** "Ter, 16 jun" — formato curto do cabeçalho */
@@ -707,8 +697,6 @@ const CalendarView = (() => {
   }
 
   function closeDayPopover() {
-    document.removeEventListener('mousedown', onPopDocDown);
-    DatePopover.close();
     document.getElementById('cal-popover')?.remove();
   }
 
