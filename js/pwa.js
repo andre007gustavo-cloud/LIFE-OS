@@ -43,22 +43,29 @@ const PWA = (() => {
       return;
     }
 
+    let _updateReady = false; // só recarrega em update, nunca no 1º install
+    let _reloading = false;
+
+    // Quando o novo SW assume o controle (após um update), recarrega para aplicar
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!_updateReady || _reloading) return;
+      _reloading = true;
+      window.location.reload();
+    });
+
     navigator.serviceWorker.register('/sw.js')
       .then(reg => {
         console.log('[PWA] Service Worker registrado. Scope:', reg.scope);
 
-        // Detecta nova versão disponível
+        // Nova versão instalada com um SW já no controle = atualização → arma o reload
         reg.addEventListener('updatefound', () => {
           const newSW = reg.installing;
           newSW.addEventListener('statechange', () => {
             if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
-              showUpdateBanner();
+              _updateReady = true; // o controllerchange seguinte recarrega sozinho
             }
           });
         });
-
-        // Verifica se já há uma atualização esperando
-        if (reg.waiting) showUpdateBanner();
       })
       .catch(err => console.warn('[PWA] Falha ao registrar SW:', err));
   }
@@ -177,31 +184,6 @@ const PWA = (() => {
       `;
     }
 
-    document.body.appendChild(banner);
-  }
-
-  function showUpdateBanner() {
-    if (document.getElementById('pwa-update-banner')) return;
-    _ensureBannerStyles();
-
-    const banner = document.createElement('div');
-    banner.id = 'pwa-update-banner';
-    banner.style.cssText = [
-      'position:fixed', 'top:16px', 'left:50%', 'transform:translateX(-50%)',
-      'background:#1E293B', 'border:1px solid #6366F1', 'border-radius:12px',
-      'padding:10px 16px', 'display:flex', 'align-items:center', 'gap:10px',
-      'z-index:10000', 'box-shadow:0 4px 24px rgba(99,102,241,.3)',
-      "font-family:system-ui,-apple-system,'Segoe UI',sans-serif",
-    ].join(';');
-    banner.innerHTML = `
-      <span style="color:#F8FAFC;font-size:13px">🔄 Nova versão disponível!</span>
-      <button onclick="location.reload()"
-              style="background:#6366F1;border:none;color:#fff;padding:6px 14px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">
-        Atualizar
-      </button>
-      <button onclick="this.parentElement.remove()"
-              style="background:none;border:none;color:#64748B;font-size:20px;cursor:pointer;line-height:1;padding:0">×</button>
-    `;
     document.body.appendChild(banner);
   }
 
