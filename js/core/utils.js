@@ -54,6 +54,26 @@ const Utils = (() => {
     return `${dy}/${m}`;
   }
 
+  /** "12 jun" — dia + mês abreviado (pt-BR) a partir de ISO */
+  function fmtDayMonth(dateStr) {
+    return parseISO(dateStr).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+  }
+
+  /**
+   * Rótulo de agenda de uma tarefa: "Hoje", "Amanhã", "12 jun",
+   * "12 jun → 15 jun" (multi-dia) ou "Hoje, 15:00 - 16:00" (com horário).
+   * Recebe um objeto com { date, dateend, start, end }. Vazio se não tiver data.
+   */
+  function fmtSchedule(s) {
+    if (!s || !s.date) return '';
+    if (s.dateend && s.dateend !== s.date) {
+      return fmtDayMonth(s.date) + ' → ' + fmtDayMonth(s.dateend);
+    }
+    let label = s.date === today() ? 'Hoje' : s.date === tomorrow() ? 'Amanhã' : fmtDayMonth(s.date);
+    if (s.start) label += ', ' + s.start + (s.end ? ' - ' + s.end : '');
+    return label;
+  }
+
   /** Diferença em dias entre duas datas ISO (d2 - d1), sem o +1 de daysBetween */
   function diffDays(d1, d2) {
     return Math.round((parseISO(d2) - parseISO(d1)) / 86400000);
@@ -200,6 +220,8 @@ const Utils = (() => {
     diffDays,
     startOfWeek,
     fmtDate,
+    fmtDayMonth,
+    fmtSchedule,
     timeToMins,
     fmtMinsShort,
     humanDuration,

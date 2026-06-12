@@ -302,10 +302,21 @@
   width:0;min-width:0;border:none;overflow:hidden;
 }
 .tt-detail-header{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0;
+  display:flex;align-items:center;gap:8px;
+  padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0;
 }
-.tt-detail-title{font-size:14px;font-weight:600;color:var(--text2)}
+.tt-detail-check{
+  width:20px;height:20px;border-radius:50%;border:2px solid var(--border);
+  cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:12px;transition:all .15s;
+}
+.tt-detail-check:hover{border-color:var(--accent)}
+.tt-detail-check.checked{background:var(--accent);border-color:var(--accent)}
+.tt-flag-btn{
+  margin-left:auto;border:none;background:transparent;cursor:pointer;
+  padding:4px;border-radius:6px;font-size:17px;color:var(--text3);
+}
+.tt-flag-btn:hover{background:var(--bg3)}
 .tt-detail-body{flex:1;overflow-y:auto;padding:16px}
 .tt-detail-name{
   font-size:17px;font-weight:700;margin-bottom:16px;
@@ -367,6 +378,42 @@
   font-size:13px;transition:color .15s;
 }
 .subtask-add:hover{color:var(--accent)}
+
+/* ===== Notes (anotações + anexos) ===== */
+.task-notes-toolbar{
+  display:flex;align-items:center;gap:4px;margin-bottom:6px;
+}
+.task-notes-editor{
+  min-height:160px;padding:8px 6px;border-radius:var(--radius-sm);
+  color:var(--text);font-size:14px;line-height:1.6;outline:none;
+  border:1px solid transparent;transition:border-color .15s;
+}
+.task-notes-editor:hover{border-color:var(--border)}
+.task-notes-editor:focus{border-color:var(--accent)}
+.task-notes-editor:empty::before{
+  content:attr(data-placeholder);color:var(--text3);
+}
+.task-notes-editor img{margin:6px 0}
+.task-file-chip{
+  display:inline-flex;align-items:center;gap:5px;vertical-align:middle;
+  padding:3px 9px;margin:2px 3px;border-radius:8px;
+  background:var(--bg3);border:1px solid var(--border);
+  color:var(--accent2);font-size:12px;text-decoration:none;
+}
+.task-file-chip:hover{border-color:var(--accent)}
+
+/* ===== Detail footer (área / projeto / ações) ===== */
+.tt-detail-foot{
+  display:flex;align-items:center;gap:8px;flex-shrink:0;
+  padding:10px 14px;border-top:1px solid var(--border);
+}
+.tt-foot-select{
+  background:var(--bg3);border:1px solid var(--border);border-radius:8px;
+  color:var(--text2);padding:5px 8px;font-size:13px;font-family:inherit;
+  cursor:pointer;outline:none;max-width:48%;
+}
+.tt-foot-select:hover{border-color:var(--accent)}
+.tt-foot-select option{background:var(--bg2);color:var(--text)}
 
 /* ===== Tags in detail ===== */
 .tag-input-wrap{display:flex;flex-wrap:wrap;gap:4px;align-items:center}

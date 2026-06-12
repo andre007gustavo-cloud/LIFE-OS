@@ -308,30 +308,9 @@ const TasksView = (() => {
     refreshScheduleLabel();
   }
 
-  /** "Hoje", "Amanhã", "12 jun", "12 jun → 15 jun", "Hoje, 15:00 - 16:00" */
-  function scheduleLabel(s) {
-    if (!s.date) return 'Data';
-    if (s.dateend && s.dateend !== s.date) {
-      return shortDate(s.date) + ' → ' + shortDate(s.dateend);
-    }
-    let label = relDate(s.date);
-    if (s.start) label += ', ' + s.start + (s.end ? ' - ' + s.end : '');
-    return label;
-  }
-
-  function relDate(iso) {
-    if (iso === Utils.today()) return 'Hoje';
-    if (iso === Utils.tomorrow()) return 'Amanhã';
-    return shortDate(iso);
-  }
-
-  function shortDate(iso) {
-    return Utils.parseISO(iso).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
-  }
-
   function refreshScheduleLabel() {
     const s = AppState.ui.ttQuickSched;
-    document.getElementById('ttq-sched-label').textContent = scheduleLabel(s);
+    document.getElementById('ttq-sched-label').textContent = Utils.fmtSchedule(s) || 'Data';
     document.getElementById('ttq-sched-btn').classList.toggle('active', !!s.date);
   }
 

@@ -1,8 +1,9 @@
 /**
  * ===================== TASK DETAIL PANEL =====================
- * Right-hand panel that opens when a task is selected in TasksView.
- * Inline-editable name, priority, date, time, recurrence, area, project,
- * tags, subtasks, notes, and an embedded pomodoro timer.
+ * Painel à direita do TasksView (layout estilo Todoist).
+ * Barra de topo: concluir + pílula de data (DatePopover) + prioridade + fechar.
+ * Corpo: título editável, anotações ricas (com anexos) e checklist de subtarefas.
+ * Rodapé: área/projeto (clicáveis para trocar) + duplicar/excluir.
  */
 
 const TaskDetail = (() => {
@@ -21,6 +22,7 @@ const TaskDetail = (() => {
 
   function close() {
     AppState.ui.ttDetailId = null;
+    DatePopover.close();
     document.getElementById('tt-detail-panel').classList.add('closed');
     if (window.TasksView) TasksView.filterAndRender();
   }
@@ -30,124 +32,117 @@ const TaskDetail = (() => {
   function render(id) {
     const task = TaskService.getById(id);
     if (!task) return;
+    document.getElementById('tt-detail-header').innerHTML = topbarHtml(task);
+    document.getElementById('tt-detail-body').innerHTML =
+      titleHtml(task) + notesHtml(task) + subtasksHtml(task);
+    document.getElementById('tt-detail-foot').innerHTML = footerHtml(task);
+  }
 
-    const area = AreaService.getById(task.area);
-    const body = document.getElementById('tt-detail-body');
+  function topbarHtml(task) {
+    const done = task.status === 'concluida';
+    const priColor = Constants.PRI_COLORS[task.priority] || 'var(--text3)';
+    const label = Utils.fmtSchedule(task) || 'Definir data';
+    return `
+      <div class="tt-detail-check${done ? ' checked' : ''}" onclick="ttDetailToggle('${task.id}')">
+        ${done ? '<i class="ti ti-check"></i>' : ''}
+      </div>
+      <button class="tt-sched-pill${task.date ? ' active' : ''}" id="tt-detail-date-btn"
+              onclick="ttDetailPickDate('${task.id}')">
+        <i class="ti ti-calendar"></i><span>${escapeHtml(label)}</span>
+      </button>
+      <button class="tt-flag-btn" onclick="ttDetailCyclePri('${task.id}')" title="Prioridade">
+        <i class="ti ti-flag" style="color:${priColor}"></i>
+      </button>
+      <button class="icon-btn" onclick="ttCloseDetail()" title="Fechar"><i class="ti ti-x"></i></button>`;
+  }
 
-    body.innerHTML = `
+  function titleHtml(task) {
+    return `
       <div class="tt-detail-name" contenteditable="true"
            onblur="ttSaveDetailName('${task.id}',this.innerText)"
-           onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">
-        ${escapeHtml(task.name)}
-      </div>
-
-      ${rowsHtml(task, area)}
-
-      ${subtasksHtml(task)}
-      ${tagsHtml(task)}
-      ${notesHtml(task)}
-      ${pomodoroHtml(task)}
-
-      <div style="display:flex;gap:6px;margin-top:16px">
-        <button class="btn btn-ghost btn-sm" onclick="ttDupTask('${task.id}')">
-          <i class="ti ti-copy"></i> Duplicar
-        </button>
-        <button class="btn btn-ghost btn-sm" style="color:var(--red);margin-left:auto"
-                onclick="ttDeleteFromDetail('${task.id}')">
-          <i class="ti ti-trash"></i> Excluir
-        </button>
-      </div>`;
-
-    PomodoroUI.refresh();
+           onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">${escapeHtml(task.name)}</div>`;
   }
 
-  // ===== Row builders =====
+  // ===== Notes (anotações + anexos) =====
 
-  function rowsHtml(task, area) {
+  function notesHtml(task) {
     return `
-      <div class="tt-detail-row">
-        <i class="ti ti-flag"></i>
-        <div class="tt-detail-row-label">Prioridade</div>
-        <select onchange="ttSaveField('${task.id}','priority',this.value)">
-          ${['nenhuma','alta','media','baixa'].map(p =>
-            `<option value="${p}"${task.priority === p ? ' selected' : ''}>${Constants.PRI_ICONS[p]} ${p}</option>`
-          ).join('')}
-        </select>
+      <div class="task-notes-toolbar">
+        <button class="icon-btn" title="Anexar foto ou arquivo"
+                onclick="document.getElementById('tt-notes-file').click()">
+          <i class="ti ti-paperclip"></i>
+        </button>
+        <input type="file" id="tt-notes-file" multiple style="display:none" onchange="ttNotesAttach(event)">
       </div>
-
-      <div class="tt-detail-row">
-        <i class="ti ti-calendar"></i>
-        <div class="tt-detail-row-label">Data</div>
-        <input type="date" value="${task.date || ''}"
-               onchange="ttSaveField('${task.id}','date',this.value)">
-      </div>
-
-      <div class="tt-detail-row">
-        <i class="ti ti-calendar-event"></i>
-        <div class="tt-detail-row-label">Data fim</div>
-        <input type="date" value="${task.dateend || ''}"
-               onchange="ttSaveField('${task.id}','dateend',this.value)">
-      </div>
-
-      <div class="tt-detail-row">
-        <i class="ti ti-clock"></i>
-        <div class="tt-detail-row-label">Horário</div>
-        <input type="time" value="${task.start || ''}"
-               onchange="ttSaveField('${task.id}','start',this.value)" style="flex:1">
-        <span style="color:var(--text3)">→</span>
-        <input type="time" value="${task.end || ''}"
-               onchange="ttSaveField('${task.id}','end',this.value)" style="flex:1">
-      </div>
-
-      <div class="tt-detail-row">
-        <i class="ti ti-refresh"></i>
-        <div class="tt-detail-row-label">Recorrência</div>
-        <select class="rec-select"
-                onchange="ttSaveField('${task.id}','recurrence',this.value)">
-          <option value="">Nenhuma</option>
-          <option value="daily"${task.recurrence === 'daily' ? ' selected' : ''}>Diária</option>
-          <option value="weekly"${task.recurrence === 'weekly' ? ' selected' : ''}>Semanal</option>
-          <option value="monthly"${task.recurrence === 'monthly' ? ' selected' : ''}>Mensal</option>
-        </select>
-      </div>
-
-      <div class="tt-detail-row">
-        <i class="ti ti-hourglass"></i>
-        <div class="tt-detail-row-label">Estimativa</div>
-        <input type="text" placeholder="ex: 30min, 2h"
-               value="${task.estimate || ''}"
-               onchange="ttSaveField('${task.id}','estimate',this.value)">
-      </div>
-
-      <div class="tt-detail-row">
-        <i class="ti ti-folder"></i>
-        <div class="tt-detail-row-label">Área</div>
-        <select onchange="ttSaveField('${task.id}','area',this.value);ttOpenDetail('${task.id}')">
-          <option value="">Nenhuma</option>
-          ${AreaService.getAll().map(a =>
-            `<option value="${a.id}"${a.id === task.area ? ' selected' : ''}>${escapeHtml(a.icon)} ${escapeHtml(a.name)}</option>`
-          ).join('')}
-        </select>
-      </div>
-
-      ${area ? `
-        <div class="tt-detail-row">
-          <i class="ti ti-briefcase"></i>
-          <div class="tt-detail-row-label">Projeto</div>
-          <select onchange="ttSaveField('${task.id}','project',this.value)">
-            <option value="">Nenhum</option>
-            ${area.projects.map(p =>
-              `<option value="${p.id}"${p.id === task.project ? ' selected' : ''}>${escapeHtml(p.name)}</option>`
-            ).join('')}
-          </select>
-        </div>` : ''}
-    `;
+      <div class="task-notes-editor" id="tt-notes-editor" contenteditable="true"
+           data-placeholder="Anotações, links, ideias… arraste arquivos aqui"
+           onblur="ttPersistNotes()" onpaste="ttNotesPaste(event)"
+           ondragover="event.preventDefault()" ondrop="ttNotesDrop(event)">${task.notes || ''}</div>`;
   }
+
+  function persistNotes() {
+    const editor = document.getElementById('tt-notes-editor');
+    const id = AppState.ui.ttDetailId;
+    if (editor && id) TaskService.updateField(id, 'notes', editor.innerHTML.trim());
+  }
+
+  function notesPaste(e) {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        insertFile(item.getAsFile());
+      }
+    }
+  }
+
+  function notesDrop(e) {
+    if (!e.dataTransfer.files.length) return;
+    e.preventDefault();
+    [...e.dataTransfer.files].forEach(insertFile);
+  }
+
+  function notesAttach(e) {
+    [...e.target.files].forEach(insertFile);
+    e.target.value = '';
+  }
+
+  /** Lê o arquivo e insere no cursor: imagem inline ou chip de download */
+  function insertFile(file) {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const html = file.type.startsWith('image/')
+        ? `<img src="${ev.target.result}" alt="${escapeAttr(file.name)}" style="max-width:100%;border-radius:8px">`
+        : `<a href="${ev.target.result}" download="${escapeAttr(file.name)}" class="task-file-chip" contenteditable="false"><i class="ti ti-file"></i> ${escapeHtml(file.name)}</a>`;
+      insertHtmlAtCursor(html);
+      persistNotes();
+    };
+    reader.onerror = () => alert('Erro ao ler o arquivo: ' + file.name);
+    reader.readAsDataURL(file);
+  }
+
+  function insertHtmlAtCursor(html) {
+    const editor = document.getElementById('tt-notes-editor');
+    if (!editor) return;
+    editor.focus();
+    const sel = window.getSelection();
+    if (!sel.rangeCount || !editor.contains(sel.anchorNode)) {
+      const range = document.createRange();
+      range.selectNodeContents(editor);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+    document.execCommand('insertHTML', false, html);
+  }
+
+  // ===== Subtasks (checklist) =====
 
   function subtasksHtml(task) {
     const subs = task.subtasks || [];
     return `
-      <div class="detail-section-title">Subtarefas (${subs.filter(s => s.done).length}/${subs.length})</div>
+      <div class="detail-section-title">Checklist (${subs.filter(s => s.done).length}/${subs.length})</div>
       ${subs.map((s, i) => `
         <div class="subtask-item">
           <div class="subtask-check${s.done ? ' done' : ''}" onclick="ttToggleSub('${task.id}',${i})">
@@ -163,60 +158,75 @@ const TaskDetail = (() => {
         </div>
       `).join('')}
       <div class="subtask-add" onclick="ttAddSub('${task.id}')">
-        <i class="ti ti-plus"></i> Adicionar subtarefa
-      </div>
-    `;
+        <i class="ti ti-plus"></i> Adicionar item
+      </div>`;
   }
 
-  function tagsHtml(task) {
+  // ===== Footer (área / projeto / ações) =====
+
+  function footerHtml(task) {
+    const area = AreaService.getById(task.area);
+    const areaOpts = `<option value="">📁 Sem área</option>` +
+      AreaService.getAll().map(a =>
+        `<option value="${a.id}"${a.id === task.area ? ' selected' : ''}>${escapeHtml(a.icon)} ${escapeHtml(a.name)}</option>`).join('');
+    const projSel = (area && area.projects.length) ? `
+      <select class="tt-foot-select" onchange="ttSaveField('${task.id}','project',this.value)">
+        <option value="">Sem projeto</option>
+        ${area.projects.map(p =>
+          `<option value="${p.id}"${p.id === task.project ? ' selected' : ''}>${escapeHtml(p.name)}</option>`).join('')}
+      </select>` : '';
     return `
-      <div class="detail-section-title">Tags</div>
-      <div class="tag-input-wrap">
-        ${(task.tags || []).map((tag, i) => `
-          <span class="tag-item">
-            #${escapeHtml(tag)}
-            <button onclick="ttRemoveTag('${task.id}',${i})">×</button>
-          </span>
-        `).join('')}
-        <input class="tag-new-input" placeholder="+ tag"
-               onkeydown="ttTagKey(event,'${task.id}')">
-      </div>
-    `;
+      <select class="tt-foot-select tt-foot-area" onchange="ttSaveArea('${task.id}',this.value)">${areaOpts}</select>
+      ${projSel}
+      <span style="flex:1"></span>
+      <button class="icon-btn" onclick="ttDupTask('${task.id}')" title="Duplicar"><i class="ti ti-copy"></i></button>
+      <button class="icon-btn" onclick="ttDeleteFromDetail('${task.id}')" title="Excluir" style="color:var(--red)"><i class="ti ti-trash"></i></button>`;
   }
 
-  function notesHtml(task) {
-    return `
-      <div class="detail-section-title">Notas</div>
-      <textarea class="detail-notes" placeholder="Adicione notas, links, ideias..."
-                onblur="ttSaveField('${task.id}','notes',this.value)">${escapeHtml(task.notes || '')}</textarea>
-    `;
+  // ===== Header actions =====
+
+  function toggleStatus(id) {
+    TaskService.toggle(id);
+    render(id);
+    if (window.TasksView) TasksView.filterAndRender();
   }
 
-  function pomodoroHtml(task) {
-    return `
-      <div class="pomo-bar">
-        <div class="pomo-title">
-          <i class="ti ti-flame" style="color:var(--accent2)"></i> Pomodoro
-        </div>
-        <div class="pomo-mode" id="pomo-mode-row"></div>
-        <div class="pomo-display" id="pomo-display">25:00</div>
-        <div class="pomo-controls">
-          <button class="pomo-btn pomo-start" id="pomo-toggle" onclick="pomoToggle('${task.id}')">
-            <i class="ti ti-player-play"></i> Iniciar
-          </button>
-          <button class="pomo-btn pomo-stop" onclick="pomoReset()">
-            <i class="ti ti-refresh"></i> Reset
-          </button>
-        </div>
-        <div class="pomo-dots" id="pomo-dots"></div>
-      </div>
-    `;
+  function cyclePriority(id) {
+    TaskService.cyclePriority(id);
+    render(id);
+    if (window.TasksView) TasksView.filterAndRender();
+  }
+
+  function pickDate(id) {
+    const t = TaskService.getById(id);
+    if (!t) return;
+    DatePopover.open(
+      document.getElementById('tt-detail-date-btn'),
+      { date: t.date, dateend: t.dateend, start: t.start, end: t.end, recurrence: t.recurrence },
+      result => applySchedule(id, result)
+    );
+  }
+
+  function applySchedule(id, result) {
+    TaskService.update(id, {
+      date: result.date, dateend: result.dateend,
+      start: result.start, end: result.end, recurrence: result.recurrence
+    });
+    render(id);
+    if (window.TasksView) TasksView.filterAndRender();
   }
 
   // ===== Field-save helpers =====
 
   function saveField(taskId, field, value) {
     TaskService.updateField(taskId, field, value);
+    if (window.TasksView) TasksView.filterAndRender();
+  }
+
+  /** Trocar a área zera o projeto e re-renderiza (atualiza a lista de projetos) */
+  function saveArea(taskId, areaId) {
+    TaskService.update(taskId, { area: areaId, project: '' });
+    render(taskId);
     if (window.TasksView) TasksView.filterAndRender();
   }
 
@@ -238,20 +248,7 @@ const TaskDetail = (() => {
     if (window.TasksView) TasksView.filterAndRender();
   }
 
-  // ===== Subtask / tag handlers =====
-
-  function tagKeyHandler(event, taskId) {
-    if (event.key !== 'Enter') return;
-    const value = event.target.value.trim().replace(/^#/, '');
-    if (!value) return;
-    TaskService.addTag(taskId, value);
-    open(taskId);
-  }
-
-  function removeTag(taskId, idx) {
-    TaskService.removeTag(taskId, idx);
-    open(taskId);
-  }
+  // ===== Subtask handlers =====
 
   function addSub(taskId) {
     TaskService.addSubtask(taskId);
@@ -260,7 +257,7 @@ const TaskDetail = (() => {
 
   function toggleSub(taskId, idx) {
     TaskService.toggleSubtask(taskId, idx);
-    open(taskId);
+    render(taskId);
     if (window.TasksView) TasksView.filterAndRender();
   }
 
@@ -271,14 +268,15 @@ const TaskDetail = (() => {
 
   function deleteSub(taskId, idx) {
     TaskService.removeSubtask(taskId, idx);
-    open(taskId);
+    render(taskId);
   }
 
   return {
     open, close, render,
-    saveField, saveName,
+    saveField, saveArea, saveName,
+    toggleStatus, cyclePriority, pickDate,
+    persistNotes, notesPaste, notesDrop, notesAttach,
     duplicateAndOpen, deleteAndClose,
-    tagKeyHandler, removeTag,
     addSub, toggleSub, renameSub, deleteSub
   };
 })();
