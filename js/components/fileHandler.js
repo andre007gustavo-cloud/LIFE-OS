@@ -46,7 +46,7 @@ const FileHandler = (() => {
     if (!file) return;
     const type = Utils.getFileType(file.name);
 
-    if (type === 'image') openImageLightbox(file);
+    if (type === 'image') lightbox(file.data, file.name);
     else if (['pdf', 'text', 'video', 'audio'].includes(type)) openInNewTab(file, type);
     else download(fileId);
   }
@@ -62,7 +62,9 @@ const FileHandler = (() => {
 
   // ===== Internal: preview implementations =====
 
-  function openImageLightbox(file) {
+  /** Visualização ampliada de uma imagem (data URL ou URL). Reusável. */
+  function lightbox(src, name) {
+    name = name || 'imagem';
     const overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;background:#000000cc;z-index:1000;display:flex;align-items:center;justify-content:center;cursor:zoom-out';
     overlay.onclick = () => overlay.remove();
@@ -71,14 +73,14 @@ const FileHandler = (() => {
     wrap.style.cssText = 'position:relative;max-width:92vw;max-height:92vh';
 
     const img = document.createElement('img');
-    img.src = file.data;
+    img.src = src;
     img.style.cssText = 'max-width:100%;max-height:88vh;border-radius:10px;display:block';
 
     const bar = document.createElement('div');
     bar.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:8px 4px';
     bar.innerHTML = `
-      <span style="color:#fff;font-size:13px">${Utils.escapeHtml(file.name)}</span>
-      <a href="${Utils.escapeAttr(file.data)}" download="${Utils.escapeAttr(file.name)}"
+      <span style="color:#fff;font-size:13px">${Utils.escapeHtml(name)}</span>
+      <a href="${Utils.escapeAttr(src)}" download="${Utils.escapeAttr(name)}"
          style="color:#fff;background:#ffffff22;border-radius:6px;padding:5px 12px;font-size:12px;text-decoration:none;display:flex;align-items:center;gap:4px"
          onclick="event.stopPropagation()">
         <i class="ti ti-download"></i> Baixar
@@ -103,5 +105,5 @@ const FileHandler = (() => {
     }
   }
 
-  return { handleSelect, handleDrop, remove, open, download };
+  return { handleSelect, handleDrop, remove, open, download, lightbox };
 })();

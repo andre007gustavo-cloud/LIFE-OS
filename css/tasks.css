@@ -384,7 +384,7 @@
   display:flex;align-items:center;gap:4px;margin-bottom:6px;
 }
 .task-notes-editor{
-  min-height:160px;padding:8px 6px;border-radius:var(--radius-sm);
+  min-height:340px;padding:10px 8px;border-radius:var(--radius-sm);
   color:var(--text);font-size:14px;line-height:1.6;outline:none;
   border:1px solid transparent;transition:border-color .15s;
 }
@@ -393,7 +393,20 @@
 .task-notes-editor:empty::before{
   content:attr(data-placeholder);color:var(--text3);
 }
-.task-notes-editor img{margin:6px 0}
+
+/* Imagem nas notas: zoom ao clicar + botões de baixar/excluir no hover */
+.note-img-wrap{position:relative;display:inline-block;max-width:100%;margin:6px 0}
+.note-img-wrap img{display:block;max-width:100%;border-radius:8px;cursor:zoom-in}
+.note-img-tools{
+  position:absolute;top:6px;right:6px;display:none;gap:4px;
+}
+.note-img-wrap:hover .note-img-tools{display:flex}
+.note-img-tools button{
+  width:28px;height:28px;border-radius:6px;cursor:pointer;
+  border:none;background:#000000aa;color:#fff;font-size:14px;
+  display:flex;align-items:center;justify-content:center;
+}
+.note-img-tools button:hover{background:#000000cc}
 .task-file-chip{
   display:inline-flex;align-items:center;gap:5px;vertical-align:middle;
   padding:3px 9px;margin:2px 3px;border-radius:8px;

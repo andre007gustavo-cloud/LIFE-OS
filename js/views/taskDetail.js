@@ -36,6 +36,7 @@ const TaskDetail = (() => {
     document.getElementById('tt-detail-body').innerHTML =
       titleHtml(task) + notesHtml(task) + subtasksHtml(task);
     document.getElementById('tt-detail-foot').innerHTML = footerHtml(task);
+    decorateNoteImages();
   }
 
   function topbarHtml(task) {
@@ -80,10 +81,58 @@ const TaskDetail = (() => {
            ondragover="event.preventDefault()" ondrop="ttNotesDrop(event)">${task.notes || ''}</div>`;
   }
 
+  /** Salva o HTML limpo (sem os controles de imagem injetados em runtime) */
   function persistNotes() {
     const editor = document.getElementById('tt-notes-editor');
     const id = AppState.ui.ttDetailId;
-    if (editor && id) TaskService.updateField(id, 'notes', editor.innerHTML.trim());
+    if (!editor || !id) return;
+    const clone = editor.cloneNode(true);
+    clone.querySelectorAll('.note-img-wrap').forEach(w => {
+      const img = w.querySelector('img');
+      if (img) { img.removeAttribute('contenteditable'); w.replaceWith(img); }
+      else w.remove();
+    });
+    TaskService.updateField(id, 'notes', clone.innerHTML.trim());
+  }
+
+  /** Envolve cada imagem das notas com botões de baixar/excluir e zoom ao clicar */
+  function decorateNoteImages() {
+    const editor = document.getElementById('tt-notes-editor');
+    if (!editor) return;
+    editor.querySelectorAll('img').forEach(img => {
+      if (img.closest('.note-img-wrap')) return;
+      const wrap = document.createElement('span');
+      wrap.className = 'note-img-wrap';
+      wrap.contentEditable = 'false';
+      img.parentNode.insertBefore(wrap, img);
+      wrap.appendChild(img);
+      img.addEventListener('click', () => FileHandler.lightbox(img.src, img.alt));
+      wrap.appendChild(buildImgTools(wrap, img));
+    });
+  }
+
+  function buildImgTools(wrap, img) {
+    const tools = document.createElement('span');
+    tools.className = 'note-img-tools';
+    tools.contentEditable = 'false';
+    const dl = document.createElement('button');
+    dl.innerHTML = '<i class="ti ti-download"></i>';
+    dl.title = 'Baixar';
+    dl.onclick = e => { e.stopPropagation(); downloadImg(img); };
+    const del = document.createElement('button');
+    del.innerHTML = '<i class="ti ti-trash"></i>';
+    del.title = 'Excluir';
+    del.onclick = e => { e.stopPropagation(); wrap.remove(); persistNotes(); };
+    tools.appendChild(dl);
+    tools.appendChild(del);
+    return tools;
+  }
+
+  function downloadImg(img) {
+    const a = document.createElement('a');
+    a.href = img.src;
+    a.download = img.alt || 'imagem';
+    a.click();
   }
 
   function notesPaste(e) {
@@ -113,9 +162,10 @@ const TaskDetail = (() => {
     const reader = new FileReader();
     reader.onload = ev => {
       const html = file.type.startsWith('image/')
-        ? `<img src="${ev.target.result}" alt="${escapeAttr(file.name)}" style="max-width:100%;border-radius:8px">`
+        ? `<img src="${ev.target.result}" alt="${escapeAttr(file.name)}">`
         : `<a href="${ev.target.result}" download="${escapeAttr(file.name)}" class="task-file-chip" contenteditable="false"><i class="ti ti-file"></i> ${escapeHtml(file.name)}</a>`;
       insertHtmlAtCursor(html);
+      decorateNoteImages();
       persistNotes();
     };
     reader.onerror = () => alert('Erro ao ler o arquivo: ' + file.name);
