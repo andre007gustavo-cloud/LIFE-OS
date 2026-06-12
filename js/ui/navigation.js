@@ -18,8 +18,14 @@ const Navigation = (() => {
     document.getElementById('view-' + viewName)?.classList.add('active');
     document.getElementById('nav-' + viewName)?.classList.add('active');
 
+    // Modo Agora esconde a nav e a faixa de próximo compromisso (silêncio visual)
+    document.body.classList.toggle('now-mode', viewName === 'now');
+
     const renderer = viewRenderers[viewName];
     if (renderer) renderer();
+
+    // Mantém a faixa coerente ao entrar/sair de qualquer view (inclui Modo Agora)
+    if (typeof NextUpBar !== 'undefined') NextUpBar.render();
   }
 
   /** Re-render every registered view (used after data changes) */
@@ -28,6 +34,7 @@ const Navigation = (() => {
     if (viewRenderers.tasks) viewRenderers.tasks();
     if (viewRenderers.calendar) viewRenderers.calendar();
     if (viewRenderers.habits) viewRenderers.habits();
+    if (typeof NextUpBar !== 'undefined') NextUpBar.render();
   }
 
   return { register, showView, renderAll };

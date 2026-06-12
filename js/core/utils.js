@@ -69,6 +69,25 @@ const Utils = (() => {
     return timeStr.split(':').reduce((acc, n) => acc * 60 + parseInt(n), 0);
   }
 
+  /** "47 min", "2h12", "1h", "3h05" — duração curta legível a partir de minutos */
+  function fmtMinsShort(mins) {
+    if (mins < 60) return `${mins} min`;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m ? `${h}h${String(m).padStart(2, '0')}` : `${h}h`;
+  }
+
+  /**
+   * Tempo relativo legível (pt-BR) a partir de um delta em ms.
+   * Positivo (futuro) → "em X"; negativo (passado) → "atrasado Y";
+   * |delta| < 1 min → "começando agora".
+   */
+  function humanDuration(ms) {
+    if (Math.abs(ms) < 60000) return 'começando agora';
+    const label = fmtMinsShort(Math.round(Math.abs(ms) / 60000));
+    return ms > 0 ? `em ${label}` : `atrasado ${label}`;
+  }
+
   // ===== Money formatting =====
 
   function fmtMoney(v) {
@@ -182,6 +201,8 @@ const Utils = (() => {
     startOfWeek,
     fmtDate,
     timeToMins,
+    fmtMinsShort,
+    humanDuration,
     fmtMoney,
     isTaskOpen,
     taskCoversDay,

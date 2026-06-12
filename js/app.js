@@ -67,6 +67,7 @@
       // Não logado
       Storage.stopListening();
       PomodoroService.reset(); // para o timer que continuaria rodando após logout
+      NextUpBar.stop();        // limpa o setInterval da faixa
       appInitialized = false;
       LoginScreen.show();
     }
@@ -79,6 +80,8 @@
     Modal.wireBackdropClicks();
     InboxCapture.init();
     CommandPalette.init();
+    NextUpBar.init();
+    NowView.init();
 
     // Close day-popover quando clica fora
     document.addEventListener('click', e => {
@@ -98,6 +101,7 @@
     Navigation.register('areas', AreasView.render);
     Navigation.register('habits', HabitsView.render);
     Navigation.register('review', ReviewView.render);
+    Navigation.register('now', NowView.render);
 
     // Expõe funções globais para onclick inline
     exposeGlobals();
@@ -122,6 +126,10 @@
     if (document.getElementById('view-review').classList.contains('active')) {
       ReviewView.render();
     }
+    if (document.getElementById('view-now').classList.contains('active')) {
+      NowView.render();
+    }
+    NextUpBar.render();
   }
 
   function showLoading(show) {
@@ -168,6 +176,10 @@
     // --- Review / Comeback (Fase 6) ---
     window.ReviewView         = ReviewView;
     window.ComebackView       = ComebackView;
+
+    // --- Modo Agora / Faixa de próximo compromisso (Fase 7) ---
+    window.NowView            = NowView;
+    window.NextUpBar          = NextUpBar;
 
     // --- Tasks (legacy modal + actions) ---
     window.openTaskModal       = TaskModal.open;

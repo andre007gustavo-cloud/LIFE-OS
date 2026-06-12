@@ -71,6 +71,14 @@ const Constants = (() => {
     TASK_LIMIT: 3      // máximo de tarefas visíveis nas listas de hoje
   };
 
+  /** Contador "próximo compromisso" + limiares de cor */
+  const NEXTUP = {
+    REFRESH_MS: 30000,      // recálculo da faixa a cada 30s
+    OVERDUE_GRACE_MIN: 60,  // janela em que uma tarefa recém-passada vira "atrasado"
+    SOON_MIN: 30,           // ≤30min ainda não começado → indigo
+    IMMINENT_MIN: 5         // ≤5min ainda não começado → âmbar
+  };
+
   /** Revisão semanal + recomeço sem culpa */
   const REVIEW = {
     STALLED_DAYS: 14,        // projeto sem tarefa concluída há N dias = parado
@@ -126,6 +134,7 @@ const Constants = (() => {
     CALENDAR,
     HABITS,
     HARD_MODE,
+    NEXTUP,
     REVIEW,
     STORAGE_KEY,
     THEME_KEY,

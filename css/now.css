@@ -1,0 +1,116 @@
+/* ===================== NEXT-UP BAR + MODO AGORA (Fase 7) ===================== */
+
+/* ===== Faixa de próximo compromisso ===== */
+.nextup-bar {
+  display: none; align-items: center;
+  height: 32px; padding: 0 16px;
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.nextup-inner {
+  display: flex; align-items: center; gap: 8px; cursor: pointer;
+  width: 100%; min-width: 0; color: var(--text2);
+}
+.nextup-inner > i { color: var(--text3); flex-shrink: 0; }
+.nextup-text {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.nextup-text strong { color: var(--text); font-weight: 600; }
+.nextup-count { font-weight: 600; margin-left: 4px; }
+
+/* No Modo Agora some tudo que distrai */
+body.now-mode nav,
+body.now-mode .nextup-bar,
+body.now-mode #fab,
+body.now-mode #inbox-fab { display: none !important; }
+
+/* ===== View Modo Agora ===== */
+#view-now.active { display: flex; flex-direction: column; min-height: 100vh; }
+.now-header { padding: 16px; }
+.now-back {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--bg2); border: 1px solid var(--border); color: var(--text2);
+  cursor: pointer; font-size: 18px;
+  display: flex; align-items: center; justify-content: center; transition: all .15s;
+}
+.now-back:hover { border-color: var(--accent); color: var(--text); }
+
+#now-root {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 24px 20px 64px; text-align: center;
+}
+
+.now-task { width: 100%; max-width: 640px; display: flex; flex-direction: column; align-items: center; }
+.now-name {
+  font-size: 32px; font-weight: 500; line-height: 1.25; color: var(--text);
+  max-width: 100%;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.now-meta {
+  margin-top: 14px; font-size: 14px; color: var(--text3);
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: center;
+}
+.now-area { display: inline-flex; align-items: center; gap: 6px; }
+.now-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.now-sep { color: var(--text3); opacity: .5; }
+
+/* Timer grande + barra de progresso */
+.now-timer {
+  margin-top: 36px;
+  font-size: 64px; font-weight: 600; line-height: 1;
+  font-family: 'SF Mono', 'Consolas', 'Roboto Mono', monospace;
+  color: var(--text); letter-spacing: 2px; font-variant-numeric: tabular-nums;
+}
+.now-progress-track {
+  margin-top: 20px; width: 60vw; max-width: 420px; height: 12px;
+  background: var(--bg3); border-radius: 6px; overflow: hidden;
+}
+.now-progress-fill { height: 100%; background: var(--accent); transition: width .9s linear; }
+.now-timer-hint { margin-top: 10px; font-size: 12px; color: var(--text3); }
+
+/* Botão iniciar foco */
+.now-start {
+  margin-top: 36px;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 28px; border-radius: 999px;
+  background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+  font-size: 16px; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: all .15s;
+}
+.now-start:hover { border-color: var(--accent); background: var(--bg4); }
+
+/* Ações */
+.now-actions {
+  margin-top: 44px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+}
+.now-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 14px 22px; border-radius: var(--radius);
+  font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit;
+  border: 1px solid var(--border); background: var(--bg2); color: var(--text);
+  transition: all .15s;
+}
+.now-btn:hover { transform: translateY(-1px); }
+.now-btn-done { background: var(--green); border-color: transparent; color: #fff; }
+.now-btn-skip { background: var(--bg3); color: var(--text2); }
+.now-btn-ghost { background: transparent; color: var(--text3); }
+.now-btn-ghost:hover { color: var(--text); border-color: var(--accent); }
+
+/* Rodapé terciário + estado vazio */
+.now-footer {
+  position: fixed; bottom: 18px; left: 0; right: 0; text-align: center;
+  font-size: 12px; color: var(--text3);
+}
+.now-empty { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.now-empty-emoji { font-size: 52px; }
+.now-empty-msg { font-size: 20px; font-weight: 500; color: var(--text2); max-width: 420px; }
+
+@media (max-width: 720px) {
+  .now-name { font-size: 26px; }
+  .now-timer { font-size: 52px; }
+  .now-progress-track { width: 80vw; }
+  .now-actions { flex-direction: column; align-items: stretch; width: 100%; max-width: 320px; }
+  .now-btn { justify-content: center; }
+}

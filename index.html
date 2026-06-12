@@ -53,6 +53,7 @@
   <link rel="stylesheet" href="css/projects.css">
   <link rel="stylesheet" href="css/habits.css">
   <link rel="stylesheet" href="css/review.css">
+  <link rel="stylesheet" href="css/now.css">
   <link rel="stylesheet" href="css/responsive.css">
 </head>
 <body>
@@ -91,6 +92,9 @@
     <button class="nav-btn active" id="nav-dashboard" onclick="showView('dashboard')">
       <i class="ti ti-layout-dashboard"></i><span class="nav-label">Painel</span>
     </button>
+    <button class="nav-btn" id="nav-now" onclick="showView('now')">
+      <i class="ti ti-target"></i><span class="nav-label">Agora</span>
+    </button>
     <button class="nav-btn" id="nav-tasks" onclick="showView('tasks')">
       <i class="ti ti-checklist"></i><span class="nav-label">Tarefas</span>
     </button>
@@ -114,6 +118,9 @@
     </button>
     <div id="user-info"></div>
   </nav>
+
+  <!-- ========== FAIXA: próximo compromisso (Fase 7) ========== -->
+  <div id="nextup-bar" class="nextup-bar"></div>
 
   <!-- ========== DASHBOARD VIEW ========== -->
   <div class="view active padded" id="view-dashboard">
@@ -360,6 +367,14 @@
   <!-- ========== REVIEW VIEW (Revisão semanal guiada) ========== -->
   <div class="view padded" id="view-review">
     <div id="review-root"></div>
+  </div>
+
+  <!-- ========== NOW VIEW (Modo Agora) ========== -->
+  <div class="view" id="view-now">
+    <div class="now-header">
+      <button class="now-back" onclick="NowView.exit()" title="Voltar (Esc)"><i class="ti ti-arrow-left"></i></button>
+    </div>
+    <div id="now-root"></div>
   </div>
 
   <!-- ========== HABITS VIEW ========== -->
@@ -732,6 +747,7 @@
 <script src="js/components/loginScreen.js"></script>
 <script src="js/components/inboxCapture.js"></script>
 <script src="js/components/commandPalette.js"></script>
+<script src="js/components/nextUpBar.js"></script>
 
 <script src="js/views/dashboardView.js"></script>
 <script src="js/views/tasksView.js"></script>
@@ -742,6 +758,7 @@
 <script src="js/views/habitsView.js"></script>
 <script src="js/views/reviewView.js"></script>
 <script src="js/views/comebackView.js"></script>
+<script src="js/views/nowView.js"></script>
 
 <script src="js/app.js"></script>
 <script src="js/pwa.js"></script>
