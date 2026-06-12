@@ -26,7 +26,7 @@ const AppState = (() => {
     finTab: 'resumo',
 
     // Calendar
-    calView: 'day',
+    calView: 'month',
     calDate: new Date(),
     miniCalDate: new Date(),
     calFilters: { areas: new Set(), project: 'all' },
@@ -57,7 +57,9 @@ const AppState = (() => {
     // Day-popover state
     popoverDate: '',
     popoverPri: 'nenhuma',
-    popoverPriIdx: 0
+    popoverPriIdx: 0,
+    popoverArea: '',
+    popoverSched: { date: '', dateend: '', start: '', end: '', recurrence: '' }
   };
 
   function getDB() { return DB; }

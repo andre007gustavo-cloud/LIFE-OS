@@ -307,6 +307,7 @@
     window.addTaskToProject    = AreasView.addTaskToCurrent;
 
     // --- Calendar ---
+    window.openCalendar      = CalendarView.enter;
     window.setCalView        = CalendarView.setView;
     window.calNavigate       = CalendarView.navigate;
     window.calGoToday        = CalendarView.goToday;
@@ -320,6 +321,9 @@
     window.popKeyDown        = CalendarView.popKeyDown;
     window.popSaveTask       = CalendarView.popSaveTask;
     window.popOpenFull       = CalendarView.popOpenFull;
+    window.popOpenDate       = CalendarView.popOpenDate;
+    window.popToggleAreaMenu = CalendarView.popToggleAreaMenu;
+    window.popPickArea       = CalendarView.popPickArea;
     window.calCreateTask     = CalendarView.createTask;
     window.miniCalNav        = CalendarView.miniCalNav;
     window.miniCalSelect     = CalendarView.miniCalSelect;

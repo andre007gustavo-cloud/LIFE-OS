@@ -8,7 +8,7 @@
  * Para publicar nova versão: incremente CACHE_VERSION.
  */
 
-const CACHE_VERSION = 'v20260612-150624';
+const CACHE_VERSION = 'v20260612-152649';
 const CACHE_NAME = `lifeos-${CACHE_VERSION}`;
 
 // Domínios do Firebase/Google — deixa passar, Firebase cuida do offline via IndexedDB

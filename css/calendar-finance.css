@@ -229,6 +229,67 @@
 .cal-popover-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
 .cal-popover-footer{display:flex;justify-content:flex-end;gap:6px}
 
+/* Cal create popover (modelo TickTick: data, título, anotações, área) */
+.cal-create-pop{width:340px;padding:14px 16px}
+.ccp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ccp-date-btn{
+  display:flex;align-items:center;gap:6px;background:none;border:none;
+  color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;
+  font-family:inherit;padding:2px 4px;border-radius:var(--radius-sm);
+}
+.ccp-date-btn:hover{background:var(--bg3)}
+.ccp-flag{
+  background:none;border:none;color:var(--text3);cursor:pointer;
+  font-size:16px;padding:4px;border-radius:var(--radius-sm);
+}
+.ccp-flag:hover,.ccp-flag.active{background:var(--bg3)}
+.ccp-title{
+  width:100%;background:transparent;border:none;color:var(--text);
+  font-size:17px;font-weight:600;outline:none;font-family:inherit;
+  padding:2px 0;margin-bottom:6px;
+}
+.ccp-title::placeholder{color:var(--text3);font-weight:600}
+.ccp-notes{
+  width:100%;background:transparent;border:none;color:var(--text2);
+  font-size:13px;outline:none;font-family:inherit;resize:none;
+  min-height:70px;padding:2px 0;margin-bottom:10px;line-height:1.5;
+}
+.ccp-notes::placeholder{color:var(--text3)}
+.ccp-footer{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:8px;border-top:1px solid var(--border);padding-top:10px;position:relative;
+}
+.ccp-area-btn{
+  display:flex;align-items:center;gap:6px;background:none;border:none;
+  color:var(--text2);font-size:13px;cursor:pointer;font-family:inherit;
+  padding:4px 6px;border-radius:var(--radius-sm);max-width:60%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.ccp-area-btn:hover{background:var(--bg3)}
+.ccp-footer-right{display:flex;align-items:center;gap:6px}
+.ccp-icon-btn{
+  background:none;border:none;color:var(--text3);cursor:pointer;
+  font-size:16px;padding:5px;border-radius:var(--radius-sm);
+}
+.ccp-icon-btn:hover{background:var(--bg3);color:var(--text)}
+.ccp-send-btn{
+  background:var(--accent);border:none;color:#fff;cursor:pointer;
+  font-size:15px;width:30px;height:30px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+}
+.ccp-send-btn:hover{opacity:.9}
+.ccp-area-menu{
+  position:absolute;bottom:calc(100% + 6px);left:0;z-index:10;
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);box-shadow:0 6px 24px #00000044;
+  padding:4px;min-width:180px;max-height:220px;overflow-y:auto;
+}
+.ccp-area-opt{
+  display:flex;align-items:center;gap:8px;padding:7px 10px;
+  font-size:13px;color:var(--text);cursor:pointer;border-radius:var(--radius-sm);
+}
+.ccp-area-opt:hover{background:var(--bg3)}
+
 /* ===================== FINANCE ===================== */
 
 .fin-bar{

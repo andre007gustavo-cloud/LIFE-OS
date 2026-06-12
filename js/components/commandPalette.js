@@ -27,7 +27,7 @@ const CommandPalette = (() => {
     { id: 'nav-dashboard', section: 'Navegar', icon: 'ti-layout-dashboard', label: 'Ir para Painel',      run: () => Navigation.showView('dashboard') },
     { id: 'nav-now',       section: 'Navegar', icon: 'ti-target',           label: 'Modo Agora',          run: () => Navigation.showView('now') },
     { id: 'nav-tasks',     section: 'Navegar', icon: 'ti-checklist',        label: 'Ir para Tarefas',     run: () => Navigation.showView('tasks') },
-    { id: 'nav-calendar',  section: 'Navegar', icon: 'ti-calendar',         label: 'Ir para Calendário',  run: () => Navigation.showView('calendar') },
+    { id: 'nav-calendar',  section: 'Navegar', icon: 'ti-calendar',         label: 'Ir para Calendário',  run: () => CalendarView.enter() },
     { id: 'nav-finance',   section: 'Navegar', icon: 'ti-coin',             label: 'Ir para Finanças',    run: () => Navigation.showView('finance') },
     { id: 'nav-areas',     section: 'Navegar', icon: 'ti-briefcase',        label: 'Ir para Projetos',    run: () => Navigation.showView('areas') },
     { id: 'nav-habits',    section: 'Navegar', icon: 'ti-repeat',           label: 'Ir para Hábitos',     run: () => Navigation.showView('habits') },

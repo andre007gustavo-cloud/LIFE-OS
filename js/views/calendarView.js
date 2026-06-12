@@ -24,6 +24,10 @@ const CalendarView = (() => {
 
   function render() {
     const view = AppState.ui.calView;
+    syncTabs(view);
+    document.getElementById('cal-title').textContent = formatTitle(view);
+    updateFilterBadge();
+
     if (view === 'day') {
       renderDayLayout();
       return;
@@ -31,9 +35,17 @@ const CalendarView = (() => {
     document.getElementById('cal-body').innerHTML = '';
     if (view === 'month') renderMonth();
     else if (view === 'week') renderWeek();
+  }
 
-    updateFilterBadge();
-    document.getElementById('cal-title').textContent = formatTitle(view);
+  function syncTabs(view) {
+    document.querySelectorAll('.cal-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('cal-tab-' + view)?.classList.add('active');
+  }
+
+  /** Entrar pela aba lateral sempre abre na visão mês */
+  function enter() {
+    AppState.ui.calView = 'month';
+    Navigation.showView('calendar');
   }
 
   function formatTitle(view) {
@@ -53,8 +65,6 @@ const CalendarView = (() => {
 
   function setView(view) {
     AppState.ui.calView = view;
-    document.querySelectorAll('.cal-tab').forEach(t => t.classList.remove('active'));
-    document.getElementById('cal-tab-' + view)?.classList.add('active');
     render();
   }
 
@@ -373,7 +383,7 @@ const CalendarView = (() => {
         <div class="week-col-title">${name}<br>${day.getDate()}</div>
         ${dayTasks.slice(0, 5).map(t => {
           const c = taskColor(t);
-          return `<div class="week-task-chip" style="background:${c}22;color:${c}"
+          return `<div class="week-task-chip" style="background:${c}22;color:var(--text)"
                onclick="ttOpenDetail('${t.id}');showView('tasks')">${recBadge(t, iso)}${escapeHtml(t.name)}</div>`;
         }).join('')}
         ${dayTasks.length > 5 ? `<div style="font-size:10px;color:var(--text3);text-align:center;margin-top:4px;cursor:pointer"
@@ -433,7 +443,7 @@ const CalendarView = (() => {
 
         singleVisible.forEach(t => {
           const tc = taskColor(t);
-          html += `<div class="month-chip" style="background:${tc}22;color:${tc}"
+          html += `<div class="month-chip" style="background:${tc}22;color:var(--text)"
                        onclick="event.stopPropagation();ttOpenDetail('${t.id}');showView('tasks')">
             ${recBadge(t, iso)}${t.start ? t.start + ' ' : ''}${escapeHtml(t.name)}
           </div>`;
@@ -559,7 +569,7 @@ const CalendarView = (() => {
     const t = span.task;
     const color = taskColor(t);
     return `<div class="month-span ${span.cls}"
-                 style="width:100%;background:${color}33;color:${color}"
+                 style="width:100%;background:${color}33;color:var(--text)"
                  onclick="event.stopPropagation();ttOpenDetail('${t.id}');showView('tasks')">
       ${span.isFirst ? escapeHtml(t.name) : ''}
     </div>`;
@@ -574,59 +584,131 @@ const CalendarView = (() => {
     AppState.ui.popoverDate = iso;
     AppState.ui.popoverPri = 'nenhuma';
     AppState.ui.popoverPriIdx = 0;
+    AppState.ui.popoverArea = '';
+    AppState.ui.popoverSched = { date: iso, dateend: '', start: '', end: '', recurrence: '' };
 
-    const tasks = TaskService.getAll()
-      .filter(t => taskOnDay(t, iso) && Utils.isTaskOpen(t));
     const popover = document.createElement('div');
-    popover.className = 'cal-popover';
+    popover.className = 'cal-popover cal-create-pop';
     popover.id = 'cal-popover';
     popover.innerHTML = `
-      <div class="cal-popover-header">
-        <div class="cal-popover-date">${Utils.parseISO(iso).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
-        <button class="cal-popover-close" onclick="closeDayPopover()">×</button>
-      </div>
-      <input class="cal-popover-input" id="pop-input" placeholder="Adicionar tarefa..." onkeydown="popKeyDown(event)">
-      <div class="cal-popover-meta">
-        <button class="tt-meta-btn" id="pop-pri-btn" onclick="popCyclePri()">
-          <i class="ti ti-flag" id="pop-pri-icon"></i> <span id="pop-pri-label">Prioridade</span>
+      <div class="ccp-header">
+        <button class="ccp-date-btn" id="ccp-date-btn" onclick="popOpenDate()">
+          <i class="ti ti-calendar"></i> <span id="ccp-date-label">${fmtPopDate(iso)}</span>
+        </button>
+        <button class="ccp-flag" id="pop-pri-btn" onclick="popCyclePri()" title="Prioridade">
+          <i class="ti ti-flag" id="pop-pri-icon"></i>
         </button>
       </div>
-      <div style="max-height:160px;overflow-y:auto;border-top:1px solid var(--border);padding-top:8px;margin-bottom:10px">
-        ${tasks.length ? tasks.slice(0, 5).map(t => `
-          <div style="display:flex;align-items:center;gap:6px;padding:4px 0;cursor:pointer;font-size:12px"
-               onclick="ttOpenDetail('${t.id}');showView('tasks');closeDayPopover()">
-            <span>${Constants.PRI_ICONS[t.priority]}</span>
-            <span style="flex:1">${recBadge(t, iso)}${escapeHtml(t.name)}</span>
-          </div>`).join('') : '<div style="font-size:12px;color:var(--text3);text-align:center;padding:8px">Nenhuma tarefa</div>'}
-      </div>
-      <div class="cal-popover-footer">
-        <button class="btn btn-ghost btn-sm" onclick="closeDayPopover()">Cancelar</button>
-        <button class="btn btn-primary btn-sm" onclick="popSaveTask()">
-          <i class="ti ti-plus"></i> Adicionar
+      <input class="ccp-title" id="pop-input" placeholder="O que você gostaria de fazer?"
+             onkeydown="popKeyDown(event)">
+      <textarea class="ccp-notes" id="pop-notes" placeholder="Anotações..."></textarea>
+      <div class="ccp-footer">
+        <button class="ccp-area-btn" id="ccp-area-btn" onclick="popToggleAreaMenu(event)">
+          <i class="ti ti-inbox" id="ccp-area-icon"></i> <span id="ccp-area-label">Caixa de Entrada</span>
         </button>
-        <button class="btn btn-ghost btn-sm" onclick="popOpenFull()" title="Abrir dia">
-          <i class="ti ti-arrow-right"></i>
-        </button>
+        <div class="ccp-footer-right">
+          <button class="ccp-icon-btn" onclick="popOpenFull()" title="Abrir dia">
+            <i class="ti ti-arrow-right"></i>
+          </button>
+          <button class="ccp-send-btn" onclick="popSaveTask()" title="Adicionar">
+            <i class="ti ti-arrow-up"></i>
+          </button>
+        </div>
       </div>`;
 
     document.body.appendChild(popover);
     positionPopover(popover, event);
-    setTimeout(() => document.getElementById('pop-input').focus(), 30);
+    setTimeout(() => {
+      document.getElementById('pop-input').focus();
+      document.addEventListener('mousedown', onPopDocDown);
+    }, 30);
+  }
+
+  function onPopDocDown(e) {
+    if (e.target.closest('#cal-popover')) return;
+    if (e.target.closest('#date-popover')) return;
+    if (e.target.closest('.month-day')) return; // troca de dia tratada à parte
+    closeDayPopover();
+  }
+
+  /** "Ter, 16 jun" — formato curto do cabeçalho */
+  function fmtPopDate(iso) {
+    const d = Utils.parseISO(iso);
+    const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+    const wd = cap(d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''));
+    const mo = d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '');
+    return `${wd}, ${d.getDate()} ${mo}`;
+  }
+
+  function popOpenDate() {
+    DatePopover.open(
+      document.getElementById('ccp-date-btn'),
+      AppState.ui.popoverSched,
+      applyPopSched
+    );
+  }
+
+  function applyPopSched(result) {
+    AppState.ui.popoverSched = { ...result };
+    const iso = result.date || AppState.ui.popoverDate;
+    AppState.ui.popoverDate = iso;
+    document.getElementById('ccp-date-label').textContent = fmtPopDate(iso);
+  }
+
+  function popToggleAreaMenu(event) {
+    event.stopPropagation();
+    const existing = document.getElementById('ccp-area-menu');
+    if (existing) { existing.remove(); return; }
+
+    const menu = document.createElement('div');
+    menu.className = 'ccp-area-menu';
+    menu.id = 'ccp-area-menu';
+    menu.innerHTML = `
+      <div class="ccp-area-opt" onclick="popPickArea(event,'')">
+        <i class="ti ti-inbox"></i> Caixa de Entrada
+      </div>
+      ${AreaService.getAll().map(a => `
+        <div class="ccp-area-opt" onclick="popPickArea(event,'${a.id}')">
+          <span style="color:${a.color}">${escapeHtml(a.icon)}</span> ${escapeHtml(a.name)}
+        </div>`).join('')}`;
+    document.getElementById('ccp-area-btn').appendChild(menu);
+  }
+
+  function popPickArea(event, id) {
+    event.stopPropagation();
+    AppState.ui.popoverArea = id;
+    const area = id ? AreaService.getById(id) : null;
+    document.getElementById('ccp-area-label').textContent = area ? area.name : 'Caixa de Entrada';
+    const icon = document.getElementById('ccp-area-icon');
+    if (area) {
+      icon.className = '';
+      icon.textContent = area.icon;
+      icon.style.color = area.color;
+    } else {
+      icon.className = 'ti ti-inbox';
+      icon.textContent = '';
+      icon.style.color = '';
+    }
+    document.getElementById('ccp-area-menu')?.remove();
   }
 
   function positionPopover(popover, event) {
     const dayEl = event.target.closest('.month-day');
     const rect = dayEl.getBoundingClientRect();
+    const w = popover.offsetWidth;
+    const h = popover.offsetHeight;
     let left = rect.right + 8;
     let top = rect.top;
-    if (left + 300 > window.innerWidth) left = rect.left - 308;
-    if (top + 320 > window.innerHeight) top = window.innerHeight - 320;
+    if (left + w > window.innerWidth) left = Math.max(8, rect.left - w - 8);
+    if (top + h > window.innerHeight) top = window.innerHeight - h - 10;
     if (top < 10) top = 10;
     popover.style.left = left + 'px';
     popover.style.top = top + 'px';
   }
 
   function closeDayPopover() {
+    document.removeEventListener('mousedown', onPopDocDown);
+    DatePopover.close();
     document.getElementById('cal-popover')?.remove();
   }
 
@@ -634,8 +716,8 @@ const CalendarView = (() => {
     AppState.ui.popoverPriIdx = (AppState.ui.popoverPriIdx + 1) % 4;
     AppState.ui.popoverPri = Constants.PRI_CYCLE[AppState.ui.popoverPriIdx];
     const pri = AppState.ui.popoverPri;
-    document.getElementById('pop-pri-icon').style.color = Constants.PRI_COLORS[pri];
-    document.getElementById('pop-pri-label').textContent = pri === 'nenhuma' ? 'Prioridade' : pri;
+    document.getElementById('pop-pri-icon').style.color =
+      pri === 'nenhuma' ? '' : Constants.PRI_COLORS[pri];
     document.getElementById('pop-pri-btn').classList.toggle('active', pri !== 'nenhuma');
   }
 
@@ -647,10 +729,17 @@ const CalendarView = (() => {
   function popSaveTask() {
     const name = document.getElementById('pop-input').value.trim();
     if (!name) return;
+    const sched = AppState.ui.popoverSched;
     TaskService.create({
       name,
+      notes: document.getElementById('pop-notes').value.trim(),
+      area: AppState.ui.popoverArea || '',
       priority: AppState.ui.popoverPri,
-      date: AppState.ui.popoverDate
+      date: sched.date || AppState.ui.popoverDate,
+      dateend: sched.dateend || '',
+      start: sched.start || '',
+      end: sched.end || '',
+      recurrence: sched.recurrence || ''
     });
     closeDayPopover();
     render();
@@ -680,10 +769,11 @@ const CalendarView = (() => {
   }
 
   return {
-    render, setView, navigate, goToday,
+    render, enter, setView, navigate, goToday,
     toggleFilterPanel, toggleArea, setProjectFilter, clearFilters,
     miniCalNav, miniCalSelect,
     createTask,
-    showDayPopover, closeDayPopover, popCyclePri, popKeyDown, popSaveTask, popOpenFull
+    showDayPopover, closeDayPopover, popCyclePri, popKeyDown, popSaveTask, popOpenFull,
+    popOpenDate, popToggleAreaMenu, popPickArea
   };
 })();
