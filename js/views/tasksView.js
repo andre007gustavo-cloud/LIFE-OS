@@ -258,22 +258,22 @@ const TasksView = (() => {
 
   // ===== Quick Add =====
 
+  function blankSchedule() {
+    return { date: '', dateend: '', start: '', end: '', recurrence: '' };
+  }
+
   function openQuick() {
     const form = document.getElementById('tt-quick-form');
     form.classList.add('open');
     document.getElementById('tt-quick-input').focus();
     AppState.ui.ttQuickPri = 'nenhuma';
     AppState.ui.ttqPriIdx = 0;
-    AppState.ui.ttQuickDate = '';
-    AppState.ui.ttQuickTime = '';
+    AppState.ui.ttQuickSched = blankSchedule();
 
     document.getElementById('ttq-pri-icon').className = 'ti ti-flag';
+    document.getElementById('ttq-pri-icon').style.color = '';
     document.getElementById('ttq-pri-label').textContent = 'Prioridade';
-    document.getElementById('ttq-date-label').textContent = 'Data';
-    document.getElementById('ttq-time-label').textContent = 'Horário';
     document.getElementById('ttq-pri-btn').classList.remove('active');
-    document.getElementById('ttq-date-btn').classList.remove('active');
-    document.getElementById('ttq-time-btn').classList.remove('active');
 
     // Populate area select
     document.getElementById('ttq-area').innerHTML =
@@ -282,47 +282,57 @@ const TasksView = (() => {
         `<option value="${a.id}">${escapeHtml(a.icon)} ${escapeHtml(a.name)}</option>`).join('');
 
     // Pre-fill date based on current list
-    if (AppState.ui.ttList === 'hoje') {
-      AppState.ui.ttQuickDate = Utils.today();
-      document.getElementById('ttq-date-label').textContent = Utils.fmtDate(Utils.today());
-    } else if (AppState.ui.ttList === 'amanha') {
-      AppState.ui.ttQuickDate = Utils.tomorrow();
-      document.getElementById('ttq-date-label').textContent = Utils.fmtDate(Utils.tomorrow());
-    }
+    if (AppState.ui.ttList === 'hoje') AppState.ui.ttQuickSched.date = Utils.today();
+    else if (AppState.ui.ttList === 'amanha') AppState.ui.ttQuickSched.date = Utils.tomorrow();
+    refreshScheduleLabel();
   }
 
   function closeQuick() {
     document.getElementById('tt-quick-form').classList.remove('open');
     document.getElementById('tt-quick-input').value = '';
-    document.getElementById('ttq-date').value = '';
-    document.getElementById('ttq-time').value = '';
-    AppState.ui.ttQuickDate = '';
-    AppState.ui.ttQuickTime = '';
+    AppState.ui.ttQuickSched = blankSchedule();
+    DatePopover.close();
     quickPreview();
   }
 
-  function quickPickDate() {
-    const inp = document.getElementById('ttq-date');
-    try { inp.showPicker(); } catch(e) { inp.click(); }
+  function openSchedule() {
+    DatePopover.open(
+      document.getElementById('ttq-sched-btn'),
+      AppState.ui.ttQuickSched,
+      applySchedule
+    );
   }
 
-  function quickPickTime() {
-    const inp = document.getElementById('ttq-time');
-    try { inp.showPicker(); } catch(e) { inp.click(); }
+  function applySchedule(result) {
+    AppState.ui.ttQuickSched = { ...result };
+    refreshScheduleLabel();
   }
 
-  function quickUpdateTime() {
-    const v = document.getElementById('ttq-time').value;
-    AppState.ui.ttQuickTime = v;
-    document.getElementById('ttq-time-label').textContent = v || 'Horário';
-    document.getElementById('ttq-time-btn').classList.toggle('active', !!v);
+  /** "Hoje", "Amanhã", "12 jun", "12 jun → 15 jun", "Hoje, 15:00 - 16:00" */
+  function scheduleLabel(s) {
+    if (!s.date) return 'Data';
+    if (s.dateend && s.dateend !== s.date) {
+      return shortDate(s.date) + ' → ' + shortDate(s.dateend);
+    }
+    let label = relDate(s.date);
+    if (s.start) label += ', ' + s.start + (s.end ? ' - ' + s.end : '');
+    return label;
   }
 
-  function quickUpdateDate() {
-    const v = document.getElementById('ttq-date').value;
-    AppState.ui.ttQuickDate = v;
-    document.getElementById('ttq-date-label').textContent = v ? Utils.fmtDate(v) : 'Data';
-    document.getElementById('ttq-date-btn').classList.toggle('active', !!v);
+  function relDate(iso) {
+    if (iso === Utils.today()) return 'Hoje';
+    if (iso === Utils.tomorrow()) return 'Amanhã';
+    return shortDate(iso);
+  }
+
+  function shortDate(iso) {
+    return Utils.parseISO(iso).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
+  }
+
+  function refreshScheduleLabel() {
+    const s = AppState.ui.ttQuickSched;
+    document.getElementById('ttq-sched-label').textContent = scheduleLabel(s);
+    document.getElementById('ttq-sched-btn').classList.toggle('active', !!s.date);
   }
 
   function quickCyclePriority() {
@@ -360,13 +370,15 @@ const TasksView = (() => {
       if (foundArea) { area = foundArea.id; project = pid; }
     }
 
+    const sched = AppState.ui.ttQuickSched || blankSchedule();
     const task = TaskService.create({
       name: parsed.name, area, project,
       priority: parsed.priority || AppState.ui.ttQuickPri,
-      date: parsed.date || AppState.ui.ttQuickDate || Utils.today(),
-      start: parsed.time || AppState.ui.ttQuickTime || '',
-      end: parsed.timeend || '',
-      recurrence: parsed.recurrence || ''
+      date: parsed.date || sched.date || Utils.today(),
+      dateend: sched.dateend || '',
+      start: parsed.time || sched.start || '',
+      end: parsed.timeend || sched.end || '',
+      recurrence: parsed.recurrence || sched.recurrence || ''
     });
 
     closeQuick();
@@ -428,7 +440,7 @@ const TasksView = (() => {
 
   return {
     renderSidebar, setList, filterAndRender,
-    openQuick, closeQuick, quickPickDate, quickPickTime, quickUpdateDate, quickUpdateTime, quickCyclePriority, quickKeyHandler, quickSave, quickPreview,
+    openQuick, closeQuick, openSchedule, quickCyclePriority, quickKeyHandler, quickSave, quickPreview,
     duplicateById, cyclePri, hardExpand
   };
 })();

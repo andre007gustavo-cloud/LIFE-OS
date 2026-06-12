@@ -35,8 +35,7 @@ const AppState = (() => {
     ttList: 'hoje',
     ttDetailId: null,
     ttQuickPri: 'nenhuma',
-    ttQuickDate: '',
-    ttQuickTime: '',
+    ttQuickSched: { date: '', dateend: '', start: '', end: '', recurrence: '' },
     ttqPriIdx: 0,
 
     // Projects workspace

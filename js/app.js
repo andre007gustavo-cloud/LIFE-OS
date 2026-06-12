@@ -237,11 +237,20 @@
     window.ttQuickSave          = TasksView.quickSave;
     window.ttQuickKey           = TasksView.quickKeyHandler;
     window.ttQuickPreview       = TasksView.quickPreview;
-    window.ttqPickDate          = TasksView.quickPickDate;
-    window.ttqPickTime          = TasksView.quickPickTime;
-    window.ttqUpdateDate        = TasksView.quickUpdateDate;
-    window.ttqUpdateTime        = TasksView.quickUpdateTime;
+    window.ttqOpenSchedule      = TasksView.openSchedule;
     window.ttqCyclePriority     = TasksView.quickCyclePriority;
+
+    // --- Date/Duration popover ---
+    window.dpTab                = DatePopover.setTab;
+    window.dpPreset             = DatePopover.preset;
+    window.dpNav                = DatePopover.navMonth;
+    window.dpPickDay            = DatePopover.pickDay;
+    window.dpSetTime            = DatePopover.setTime;
+    window.dpSetDurDate         = DatePopover.setDurDate;
+    window.dpToggleAllDay       = DatePopover.toggleAllDay;
+    window.dpSetRepeat          = DatePopover.setRepeat;
+    window.dpClear              = DatePopover.clear;
+    window.dpApply              = DatePopover.apply;
     window.ttCyclePri           = TasksView.cyclePri;
     window.ttDupTaskById        = TasksView.duplicateById;
     window.ttHardExpand         = TasksView.hardExpand;
