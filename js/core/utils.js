@@ -54,6 +54,17 @@ const Utils = (() => {
     return `${dy}/${m}`;
   }
 
+  /** Diferença em dias entre duas datas ISO (d2 - d1), sem o +1 de daysBetween */
+  function diffDays(d1, d2) {
+    return Math.round((parseISO(d2) - parseISO(d1)) / 86400000);
+  }
+
+  /** Segunda-feira (início da semana) da semana que contém a data ISO */
+  function startOfWeek(dateStr) {
+    const offset = (parseISO(dateStr).getDay() + 6) % 7; // 0=seg ... 6=dom
+    return addDays(dateStr, -offset);
+  }
+
   function timeToMins(timeStr) {
     return timeStr.split(':').reduce((acc, n) => acc * 60 + parseInt(n), 0);
   }
@@ -69,6 +80,11 @@ const Utils = (() => {
 
   // ===== Task helpers =====
 
+  /** Tarefa "em aberto": não concluída e não arquivada (descartada) */
+  function isTaskOpen(task) {
+    return task.status !== 'concluida' && task.status !== 'descartada';
+  }
+
   /** Returns true if a task occupies the given ISO date (handles multi-day tasks) */
   function taskCoversDay(task, isoDate) {
     if (!task.date) return false;
@@ -83,7 +99,7 @@ const Utils = (() => {
    */
   function taskRecursOnDay(task, isoDate) {
     if (!task.recurrence || !task.date) return false;
-    if (task.status === 'concluida') return false;
+    if (!isTaskOpen(task)) return false;
     if (task.dateend && task.dateend !== task.date) return false;
     if (isoDate <= task.date) return false; // o próprio dia já vem de taskCoversDay
     if (task.recurrence === 'daily') return true;
@@ -162,9 +178,12 @@ const Utils = (() => {
     tomorrow,
     addDays,
     daysBetween,
+    diffDays,
+    startOfWeek,
     fmtDate,
     timeToMins,
     fmtMoney,
+    isTaskOpen,
     taskCoversDay,
     taskRecursOnDay,
     formatFileSize,

@@ -30,7 +30,7 @@ const AreasView = (() => {
 
   function projectItemHtml(project) {
     const taskCount = TaskService.forProject(project.id)
-      .filter(t => t.status !== 'concluida').length;
+      .filter(t => Utils.isTaskOpen(t)).length;
     const isActive = AppState.ui.activeProjectId === project.id;
     const statusColor = project.status === 'concluido' ? 'var(--green)'
       : project.status === 'pausado' ? 'var(--amber)'
@@ -174,13 +174,13 @@ const AreasView = (() => {
 
       ${tasks.length ? `<div class="card">
         <div class="card-title">Próximas tarefas</div>
-        ${tasks.filter(t => t.status !== 'concluida').slice(0, 5).map(miniTaskHtml).join('') || '<div class="text-muted">Sem tarefas pendentes</div>'}
+        ${tasks.filter(t => Utils.isTaskOpen(t)).slice(0, 5).map(miniTaskHtml).join('') || '<div class="text-muted">Sem tarefas pendentes</div>'}
       </div>` : ''}`;
   }
 
   function renderTasks(project) {
     const tasks = TaskService.forProject(project.id);
-    const pending = tasks.filter(t => t.status !== 'concluida');
+    const pending = tasks.filter(t => Utils.isTaskOpen(t));
     const done = tasks.filter(t => t.status === 'concluida');
 
     document.getElementById('proj-tab-content').innerHTML = `

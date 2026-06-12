@@ -87,7 +87,11 @@ const Storage = (() => {
           inbox: data.inbox || [],
           habits: data.habits || [],
           habitLogs: data.habitLogs || [],
-          hardModeDates: data.hardModeDates || []
+          hardModeDates: data.hardModeDates || [],
+          weeklyGoals: data.weeklyGoals || [],
+          reviewLogs: data.reviewLogs || [],
+          events: data.events || [],
+          meta: data.meta || {}
         };
       }
     } catch (err) {
@@ -114,6 +118,10 @@ const Storage = (() => {
         habits: db.habits || [],
         habitLogs: db.habitLogs || [],
         hardModeDates: db.hardModeDates || [],
+        weeklyGoals: db.weeklyGoals || [],
+        reviewLogs: db.reviewLogs || [],
+        events: db.events || [],
+        meta: db.meta || {},
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
       _setSyncState('synced');
@@ -176,7 +184,11 @@ const Storage = (() => {
           inbox: data.inbox || [],
           habits: data.habits || [],
           habitLogs: data.habitLogs || [],
-          hardModeDates: data.hardModeDates || []
+          hardModeDates: data.hardModeDates || [],
+          weeklyGoals: data.weeklyGoals || [],
+          reviewLogs: data.reviewLogs || [],
+          events: data.events || [],
+          meta: data.meta || {}
         });
       }
     });

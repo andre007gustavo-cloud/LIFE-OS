@@ -175,7 +175,7 @@ const CalendarView = (() => {
       const isToday = iso === todayISO;
       const isSelected = iso === selISO;
       const hasTasks = TaskService.getAll()
-        .some(t => taskOnDay(t, iso) && t.status !== 'concluida');
+        .some(t => taskOnDay(t, iso) && Utils.isTaskOpen(t));
 
       html += `<div class="mini-day-wrap">
         <div class="mini-day${isToday ? ' today-mini' : ''}${isSelected ? ' selected' : ''}"
@@ -367,7 +367,7 @@ const CalendarView = (() => {
       day.setDate(day.getDate() + i);
       const iso = isoOf(day);
       const dayTasks = getFilteredTasks(t => taskOnDay(t, iso))
-        .filter(t => t.status !== 'concluida');
+        .filter(t => Utils.isTaskOpen(t));
 
       html += `<div class="week-col${iso === todayISO ? ' today-col' : ''}">
         <div class="week-col-title">${name}<br>${day.getDate()}</div>
@@ -576,7 +576,7 @@ const CalendarView = (() => {
     AppState.ui.popoverPriIdx = 0;
 
     const tasks = TaskService.getAll()
-      .filter(t => taskOnDay(t, iso) && t.status !== 'concluida');
+      .filter(t => taskOnDay(t, iso) && Utils.isTaskOpen(t));
     const popover = document.createElement('div');
     popover.className = 'cal-popover';
     popover.id = 'cal-popover';

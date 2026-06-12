@@ -46,7 +46,16 @@
       }
 
       LoginScreen.updateUserInfo();
-      renderActiveViews();
+
+      // Recomeço sem culpa: detecta a ausência ANTES de carimbar o acesso de hoje
+      const comeback = ReviewService.detectComeback();
+      ReviewService.stampActivity();
+
+      if (comeback) {
+        ComebackView.show(comeback.daysAway, renderActiveViews);
+      } else {
+        renderActiveViews();
+      }
 
       // Escuta mudanças de outros dispositivos em tempo real
       Storage.listenForChanges((data) => {
@@ -88,6 +97,7 @@
     Navigation.register('finance', FinanceView.render);
     Navigation.register('areas', AreasView.render);
     Navigation.register('habits', HabitsView.render);
+    Navigation.register('review', ReviewView.render);
 
     // Expõe funções globais para onclick inline
     exposeGlobals();
@@ -108,6 +118,9 @@
     }
     if (document.getElementById('view-habits').classList.contains('active')) {
       HabitsView.render();
+    }
+    if (document.getElementById('view-review').classList.contains('active')) {
+      ReviewView.render();
     }
   }
 
@@ -151,6 +164,10 @@
 
     // --- Habits ---
     window.HabitsView         = HabitsView;
+
+    // --- Review / Comeback (Fase 6) ---
+    window.ReviewView         = ReviewView;
+    window.ComebackView       = ComebackView;
 
     // --- Tasks (legacy modal + actions) ---
     window.openTaskModal       = TaskModal.open;

@@ -138,9 +138,17 @@ const TaskService = (() => {
 
   // ===== Filtering / querying =====
 
-  /** Returns pending (non-completed) tasks */
+  /** Returns pending (em aberto: nem concluídas, nem arquivadas) tasks */
   function pending() {
-    return getAll().filter(t => t.status !== 'concluida');
+    return getAll().filter(Utils.isTaskOpen);
+  }
+
+  /** Arquiva (descarta sem excluir): some das listas mas continua no banco */
+  function archive(id) {
+    const t = getById(id);
+    if (!t) return;
+    t.status = 'descartada';
+    AppState.persist();
   }
 
   /** Returns completed tasks */
@@ -199,7 +207,7 @@ const TaskService = (() => {
   }
 
   return {
-    getAll, getById, create, update, updateField, remove, toggle,
+    getAll, getById, create, update, updateField, remove, toggle, archive,
     cyclePriority, duplicate,
     addSubtask, toggleSubtask, renameSubtask, removeSubtask,
     addTag, removeTag,

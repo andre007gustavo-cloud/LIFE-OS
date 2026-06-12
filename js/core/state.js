@@ -70,8 +70,16 @@ const AppState = (() => {
     localStorage.setItem(Constants.STORAGE_KEY, JSON.stringify(DB));
   }
 
-  /** Save current state to localStorage + cloud (debounced) */
-  function persist() { Storage.save(DB); }
+  /**
+   * Save current state to localStorage + cloud (debounced).
+   * Carimba a data da última atividade — toda mutação passa por aqui, então é
+   * o único ponto de onde o "recomeço sem culpa" mede a ausência do usuário.
+   */
+  function persist() {
+    if (!DB.meta) DB.meta = {};
+    DB.meta.lastActivity = Utils.today();
+    Storage.save(DB);
+  }
 
   /** Reload from local storage */
   function reload() { DB = Storage.load(); }

@@ -15,10 +15,26 @@ const DashboardView = (() => {
     const td = Utils.today();
     renderHeader(td);
     renderHardMode(td);
+    renderReviewNudge(td);
     renderMetrics(td);
     renderTimeline(td);
     renderInbox();
     renderWeek(td);
+  }
+
+  // ===== Gatilho sutil de revisão semanal =====
+
+  /** Domingo, ou 7+ dias desde a última revisão → card discreto (nunca bloqueante) */
+  function renderReviewNudge(td) {
+    const el = document.getElementById('dash-review-nudge');
+    if (!el) return;
+    const isSunday = Utils.parseISO(td).getDay() === 0;
+    const overdue = ReviewService.daysSinceLastReview() >= Constants.REVIEW.NUDGE_DAYS;
+    if (!isSunday && !overdue) { el.innerHTML = ''; return; }
+    el.innerHTML = `<div class="dash-review-nudge" onclick="showView('review')">
+      <div class="drn-text"><i class="ti ti-report-analytics"></i> É hora da revisão semanal</div>
+      <button class="btn btn-sm btn-primary" onclick="event.stopPropagation();showView('review')">Revisar</button>
+    </div>`;
   }
 
   // ===== Modo dia difícil =====
@@ -64,7 +80,7 @@ const DashboardView = (() => {
       { weekday: 'long', day: 'numeric', month: 'long' });
     const dateCap = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
 
-    const n = timedTasks(td).filter(t => t.status !== 'concluida').length;
+    const n = timedTasks(td).filter(t => Utils.isTaskOpen(t)).length;
     const summary = n === 0 ? 'nenhuma tarefa com horário hoje'
       : n === 1 ? '1 tarefa com horário hoje'
       : `${n} tarefas com horário hoje`;
@@ -82,7 +98,7 @@ const DashboardView = (() => {
 
   function untimedPending(td) {
     return TaskService.forDay(td)
-      .filter(t => (!t.start || t.dateend) && t.status !== 'concluida');
+      .filter(t => (!t.start || t.dateend) && Utils.isTaskOpen(t));
   }
 
   // ===== Cards de métrica =====
@@ -192,7 +208,7 @@ const DashboardView = (() => {
 
   /** Modo dia difícil: só as 3 tarefas pendentes mais prioritárias de hoje */
   function hardTimelineHtml(withTime, noTime, pomo) {
-    const pending = [...withTime.filter(t => t.status !== 'concluida'), ...noTime]
+    const pending = [...withTime.filter(t => Utils.isTaskOpen(t)), ...noTime]
       .sort((a, b) => Constants.PRI_ORDER[a.priority] - Constants.PRI_ORDER[b.priority]);
     const top = pending.slice(0, Constants.HARD_MODE.TASK_LIMIT);
     const hidden = pending.length - top.length;

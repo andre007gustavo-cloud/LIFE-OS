@@ -71,6 +71,16 @@ const Constants = (() => {
     TASK_LIMIT: 3      // máximo de tarefas visíveis nas listas de hoje
   };
 
+  /** Revisão semanal + recomeço sem culpa */
+  const REVIEW = {
+    STALLED_DAYS: 14,        // projeto sem tarefa concluída há N dias = parado
+    NUDGE_DAYS: 7,           // dias desde a última revisão para sugerir uma nova
+    COMEBACK_DAYS: 5,        // dias de ausência para a tela de recomeço aparecer
+    REVIEW_OVERDUE_KEEP: 5,  // recomeço "revisar as mais importantes": nº de vencidas mantidas
+    COMEBACK_RECENT_DAYS: 7, // janela em que um recomeço ainda é mencionado na revisão
+    GOALS_MAX: 3             // "as 3 grandes da semana"
+  };
+
   /** Default storage key */
   const STORAGE_KEY = 'lifeos';
   const THEME_KEY = 'lifeos-theme';
@@ -82,6 +92,10 @@ const Constants = (() => {
     habits: [],
     habitLogs: [],
     hardModeDates: [],
+    weeklyGoals: [],
+    reviewLogs: [],
+    events: [],
+    meta: {},
     areas: [
       { id: 'a1', name: 'Trabalho', icon: '💼', color: '#7c6fff',
         projects: [{ id: 'p1', name: 'Geral', status: 'ativo', desc: '' }] },
@@ -112,6 +126,7 @@ const Constants = (() => {
     CALENDAR,
     HABITS,
     HARD_MODE,
+    REVIEW,
     STORAGE_KEY,
     THEME_KEY,
     SEED_DATA

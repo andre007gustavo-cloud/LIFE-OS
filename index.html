@@ -52,6 +52,7 @@
   <link rel="stylesheet" href="css/calendar-finance.css">
   <link rel="stylesheet" href="css/projects.css">
   <link rel="stylesheet" href="css/habits.css">
+  <link rel="stylesheet" href="css/review.css">
   <link rel="stylesheet" href="css/responsive.css">
 </head>
 <body>
@@ -77,6 +78,11 @@
   <div style="font-size:13px;color:var(--text3)">Carregando dados...</div>
 </div>
 
+<!-- ========== COMEBACK SCREEN (Recomeço sem culpa) ========== -->
+<div id="comeback-screen">
+  <div id="comeback-content"></div>
+</div>
+
 <div id="app" style="display:none">
 
   <!-- ========== NAV ========== -->
@@ -96,6 +102,9 @@
     </button>
     <button class="nav-btn" id="nav-areas" onclick="showView('areas')">
       <i class="ti ti-briefcase"></i><span class="nav-label">Projetos</span>
+    </button>
+    <button class="nav-btn" id="nav-review" onclick="showView('review')">
+      <i class="ti ti-report-analytics"></i><span class="nav-label">Revisão</span>
     </button>
     <button class="nav-btn" id="nav-habits" onclick="showView('habits')">
       <i class="ti ti-repeat"></i><span class="nav-label">Hábitos</span>
@@ -124,6 +133,7 @@
     </div>
 
     <div id="dash-hardmode"></div>
+    <div id="dash-review-nudge"></div>
 
     <div class="metric-grid" id="dash-metrics"></div>
 
@@ -345,6 +355,11 @@
       </div>
 
     </div>
+  </div>
+
+  <!-- ========== REVIEW VIEW (Revisão semanal guiada) ========== -->
+  <div class="view padded" id="view-review">
+    <div id="review-root"></div>
   </div>
 
   <!-- ========== HABITS VIEW ========== -->
@@ -699,6 +714,7 @@
 <script src="js/services/financeService.js"></script>
 <script src="js/services/pomodoroService.js"></script>
 <script src="js/services/habitService.js"></script>
+<script src="js/services/reviewService.js"></script>
 
 <script src="js/ui/navigation.js"></script>
 <script src="js/ui/theme.js"></script>
@@ -724,6 +740,8 @@
 <script src="js/views/financeView.js"></script>
 <script src="js/views/areasView.js"></script>
 <script src="js/views/habitsView.js"></script>
+<script src="js/views/reviewView.js"></script>
+<script src="js/views/comebackView.js"></script>
 
 <script src="js/app.js"></script>
 <script src="js/pwa.js"></script>

@@ -52,7 +52,7 @@ const TasksView = (() => {
       const isAreaActive = ttList === `area:${area.id}`;
       const projs = area.projects || [];
       const areaCount = TaskService.getAll()
-        .filter(t => t.area === area.id && t.status !== 'concluida').length;
+        .filter(t => t.area === area.id && Utils.isTaskOpen(t)).length;
 
       return `<div class="tt-list-item${isAreaActive ? ' active' : ''}" id="ttl-area-${area.id}" onclick="ttSetList('area:${area.id}')">
         <div class="tt-area-dot" style="background:${area.color}"></div>
@@ -104,23 +104,23 @@ const TasksView = (() => {
     }
 
     const filters = {
-      hoje: t => t.status !== 'concluida' && Utils.taskCoversDay(t, td),
-      amanha: t => t.status !== 'concluida' && Utils.taskCoversDay(t, tom),
-      semana: t => t.status !== 'concluida' && t.date && t.date >= td && t.date <= in7,
-      todas: t => t.status !== 'concluida',
-      alta: t => t.status !== 'concluida' && t.priority === 'alta',
-      semdata: t => t.status !== 'concluida' && !t.date,
+      hoje: t => Utils.isTaskOpen(t) && Utils.taskCoversDay(t, td),
+      amanha: t => Utils.isTaskOpen(t) && Utils.taskCoversDay(t, tom),
+      semana: t => Utils.isTaskOpen(t) && t.date && t.date >= td && t.date <= in7,
+      todas: t => Utils.isTaskOpen(t),
+      alta: t => Utils.isTaskOpen(t) && t.priority === 'alta',
+      semdata: t => Utils.isTaskOpen(t) && !t.date,
       concluidas: t => t.status === 'concluida'
     };
 
     if (filters[ttList]) return tasks.filter(filters[ttList]);
     if (ttList.startsWith('area:')) {
       const areaId = ttList.replace('area:', '');
-      return tasks.filter(t => t.area === areaId && t.status !== 'concluida');
+      return tasks.filter(t => t.area === areaId && Utils.isTaskOpen(t));
     }
     if (ttList.startsWith('proj:')) {
       const projId = ttList.replace('proj:', '');
-      return tasks.filter(t => t.project === projId && t.status !== 'concluida');
+      return tasks.filter(t => t.project === projId && Utils.isTaskOpen(t));
     }
     return tasks;
   }
@@ -203,7 +203,7 @@ const TasksView = (() => {
     const subDone = subtasks.filter(s => s.done).length;
     const isActive = AppState.ui.ttDetailId === t.id;
     const isOverdue = t.date && t.date < Utils.today()
-      && t.status !== 'concluida' && !isMulti;
+      && Utils.isTaskOpen(t) && !isMulti;
 
     const metaParts = buildTaskMeta(t, area, proj, isMulti, isOverdue);
     const subBar = subtasks.length
