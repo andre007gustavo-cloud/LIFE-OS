@@ -8,7 +8,7 @@
  * Para publicar nova versão: incremente CACHE_VERSION.
  */
 
-const CACHE_VERSION = 'v20260611-205017';
+const CACHE_VERSION = 'v20260611-213451';
 const CACHE_NAME = `lifeos-${CACHE_VERSION}`;
 
 // Domínios do Firebase/Google — deixa passar, Firebase cuida do offline via IndexedDB
@@ -65,6 +65,7 @@ const PRECACHE = [
   '/js/components/pomodoroUI.js',
   '/js/components/loginScreen.js',
   '/js/components/inboxCapture.js',
+  '/js/components/commandPalette.js',
   '/js/views/dashboardView.js',
   '/js/views/tasksView.js',
   '/js/views/taskDetail.js',

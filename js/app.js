@@ -69,6 +69,7 @@
     MobileSidebar.init();
     Modal.wireBackdropClicks();
     InboxCapture.init();
+    CommandPalette.init();
 
     // Close day-popover quando clica fora
     document.addEventListener('click', e => {

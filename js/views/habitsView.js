@@ -26,13 +26,31 @@ const HabitsView = (() => {
     wireMenuCloseOnce();
     const el = document.getElementById('habits-list');
     const habits = HabitService.getAll();
-    if (!habits.length) {
-      el.innerHTML = emptyStateHtml();
-      return;
-    }
     const td = Utils.today();
     const hard = HabitService.isHardDay(td);
-    el.innerHTML = habits.map(h => habitRowHtml(h, td, hard)).join('');
+    const body = habits.length
+      ? habits.map(h => habitRowHtml(h, td, hard)).join('')
+      : emptyStateHtml();
+    el.innerHTML = body + testButtonHtml();
+  }
+
+  /** Botão de teste do escudo — só em localhost, nunca em produção */
+  function testButtonHtml() {
+    if (window.location.hostname !== 'localhost') return '';
+    return `<button onclick="HabitsView.seedShieldTest()" title="Cria um hábito de teste: 7 dias cumpridos + 1 falha protegida por escudo"
+      style="margin-top:12px;padding:5px 10px;font-size:11px;background:transparent;border:1px dashed var(--border);border-radius:var(--radius-sm);color:var(--text3);cursor:pointer;font-family:inherit">🧪 Testar escudo</button>`;
+  }
+
+  function seedShieldTest() {
+    const habit = HabitService.create({
+      name: 'Teste Escudo', icon: '🧪', minVersion: 'teste',
+      frequency: { type: 'daily' }
+    });
+    // 7 cumpridos (ganha 1 escudo) + falha em ontem (consome o escudo → log
+    // 'shielded') + hoje cumprido → streak=9 com quadradinho azul na falha.
+    // ("DDDDDDD." colocaria a falha em hoje, que não conta como falha ainda.)
+    HabitService._seedTestData(habit.id, 'DDDDDDD.D');
+    render();
   }
 
   function habitRowHtml(habit, td, hard) {
@@ -41,7 +59,7 @@ const HabitsView = (() => {
     const monthName = Utils.parseISO(td).toLocaleDateString('pt-BR', { month: 'long' });
     const dueToday = HabitService.isDueOn(habit, td);
 
-    return `<div class="habit-row">
+    return `<div class="habit-row" data-habit-id="${habit.id}">
       <div class="habit-icon" style="background:${habit.color}22" onclick="HabitsView.openModal('${habit.id}')">${escapeHtml(habit.icon)}</div>
       <div class="habit-info" onclick="HabitsView.openModal('${habit.id}')">
         <div class="habit-name">${escapeHtml(habit.name)}</div>
@@ -179,6 +197,17 @@ const HabitsView = (() => {
     DashboardView.render(); // card "Hábitos hoje"
   }
 
+  /** Rola até o hábito e o destaca brevemente (vindo da paleta de comandos) */
+  function highlight(id) {
+    const row = document.querySelector(`.habit-row[data-habit-id="${id}"]`);
+    if (!row) return;
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    row.classList.remove('cmdk-flash');
+    void row.offsetWidth; // força reflow para reiniciar a animação
+    row.classList.add('cmdk-flash');
+    setTimeout(() => row.classList.remove('cmdk-flash'), 1600);
+  }
+
   // ===== Modal de criar/editar =====
 
   function openModal(habitId) {
@@ -264,8 +293,9 @@ const HabitsView = (() => {
   }
 
   return {
-    render,
+    render, highlight,
     tap, pressStart, pressEnd, openMenu, menuAction,
-    openModal, useSuggestion, selectColor, onFreqChange, save, archive
+    openModal, useSuggestion, selectColor, onFreqChange, save, archive,
+    seedShieldTest
   };
 })();

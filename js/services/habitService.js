@@ -200,10 +200,38 @@ const HabitService = (() => {
     AppState.persist();
   }
 
+  // ===== Teste manual =====
+
+  /**
+   * APENAS PARA TESTE MANUAL NO CONSOLE — não usar em produção.
+   * Cria habitLogs retroativos para um hábito existente a partir de um padrão.
+   * `pattern`: cada caractere é um dia, do mais antigo (esquerda) para hoje
+   * (direita) — D=done, M=minimal, .=devido-não-cumprido, _=não-devido.
+   * Recua o createdAt do hábito para o dia mais antigo e limpa logs anteriores.
+   * Ex.: HabitService._seedTestData(id, "DDDDDDD.D")
+   */
+  function _seedTestData(habitId, pattern) {
+    const habit = getById(habitId);
+    if (!habit) return;
+    const db = _db();
+    const td = Utils.today();
+    const n = pattern.length;
+    habit.createdAt = Utils.addDays(td, -(n - 1));
+    db.habitLogs = db.habitLogs.filter(l => l.habitId !== habitId);
+    pattern.split('').forEach((ch, i) => {
+      const date = Utils.addDays(td, -(n - 1 - i));
+      if (ch === 'D') db.habitLogs.push({ habitId, date, status: 'done' });
+      else if (ch === 'M') db.habitLogs.push({ habitId, date, status: 'minimal' });
+      // '.' (devido-não-cumprido) e '_' (não-devido) não geram log
+    });
+    AppState.persist();
+  }
+
   return {
     getAll, getById, create, update, archive,
     getLog, toggle,
     isDueOn, streak, monthlyRate, stats,
-    isHardDay, toggleHardDay
+    isHardDay, toggleHardDay,
+    _seedTestData
   };
 })();
