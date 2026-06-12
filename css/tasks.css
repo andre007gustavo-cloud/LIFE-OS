@@ -154,15 +154,6 @@
   background:transparent;color:var(--text2);font-size:13px;font-family:inherit;
 }
 .dp-tab.active{background:var(--bg2);color:var(--text);font-weight:600}
-.dp-presets{
-  display:flex;justify-content:space-around;gap:6px;margin-bottom:10px;
-}
-.dp-preset{
-  flex:1;padding:8px 0;border-radius:8px;cursor:pointer;
-  border:1px solid var(--border);background:transparent;color:var(--text2);
-  font-size:17px;transition:all .12s;
-}
-.dp-preset:hover{border-color:var(--accent);color:var(--accent2)}
 .dp-cal-head{
   display:flex;align-items:center;justify-content:space-between;
   padding:2px 4px 8px;

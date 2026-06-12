@@ -44,8 +44,8 @@ const DatePopover = (() => {
     viewY = base.getFullYear();
     viewM = base.getMonth();
     render();
+    el().classList.add('open'); // visível antes de medir, senão offsetWidth = 0
     position();
-    el().classList.add('open');
     setTimeout(() => document.addEventListener('mousedown', onDocDown), 0);
   }
 
@@ -95,30 +95,7 @@ const DatePopover = (() => {
   }
 
   function dataPanel() {
-    return presetsRow() + monthGrid() + timeRow();
-  }
-
-  function presetsRow() {
-    const items = [
-      { key: 'hoje', icon: 'ti-sun', title: 'Hoje' },
-      { key: 'amanha', icon: 'ti-sunrise', title: 'Amanhã' },
-      { key: 'fimsemana', icon: 'ti-calendar', title: 'Fim de semana' },
-      { key: 'proxsemana', icon: 'ti-moon', title: 'Próxima semana' }
-    ];
-    return `<div class="dp-presets">${items.map(p =>
-      `<button class="dp-preset" title="${p.title}" onclick="dpPreset('${p.key}')">
-        <i class="ti ${p.icon}"></i>
-      </button>`).join('')}</div>`;
-  }
-
-  function presetDate(key) {
-    const td = Utils.today();
-    const dow = Utils.parseISO(td).getDay();
-    if (key === 'hoje') return td;
-    if (key === 'amanha') return Utils.addDays(td, 1);
-    if (key === 'fimsemana') return Utils.addDays(td, (6 - dow + 7) % 7 || 7);
-    if (key === 'proxsemana') return Utils.addDays(td, (8 - dow) % 7 || 7); // próxima segunda
-    return td;
+    return monthGrid() + timeRow();
   }
 
   function monthGrid() {
@@ -214,15 +191,6 @@ const DatePopover = (() => {
     position();
   }
 
-  function preset(key) {
-    val.date = presetDate(key);
-    const base = Utils.parseISO(val.date);
-    viewY = base.getFullYear();
-    viewM = base.getMonth();
-    render();
-    position();
-  }
-
   function navMonth(delta) {
     const d = new Date(viewY, viewM + delta, 1);
     viewY = d.getFullYear();
@@ -283,7 +251,7 @@ const DatePopover = (() => {
 
   return {
     open, close,
-    setTab, preset, navMonth, pickDay, setTime, setDurDate,
+    setTab, navMonth, pickDay, setTime, setDurDate,
     toggleAllDay, setRepeat, clear, apply
   };
 })();

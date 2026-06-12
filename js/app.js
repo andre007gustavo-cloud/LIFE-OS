@@ -242,7 +242,6 @@
 
     // --- Date/Duration popover ---
     window.dpTab                = DatePopover.setTab;
-    window.dpPreset             = DatePopover.preset;
     window.dpNav                = DatePopover.navMonth;
     window.dpPickDay            = DatePopover.pickDay;
     window.dpSetTime            = DatePopover.setTime;
