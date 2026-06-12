@@ -75,7 +75,7 @@
 <!-- ========== LOADING SCREEN ========== -->
 <div id="loading-screen">
   <div style="font-size:20px;font-weight:700;color:var(--accent2)">LIFE OS</div>
-  <div class="loading-dot-pulse"><span></span><span></span><span></span></div>
+  <div class="fb-skeleton"><span></span><span></span><span></span></div>
   <div style="font-size:13px;color:var(--text3)">Carregando dados...</div>
 </div>
 
@@ -676,6 +676,18 @@
   </div>
 </div>
 
+<!-- ========== MODAL: SETTINGS ========== -->
+<div class="overlay" id="settings-modal">
+  <div class="modal">
+    <div class="modal-title">
+      <span>Configurações</span>
+      <button class="modal-close" onclick="closeModal('settings-modal')">×</button>
+    </div>
+    <div class="card-title">Feedback sensorial</div>
+    <div id="settings-body"></div>
+  </div>
+</div>
+
 <!-- ========== NOTE EDITOR OVERLAY ========== -->
 <div class="note-overlay" id="note-overlay" onclick="noteOverlayClick(event)">
   <div class="note-modal">
@@ -739,6 +751,8 @@
 <script src="js/ui/modal.js"></script>
 <script src="js/ui/mobile.js"></script>
 
+<script src="js/components/feedback.js"></script>
+<script src="js/components/settingsModal.js"></script>
 <script src="js/components/taskModal.js"></script>
 <script src="js/components/areaModal.js"></script>
 <script src="js/components/financeModal.js"></script>

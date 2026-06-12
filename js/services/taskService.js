@@ -156,6 +156,19 @@ const TaskService = (() => {
     return getAll().filter(t => t.status === 'concluida');
   }
 
+  /**
+   * Nível de celebração de uma tarefa recém-concluída (Fase 8).
+   * Chamar APÓS o toggle: 'large' quando zerou as pendentes de hoje,
+   * 'medium' para prioridade alta, 'small' para o resto.
+   */
+  function completionLevel(task) {
+    const td = Utils.today();
+    const clearedToday = Utils.taskCoversDay(task, td)
+      && forDay(td).filter(Utils.isTaskOpen).length === 0;
+    if (clearedToday) return 'large';
+    return task.priority === 'alta' ? 'medium' : 'small';
+  }
+
   function forDay(isoDate) {
     return getAll().filter(t => Utils.taskCoversDay(t, isoDate));
   }
@@ -208,7 +221,7 @@ const TaskService = (() => {
 
   return {
     getAll, getById, create, update, updateField, remove, toggle, archive,
-    cyclePriority, duplicate,
+    completionLevel, cyclePriority, duplicate,
     addSubtask, toggleSubtask, renameSubtask, removeSubtask,
     addTag, removeTag,
     pending, completed, forDay, forProject

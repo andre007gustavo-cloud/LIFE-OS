@@ -89,6 +89,24 @@ const Constants = (() => {
     GOALS_MAX: 3             // "as 3 grandes da semana"
   };
 
+  /** Micro-recompensas e polish sensorial (Fase 8) */
+  const FEEDBACK = {
+    PREFS_KEY: 'lifeos_feedback_prefs',           // localStorage, por dispositivo (nunca sincroniza)
+    DEFAULT_PREFS: { animations: true, sounds: false, confetti: true },
+    VOLUME: 0.15,
+    PULSE_MS: 180,           // pulso visual e atraso máximo de re-render pós-conclusão
+    TOAST_MS: 2500,
+    NUMBER_TICK_MS: 300,
+    STREAK_MILESTONES: [7, 14, 30, 60, 100],
+    CONFETTI: { MAX_PARTICLES: 60, DURATION_MS: 1200 },
+    /** Sequências de tons (Web Audio): [freqHz, duraçãoMs] */
+    TONES: {
+      small:  [[523, 80]],
+      medium: [[659, 120]],
+      large:  [[783, 90], [988, 90], [1175, 140]]
+    }
+  };
+
   /** Default storage key */
   const STORAGE_KEY = 'lifeos';
   const THEME_KEY = 'lifeos-theme';
@@ -136,6 +154,7 @@ const Constants = (() => {
     HARD_MODE,
     NEXTUP,
     REVIEW,
+    FEEDBACK,
     STORAGE_KEY,
     THEME_KEY,
     SEED_DATA

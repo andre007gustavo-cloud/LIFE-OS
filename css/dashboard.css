@@ -16,9 +16,13 @@
 .metric-card{
   background:var(--bg2);border:1px solid var(--border);
   border-radius:var(--radius);padding:14px 16px;min-width:0;
+  transition:transform .15s ease,border-color .15s ease;
 }
-.metric-card.clickable{cursor:pointer;transition:border-color .15s}
+.metric-card:hover{transform:translateY(-1px);border-color:var(--accent2)}
+.metric-card.clickable{cursor:pointer}
 .metric-card.clickable:hover{border-color:var(--accent)}
+.dash-grid .card{transition:transform .15s ease,border-color .15s ease}
+.dash-grid .card:hover{transform:translateY(-1px);border-color:var(--accent2)}
 .metric-label{
   font-size:11px;color:var(--text3);
   display:flex;align-items:center;gap:5px;margin-bottom:6px;

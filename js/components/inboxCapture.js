@@ -25,7 +25,7 @@ const InboxCapture = (() => {
       if (text) saveItem(text, 'voz');
     };
     _recognition.onerror = e => {
-      if (e.error === 'not-allowed') Modal.toast('🎤 Permita o acesso ao microfone para usar a voz');
+      if (e.error === 'not-allowed') Feedback.toast('Permita o acesso ao microfone para usar a voz', 'warn');
       stopVoiceUI();
     };
     _recognition.onend = stopVoiceUI;
@@ -54,10 +54,11 @@ const InboxCapture = (() => {
   }
 
   function saveItem(text, source) {
-    InboxService.add(text, source);
-    Modal.toast('📥 Capturado na caixa de entrada');
+    const item = InboxService.add(text, source);
+    Feedback.toast('Capturado', 'success'); // toast nunca toca som
     close();
     Navigation.renderAll();
+    if (item) Feedback.slideIn(`.inbox-item[data-inbox-id="${item.id}"]`);
   }
 
   function keyHandler(e) {

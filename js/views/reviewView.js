@@ -420,7 +420,8 @@ const ReviewView = (() => {
     });
     flow = null;
     render();
-    Modal.toast('✓ Revisão concluída');
+    Feedback.celebrate('large');
+    Feedback.toast('Revisão concluída', 'success');
     DashboardView.render(); // atualiza o gatilho de revisão no painel
   }
 

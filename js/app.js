@@ -10,6 +10,7 @@
 (function bootstrap() {
 
   Theme.init();
+  Feedback.applyBodyClass(); // aplica a preferência de animações antes do login
   let appInitialized = false;
 
   // Indicador de sync na nav: o storage emite, a UI reage (sem acoplamento direto)
@@ -82,6 +83,7 @@
     CommandPalette.init();
     NextUpBar.init();
     NowView.init();
+    PomodoroService.onComplete(onPomodoroComplete);
 
     // Close day-popover quando clica fora
     document.addEventListener('click', e => {
@@ -137,6 +139,31 @@
     if (el) el.style.display = show ? 'flex' : 'none';
   }
 
+  /** Fase 8: feedback ao fim de cada ciclo do pomodoro */
+  function onPomodoroComplete(finishedMode) {
+    if (finishedMode === 'work') {
+      const breakMin = Math.round(PomodoroService.getState().total / 60);
+      Feedback.celebrate('medium');
+      Feedback.toast(`Foco concluído. Pausa de ${breakMin} min`, 'success');
+    } else {
+      Feedback.toast('Volta ao trabalho', 'info'); // fim de pausa não é vitória
+    }
+  }
+
+  /** Fase 8: celebra a conclusão; o pulso segura o re-render por só 180ms */
+  function celebrateTaskDone(task, checkbox) {
+    const level = TaskService.completionLevel(task);
+    Feedback.celebrate(level);
+    if (level === 'large') Feedback.toast('Dia limpo. Bom trabalho.', 'success');
+    if (checkbox && Feedback.animationsOn()) {
+      checkbox.classList.add('checked');
+      Feedback.pulse(checkbox);
+      setTimeout(Navigation.renderAll, Constants.FEEDBACK.PULSE_MS);
+    } else {
+      Navigation.renderAll();
+    }
+  }
+
   // ===== Expõe globals para onclick="..." inline =====
 
   function exposeGlobals() {
@@ -148,6 +175,8 @@
     window.closeModal       = Modal.close;
     window.openMobileSidebar  = MobileSidebar.open;
     window.closeMobileSidebar = MobileSidebar.close;
+    window.openSettingsModal  = SettingsModal.open;
+    window.SettingsModal      = SettingsModal;
 
     // --- Login/Logout ---
     window.loginWithGoogle  = LoginScreen.login;
@@ -191,8 +220,14 @@
       Navigation.renderAll();
     };
     window.toggleTask          = id => {
+      const task = TaskService.getById(id);
+      const completing = task && Utils.isTaskOpen(task);
       TaskService.toggle(id);
-      Navigation.renderAll();
+      if (completing) {
+        celebrateTaskDone(task, window.event?.target?.closest?.('.tt-check'));
+      } else {
+        Navigation.renderAll();
+      }
     };
 
     // --- TickTick task layout ---

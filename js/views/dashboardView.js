@@ -9,6 +9,7 @@ const DashboardView = (() => {
 
   let pomoWired = false;
   let lastPomoSig = '';
+  let lastSaldo = null; // detecta a virada do saldo do mês para positivo
 
   function render() {
     wirePomodoroOnce();
@@ -126,10 +127,16 @@ const DashboardView = (() => {
       }) +
       metricCardHtml({
         icon: 'ti-wallet', label: 'Saldo do mês',
-        value: `<span style="color:${saldoColor}">${Utils.fmtMoney(month.saldo)}</span>`,
+        value: `<span id="dash-saldo" style="color:${saldoColor}">${Utils.fmtMoney(month.saldo)}</span>`,
         context: `+${Utils.fmtMoney(month.receitas)} · −${Utils.fmtMoney(month.despesas)}`
       }) +
       metricCardHtml(habitsMetric(td));
+
+    // Fase 8: saldo virou positivo → tick verde animado no card
+    if (lastSaldo !== null && lastSaldo < 0 && month.saldo >= 0) {
+      Feedback.numberTick('#dash-saldo', lastSaldo, month.saldo, Utils.fmtMoney);
+    }
+    lastSaldo = month.saldo;
   }
 
   /** Card "Hábitos hoje": cumpridos/devidos + melhor sequência ativa */
@@ -348,7 +355,7 @@ const DashboardView = (() => {
     const when = Utils.fmtDate(Utils.toISO(new Date(item.createdAt)));
     const srcIcon = item.source === 'voz' ? 'ti-microphone' : 'ti-keyboard';
 
-    return `<div class="inbox-item">
+    return `<div class="inbox-item" data-inbox-id="${item.id}">
       <div class="inbox-item-body">
         <div class="inbox-item-text">${escapeHtml(item.text)}</div>
         <div class="inbox-item-meta"><i class="ti ${srcIcon}"></i> ${when}</div>
@@ -390,8 +397,9 @@ const DashboardView = (() => {
       recurrence: parsed.recurrence || ''
     });
     InboxService.remove(id);
-    Modal.toast('✓ Tarefa criada: ' + task.name);
+    Feedback.toast('Tarefa criada: ' + task.name, 'success');
     Navigation.renderAll();
+    Feedback.slideIn(`.tt-task[data-task-id="${task.id}"]`);
   }
 
   function inboxEditStart(id) {

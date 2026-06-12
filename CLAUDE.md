@@ -12,6 +12,7 @@ Princípios gerais: SOLID e Clean Code, aplicados conforme as regras concretas a
 ### Exceções conhecidas (não "corrigir" sem combinar)
 - js/core/storage.js mostra um toast de erro de sync (`_notifySyncError`) — único ponto de DOM no core, intencional
 - js/pwa.js usa localStorage direto para as chaves próprias dos banners de instalação (não são dados do app)
+- js/components/feedback.js usa localStorage direto para as preferências de feedback (por dispositivo, nunca sincronizam)
 - js/components/loginScreen.js chama Storage.stopListening() no logout (fluxo de autenticação)
 
 ## Checklist obrigatório ao criar/renomear QUALQUER arquivo

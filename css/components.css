@@ -202,3 +202,60 @@ body.light .cmdk-item.selected .cmdk-item-section{color:#4338CA}
 /* Destaque do hábito alvo, vindo da paleta de comandos */
 @keyframes cmdk-flash{0%,100%{background:transparent}30%{background:var(--acc-dim)}}
 .habit-row.cmdk-flash{animation:cmdk-flash 1.4s ease;border-radius:var(--radius-sm)}
+
+/* ===== Feedback sensorial (Fase 8) ===== */
+
+/* Pulso rápido (conclusões, teste de animação) */
+@keyframes fb-pulse{50%{transform:scale(1.06)}}
+.fb-pulse{animation:fb-pulse .18s ease}
+
+/* Entrada sutil de item novo em listas */
+@keyframes fb-slide-in{from{opacity:0;transform:translateY(8px)}}
+.fb-slide-in{animation:fb-slide-in .2s ease}
+
+/* Entrada do toast */
+@keyframes fb-toast-in{from{opacity:0;transform:translate(-50%,6px)}}
+
+/* Confete (canvas por cima de tudo, nunca captura cliques) */
+.fb-confetti-canvas{position:fixed;inset:0;pointer-events:none;z-index:9998}
+
+/* Skeleton: 3 linhas cinzas pulsando enquanto dados carregam */
+.fb-skeleton{display:flex;flex-direction:column;gap:8px;width:180px}
+.fb-skeleton span{height:10px;border-radius:5px;background:var(--bg3);animation:fb-skeleton-pulse 1.2s ease-in-out infinite}
+.fb-skeleton span:nth-child(2){animation-delay:.15s;width:80%}
+.fb-skeleton span:nth-child(3){animation-delay:.3s;width:60%}
+@keyframes fb-skeleton-pulse{0%,100%{opacity:.45}50%{opacity:1}}
+
+/* Botão primário: resposta tátil instantânea no clique */
+.btn-primary:active{transform:scale(.97);transition-duration:0s}
+
+/* Switch das configurações */
+.fb-switch{position:relative;display:inline-block;width:38px;height:22px;flex-shrink:0}
+.fb-switch input{opacity:0;width:0;height:0}
+.fb-switch-slider{position:absolute;inset:0;background:var(--bg4);border-radius:11px;cursor:pointer;transition:background .15s}
+.fb-switch-slider::before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;border-radius:50%;background:#fff;transition:transform .15s}
+.fb-switch input:checked+.fb-switch-slider{background:var(--accent)}
+.fb-switch input:checked+.fb-switch-slider::before{transform:translateX(16px)}
+
+/* Linhas do modal de configurações */
+.fbset-row{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--border)}
+.fbset-row:last-child{border-bottom:none}
+.fbset-icon{font-size:18px;color:var(--text2);width:22px;text-align:center;flex-shrink:0}
+.fbset-info{flex:1;min-width:0}
+.fbset-label{font-size:14px;font-weight:500}
+.fbset-hint{font-size:11px;color:var(--text3)}
+
+/* Animações desligadas: por preferência do usuário (body.fb-no-anim)
+   ou pelo sistema (prefers-reduced-motion) — sons não são afetados */
+body.fb-no-anim .view,
+body.fb-no-anim .fb-pulse,
+body.fb-no-anim .fb-slide-in,
+body.fb-no-anim .app-toast{animation:none}
+body.fb-no-anim .metric-card:hover,
+body.fb-no-anim .dash-grid .card:hover{transform:none}
+body.fb-no-anim .btn-primary:active{transform:none}
+@media (prefers-reduced-motion: reduce){
+  .view,.fb-pulse,.fb-slide-in,.app-toast,.fb-skeleton span{animation:none}
+  .metric-card:hover,.dash-grid .card:hover{transform:none}
+  .btn-primary:active{transform:none}
+}

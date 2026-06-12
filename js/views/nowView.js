@@ -294,9 +294,12 @@ const NowView = (() => {
 
   function done() {
     if (!current || isFreeFocus()) return;
-    const id = current.id;
-    releaseTimerIfLinked(id);
-    TaskService.toggle(id);               // conclui (celebração virá na Fase 8)
+    const task = current;
+    releaseTimerIfLinked(task.id);
+    TaskService.toggle(task.id);
+    const level = TaskService.completionLevel(task);
+    Feedback.celebrate(level);
+    if (level === 'large') Feedback.toast('Dia limpo. Bom trabalho.', 'success');
     advance();
   }
 

@@ -53,6 +53,7 @@ const CommandPalette = (() => {
       run: () => PomodoroUI.toggle()
     },
     { id: 'theme', section: 'Ação', icon: 'ti-contrast', label: 'Alternar tema claro/escuro', run: () => Theme.toggle() },
+    { id: 'settings', section: 'Ação', icon: 'ti-settings', label: 'Configurações', run: () => SettingsModal.open() },
     {
       id: 'hardmode', section: 'Ação', icon: 'ti-shield-half',
       label: () => HabitService.isHardDay(Utils.today()) ? 'Desativar modo dia difícil' : 'Ativar modo dia difícil',
@@ -164,7 +165,7 @@ const CommandPalette = (() => {
     if (!text) return;
     InboxService.add(text, 'texto');
     close();
-    Modal.toast('📥 Capturado na caixa de entrada');
+    Feedback.toast('Capturado', 'success');
     Navigation.renderAll();
   }
 

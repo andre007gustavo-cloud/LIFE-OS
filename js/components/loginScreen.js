@@ -64,6 +64,9 @@ const LoginScreen = (() => {
           <span class="sync-dot" id="sync-dot"></span><span class="sync-label" id="sync-label"></span>
         </div>
       </div>
+      <button class="icon-btn" onclick="openSettingsModal()" title="Configurações" style="color:var(--text3)">
+        <i class="ti ti-settings"></i>
+      </button>
       <button class="icon-btn" onclick="logoutUser()" title="Sair" style="color:var(--text3)">
         <i class="ti ti-logout"></i>
       </button>`;

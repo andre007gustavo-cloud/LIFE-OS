@@ -45,6 +45,13 @@ const PomodoroService = (() => {
     tickListeners.push(callback);
   }
 
+  /** Listeners de fim de ciclo: recebem o modo que terminou ('work'|'short'|'long') */
+  const completeListeners = [];
+
+  function onComplete(callback) {
+    completeListeners.push(callback);
+  }
+
   function notify() {
     tickListeners.forEach(cb => cb({ seconds, mode, round, running, total: durations[mode] }));
   }
@@ -115,6 +122,7 @@ const PomodoroService = (() => {
 
   /** Cycle through work → short → work → short → work → long */
   function advanceMode() {
+    const finished = mode;
     stop();
     if (mode === 'work') {
       focusCount++;
@@ -124,7 +132,8 @@ const PomodoroService = (() => {
       mode = 'work';
     }
     seconds = durations[mode];
+    completeListeners.forEach(cb => cb(finished));
   }
 
-  return { onTick, getState, getDurations, setDuration, getFocusToday, setMode, toggle, reset };
+  return { onTick, onComplete, getState, getDurations, setDuration, getFocusToday, setMode, toggle, reset };
 })();

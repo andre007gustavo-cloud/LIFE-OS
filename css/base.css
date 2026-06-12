@@ -60,11 +60,13 @@ nav{
 }
 
 /* ===== VIEWS ===== */
-.view{display:none;animation:fadeIn .2s ease}
+/* Cross-fade só na troca de view raiz: a animação roda quando .active
+   muda display none→block, não a cada re-render de conteúdo */
+.view{display:none;animation:fadeIn .12s ease}
 .view.active{display:block}
 @keyframes fadeIn{
-  from{opacity:0;transform:translateY(4px)}
-  to{opacity:1;transform:translateY(0)}
+  from{opacity:0}
+  to{opacity:1}
 }
 .padded{padding:20px 16px}
 
@@ -139,19 +141,6 @@ nav{
   align-items:center;justify-content:center;
   flex-direction:column;gap:12px;
 }
-.loading-dot-pulse{
-  display:flex;gap:6px;
-}
-.loading-dot-pulse span{
-  width:10px;height:10px;border-radius:50%;
-  background:var(--accent);animation:pulse 1.2s infinite;
-}
-.loading-dot-pulse span:nth-child(2){animation-delay:.2s}
-.loading-dot-pulse span:nth-child(3){animation-delay:.4s}
-@keyframes pulse{
-  0%,80%,100%{opacity:.3;transform:scale(.8)}
-  40%{opacity:1;transform:scale(1)}
-}
 
 /* ===== User block in nav (avatar + nome + estado de sync) ===== */
 #user-info{
@@ -224,4 +213,10 @@ nav{
   padding:10px 16px;border-radius:10px;font-size:13px;z-index:9999;
   max-width:calc(100vw - 32px);text-align:center;
   box-shadow:0 4px 16px #00000066;
+  display:flex;align-items:center;gap:8px;
+  animation:fb-toast-in .15s ease;
 }
+.app-toast.success i{color:var(--green)}
+.app-toast.info i{color:var(--blue)}
+.app-toast.warn i{color:var(--amber)}
+.app-toast.error i{color:var(--red)}

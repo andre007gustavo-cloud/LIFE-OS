@@ -132,9 +132,39 @@ const HabitsView = (() => {
     if (longPressFired) { longPressFired = false; return; }
     const td = Utils.today();
     const log = HabitService.getLog(habitId, td);
-    const mark = HabitService.isHardDay(td) ? 'minimal' : 'done';
-    HabitService.toggle(habitId, td, log ? log.status : mark);
-    refresh();
+    if (log) {
+      HabitService.toggle(habitId, td, log.status); // desmarcar: sem festa
+      refresh();
+      return;
+    }
+    markWithFeedback(habitId, td, HabitService.isHardDay(td) ? 'minimal' : 'done');
+  }
+
+  /** Marca hoje e celebra (pulso no botão, marco de sequência, escudo novo) */
+  function markWithFeedback(habitId, td, status) {
+    const before = HabitService.stats(habitId);
+    HabitService.toggle(habitId, td, status);
+    announceProgress(HabitService.stats(habitId), before);
+
+    const check = document.querySelector(`.habit-row[data-habit-id="${habitId}"] .habit-check`);
+    if (check && Feedback.animationsOn()) {
+      Feedback.pulse(check);
+      setTimeout(refresh, Constants.FEEDBACK.PULSE_MS); // pulso visível antes do re-render
+    } else {
+      refresh();
+    }
+  }
+
+  function announceProgress(after, before) {
+    const milestone = after.streak > before.streak
+      && Constants.FEEDBACK.STREAK_MILESTONES.includes(after.streak);
+    if (milestone) {
+      Feedback.celebrate('large');
+      Feedback.toast(`Sequência de ${after.streak} dias 🔥`, 'success');
+    } else {
+      Feedback.celebrate('small');
+      if (after.shields > before.shields) Feedback.toast('+1 escudo disponível', 'info');
+    }
   }
 
   function pressStart(e, habitId) {
@@ -171,9 +201,13 @@ const HabitsView = (() => {
     closeMenu();
     const td = Utils.today();
     const log = HabitService.getLog(habitId, td);
+    if (status && !log) {
+      markWithFeedback(habitId, td, status); // marcação nova celebra
+      return;
+    }
     if (!status) {
       if (log) HabitService.toggle(habitId, td, '');
-    } else if (log?.status !== status) {
+    } else if (log.status !== status) {
       HabitService.toggle(habitId, td, status);
     }
     refresh();
@@ -278,11 +312,14 @@ const HabitsView = (() => {
       frequency: { type, days: type === 'custom' ? days : [] },
       minVersion
     };
-    if (AppState.ui.habitEditId) HabitService.update(AppState.ui.habitEditId, data);
-    else HabitService.create(data);
+    const isNew = !AppState.ui.habitEditId;
+    const habit = isNew
+      ? HabitService.create(data)
+      : HabitService.update(AppState.ui.habitEditId, data);
 
     Modal.close('habit-modal');
     refresh();
+    if (isNew) Feedback.slideIn(`.habit-row[data-habit-id="${habit.id}"]`);
   }
 
   function archive() {

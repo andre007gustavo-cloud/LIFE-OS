@@ -8,7 +8,7 @@
  * Para publicar nova versão: incremente CACHE_VERSION.
  */
 
-const CACHE_VERSION = 'v20260612-120817';
+const CACHE_VERSION = 'v20260612-123759';
 const CACHE_NAME = `lifeos-${CACHE_VERSION}`;
 
 // Domínios do Firebase/Google — deixa passar, Firebase cuida do offline via IndexedDB
@@ -58,6 +58,8 @@ const PRECACHE = [
   '/js/ui/theme.js',
   '/js/ui/modal.js',
   '/js/ui/mobile.js',
+  '/js/components/feedback.js',
+  '/js/components/settingsModal.js',
   '/js/components/taskModal.js',
   '/js/components/areaModal.js',
   '/js/components/financeModal.js',

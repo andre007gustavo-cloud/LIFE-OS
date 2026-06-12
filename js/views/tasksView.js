@@ -217,7 +217,7 @@ const TasksView = (() => {
 
     const priColor = Constants.PRI_COLORS[t.priority] || 'var(--text3)';
 
-    return `<div class="tt-task${t.status === 'concluida' ? ' done-task' : ''}${isActive ? ' active-detail' : ''}" onclick="ttOpenDetail('${t.id}')">
+    return `<div class="tt-task${t.status === 'concluida' ? ' done-task' : ''}${isActive ? ' active-detail' : ''}" data-task-id="${t.id}" onclick="ttOpenDetail('${t.id}')">
       <div class="tt-check${t.status === 'concluida' ? ' checked' : ''}" onclick="event.stopPropagation();toggleTask('${t.id}')">
         ${t.status === 'concluida' ? '<i class="ti ti-check" style="font-size:11px;color:#fff"></i>' : ''}
       </div>
@@ -360,7 +360,7 @@ const TasksView = (() => {
       if (foundArea) { area = foundArea.id; project = pid; }
     }
 
-    TaskService.create({
+    const task = TaskService.create({
       name: parsed.name, area, project,
       priority: parsed.priority || AppState.ui.ttQuickPri,
       date: parsed.date || AppState.ui.ttQuickDate || Utils.today(),
@@ -372,6 +372,7 @@ const TasksView = (() => {
     closeQuick();
     renderSidebar();
     filterAndRender();
+    Feedback.slideIn(`.tt-task[data-task-id="${task.id}"]`);
   }
 
   // ===== Quick Add: preview ao vivo do parser =====
