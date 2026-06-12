@@ -70,9 +70,9 @@ body.now-mode #inbox-fab { display: none !important; }
 .now-progress-fill { height: 100%; background: var(--accent); transition: width .9s linear; }
 .now-timer-hint { margin-top: 10px; font-size: 12px; color: var(--text3); }
 
-/* Botão iniciar foco */
+/* Atalho minimalista: iniciar + abrir painel */
+.now-compact { margin-top: 36px; display: flex; align-items: center; gap: 10px; }
 .now-start {
-  margin-top: 36px;
   display: inline-flex; align-items: center; gap: 8px;
   padding: 14px 28px; border-radius: 999px;
   background: var(--bg3); border: 1px solid var(--border); color: var(--text);
@@ -80,6 +80,52 @@ body.now-mode #inbox-fab { display: none !important; }
   transition: all .15s;
 }
 .now-start:hover { border-color: var(--accent); background: var(--bg4); }
+.now-plus {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--bg2); border: 1px solid var(--border); color: var(--text2);
+  font-size: 20px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: all .15s;
+}
+.now-plus:hover { border-color: var(--accent); color: var(--text); }
+
+/* ===== Painel de foco (pomodoro) ===== */
+.now-pomo { margin-top: 28px; display: flex; flex-direction: column; align-items: center; width: 100%; }
+.now-pomo .now-timer { margin-top: 18px; }
+.now-pomo-modes {
+  display: inline-flex; gap: 6px; padding: 4px;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 999px;
+}
+.now-pomo-mode {
+  padding: 8px 20px; border-radius: 999px;
+  background: transparent; border: none; color: var(--text2);
+  font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: all .15s;
+}
+.now-pomo-mode:hover { color: var(--text); }
+.now-pomo-mode.active { background: var(--accent); color: var(--on-accent); }
+
+.now-pomo-toggle {
+  margin-top: 20px;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 32px; border-radius: 999px;
+  background: var(--accent); border: none; color: var(--on-accent);
+  font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: background .15s;
+}
+.now-pomo-toggle:hover { background: var(--accent2); }
+
+.now-pomo-times { margin-top: 26px; display: flex; gap: 28px; }
+.now-pomo-time { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.now-pomo-time-label { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; }
+.now-pomo-stepper { display: flex; align-items: center; gap: 10px; }
+.now-pomo-stepper strong { min-width: 56px; text-align: center; font-size: 15px; font-weight: 600; color: var(--text); }
+.now-pomo-stepper button {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+  cursor: pointer; font-size: 14px;
+  display: flex; align-items: center; justify-content: center; transition: all .15s;
+}
+.now-pomo-stepper button:hover { border-color: var(--accent); background: var(--bg4); }
 
 /* Ações */
 .now-actions {

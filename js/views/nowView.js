@@ -10,9 +10,10 @@ const NowView = (() => {
 
   const escapeHtml = Utils.escapeHtml;
 
-  let current = null;     // tarefa exibida no momento
-  let lastSig = '';       // assinatura do pomodoro para detectar mudança estrutural
+  let current = null;       // tarefa exibida no momento
+  let lastSig = '';         // assinatura do pomodoro para detectar mudança estrutural
   let wired = false;
+  let pomoPanelOpen = false; // painel de pomodoro expandido ("+")
 
   function init() {
     if (wired) return;
@@ -71,7 +72,7 @@ const NowView = (() => {
 
   /** Há uma sessão de pomodoro em andamento (rodando ou pausada no meio)? */
   function sessionActive(pomo) {
-    return pomo.running || pomo.seconds < Constants.POMO_TIMES[pomo.mode];
+    return pomo.running || pomo.seconds < pomo.total;
   }
 
   // ===== Render =====
@@ -113,7 +114,7 @@ const NowView = (() => {
     return `<div class="now-task">
       <div class="now-name">${escapeHtml(t.name)}</div>
       <div class="now-meta">${metaHtml(t)}</div>
-      ${session ? timerHtml(pomo) : startBtnHtml(t)}
+      ${(session || pomoPanelOpen) ? pomoPanelHtml(pomo) : compactHtml()}
       <div class="now-actions">
         <button class="now-btn now-btn-done" onclick="NowView.done()"><i class="ti ti-check"></i> Feito</button>
         <button class="now-btn now-btn-skip" onclick="NowView.skip()"><i class="ti ti-arrow-right"></i> Pular por hoje</button>
@@ -134,18 +135,50 @@ const NowView = (() => {
     return parts.join('<span class="now-sep">·</span>');
   }
 
-  function timerHtml(pomo) {
-    const total = Constants.POMO_TIMES[pomo.mode];
-    const pct = Math.round((total - pomo.seconds) / total * 100);
-    return `<div class="now-timer" id="now-timer">${Utils.formatPomodoroTime(pomo.seconds)}</div>
-      <div class="now-progress-track"><div class="now-progress-fill" id="now-progress" style="width:${pct}%"></div></div>
-      <div class="now-timer-hint">${pomo.running ? 'Espaço para pausar' : 'Espaço para retomar'}</div>`;
+  /** Atalho minimalista: iniciar 25 min direto ou abrir o painel completo ("+") */
+  function compactHtml() {
+    return `<div class="now-compact">
+      <button class="now-start" onclick="NowView.startFocus()">
+        <i class="ti ti-player-play"></i> Iniciar 25 min
+      </button>
+      <button class="now-plus" onclick="NowView.openPomoPanel()" title="Sessão de foco (ajustar tempos)">
+        <i class="ti ti-plus"></i>
+      </button>
+    </div>`;
   }
 
-  function startBtnHtml(t) {
-    return `<button class="now-start" onclick="NowView.toggleFocus()">
-      <i class="ti ti-player-play"></i> Iniciar 25 min
-    </button>`;
+  /** Painel de foco: modos em cima, cronômetro grande, play/pausa e ajuste de tempo */
+  function pomoPanelHtml(pomo) {
+    const pct = pomo.total ? Math.round((pomo.total - pomo.seconds) / pomo.total * 100) : 0;
+    const dur = PomodoroService.getDurations();
+    return `<div class="now-pomo">
+      <div class="now-pomo-modes">
+        <button class="now-pomo-mode${pomo.mode === 'work' ? ' active' : ''}" onclick="NowView.pomoMode('work')">Trabalho</button>
+        <button class="now-pomo-mode${pomo.mode === 'short' ? ' active' : ''}" onclick="NowView.pomoMode('short')">Pausa</button>
+      </div>
+      <div class="now-timer" id="now-timer">${Utils.formatPomodoroTime(pomo.seconds)}</div>
+      <div class="now-progress-track"><div class="now-progress-fill" id="now-progress" style="width:${pct}%"></div></div>
+      <button class="now-pomo-toggle" onclick="NowView.pomoToggle()">
+        <i class="ti ${pomo.running ? 'ti-player-pause' : 'ti-player-play'}"></i>
+        ${pomo.running ? 'Pausar' : (sessionActive(pomo) ? 'Retomar' : 'Iniciar')}
+      </button>
+      <div class="now-pomo-times">
+        ${timeStepperHtml('work', 'Trabalho', dur.work, 5)}
+        ${timeStepperHtml('short', 'Pausa', dur.short, 1)}
+      </div>
+    </div>`;
+  }
+
+  function timeStepperHtml(mode, label, secs, step) {
+    const mins = Math.round(secs / 60);
+    return `<div class="now-pomo-time">
+      <span class="now-pomo-time-label">${label}</span>
+      <div class="now-pomo-stepper">
+        <button onclick="NowView.pomoAdjust('${mode}',${-step})" title="Menos ${step} min"><i class="ti ti-minus"></i></button>
+        <strong>${mins} min</strong>
+        <button onclick="NowView.pomoAdjust('${mode}',${step})" title="Mais ${step} min"><i class="ti ti-plus"></i></button>
+      </div>
+    </div>`;
   }
 
   // ===== Live update do timer =====
@@ -160,23 +193,47 @@ const NowView = (() => {
     const timerEl = document.getElementById('now-timer');
     if (timerEl) timerEl.textContent = Utils.formatPomodoroTime(pomo.seconds);
     const fill = document.getElementById('now-progress');
-    if (fill) {
-      const total = Constants.POMO_TIMES[pomo.mode];
-      fill.style.width = Math.round((total - pomo.seconds) / total * 100) + '%';
+    if (fill && pomo.total) {
+      fill.style.width = Math.round((pomo.total - pomo.seconds) / pomo.total * 100) + '%';
     }
   }
 
   // ===== Ações =====
 
-  function toggleFocus() {
+  /** "Iniciar 25 min": começa o foco já em modo trabalho, vinculado à tarefa */
+  function startFocus() {
     if (!current) return;
+    pomoPanelOpen = true;
+    PomodoroService.setMode('work');
+    PomodoroService.toggle(current.id);
+    render();
+  }
+
+  function openPomoPanel() {
+    pomoPanelOpen = true;
+    render();
+  }
+
+  /** Troca o modo (Trabalho/Pausa) sem iniciar; reseta o relógio do modo */
+  function pomoMode(mode) {
+    PomodoroService.setMode(mode);
+    render();
+  }
+
+  /** Play/pausa do modo atual; vincula a tarefa ao iniciar/retomar */
+  function pomoToggle() {
+    if (!current) return;
+    pomoPanelOpen = true;
     const pomo = PomodoroService.getState();
-    if (sessionActive(pomo) && pomo.taskId === current.id) {
-      PomodoroService.toggle();           // pausa/retoma a sessão atual
-    } else {
-      PomodoroService.setMode('work');    // garante 25 min de trabalho
-      PomodoroService.toggle(current.id);
-    }
+    if (pomo.running) PomodoroService.toggle();
+    else PomodoroService.toggle(current.id);
+    render();
+  }
+
+  /** Ajusta a duração de trabalho/pausa em passos de minutos */
+  function pomoAdjust(mode, deltaMin) {
+    const dur = PomodoroService.getDurations();
+    PomodoroService.setDuration(mode, dur[mode] + deltaMin * 60);
     render();
   }
 
@@ -209,6 +266,7 @@ const NowView = (() => {
   }
 
   function exit() {
+    pomoPanelOpen = false;
     Navigation.showView('dashboard');
   }
 
@@ -228,10 +286,13 @@ const NowView = (() => {
       }
       return;
     }
-    if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); toggleFocus(); }
+    if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); pomoToggle(); }
     else if (e.key === 'Enter') { e.preventDefault(); done(); }
     else if (e.key === 'Escape') { e.preventDefault(); exit(); }
   }
 
-  return { init, render, toggleFocus, done, skip, exit };
+  return {
+    init, render, done, skip, exit,
+    startFocus, openPomoPanel, pomoMode, pomoToggle, pomoAdjust
+  };
 })();

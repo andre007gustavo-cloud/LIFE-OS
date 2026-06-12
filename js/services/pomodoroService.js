@@ -12,6 +12,9 @@ const PomodoroService = (() => {
   let round = 0;
   let running = false;
 
+  /** Durações por modo (segundos) — ajustáveis no Modo Agora; partem do padrão */
+  const durations = { ...Constants.POMO_TIMES };
+
   /** Tarefa vinculada ao timer (mostrada "em andamento" no dashboard) */
   let linkedTaskId = null;
 
@@ -43,17 +46,29 @@ const PomodoroService = (() => {
   }
 
   function notify() {
-    tickListeners.forEach(cb => cb({ seconds, mode, round, running }));
+    tickListeners.forEach(cb => cb({ seconds, mode, round, running, total: durations[mode] }));
   }
 
   function getState() {
-    return { seconds, mode, round, running, taskId: linkedTaskId };
+    return { seconds, mode, round, running, taskId: linkedTaskId, total: durations[mode] };
+  }
+
+  function getDurations() {
+    return { ...durations };
+  }
+
+  /** Ajusta a duração de um modo (1–90 min); reflete no relógio se parado nele */
+  function setDuration(targetMode, secs) {
+    if (!durations[targetMode]) return;
+    durations[targetMode] = Math.max(60, Math.min(secs, 90 * 60));
+    if (mode === targetMode && !running) seconds = durations[targetMode];
+    notify();
   }
 
   function setMode(newMode) {
-    if (!Constants.POMO_TIMES[newMode]) return;
+    if (!durations[newMode]) return;
     mode = newMode;
-    seconds = Constants.POMO_TIMES[newMode];
+    seconds = durations[newMode];
     stop();
   }
 
@@ -83,7 +98,7 @@ const PomodoroService = (() => {
   function reset() {
     stop();
     linkedTaskId = null;
-    seconds = Constants.POMO_TIMES[mode];
+    seconds = durations[mode];
     notify();
   }
 
@@ -108,8 +123,8 @@ const PomodoroService = (() => {
     } else {
       mode = 'work';
     }
-    seconds = Constants.POMO_TIMES[mode];
+    seconds = durations[mode];
   }
 
-  return { onTick, getState, getFocusToday, setMode, toggle, reset };
+  return { onTick, getState, getDurations, setDuration, getFocusToday, setMode, toggle, reset };
 })();
