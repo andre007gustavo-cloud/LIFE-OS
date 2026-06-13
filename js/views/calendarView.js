@@ -595,6 +595,8 @@ const CalendarView = (() => {
     AppState.ui.popoverPriIdx = 0;
     AppState.ui.popoverArea = '';
     AppState.ui.popoverSched = { date: iso, dateend: '', start: '', end: '', recurrence: '' };
+    // Campos que o parser pode preencher; uma edição manual trava o respectivo campo
+    AppState.ui.popoverLocks = { date: false, time: false, priority: false, area: false };
 
     const popover = document.createElement('div');
     popover.className = 'cal-popover cal-create-pop';
@@ -609,7 +611,7 @@ const CalendarView = (() => {
         </button>
       </div>
       <input class="ccp-title" id="pop-input" placeholder="O que você gostaria de fazer?"
-             onkeydown="popKeyDown(event)">
+             onkeydown="popKeyDown(event)" oninput="popParseInput()">
       <textarea class="ccp-notes" id="pop-notes" placeholder="Anotações..."></textarea>
       <div class="ccp-footer">
         <button class="ccp-area-btn" id="ccp-area-btn" onclick="popToggleAreaMenu(event)">
@@ -652,6 +654,9 @@ const CalendarView = (() => {
     const iso = result.date || AppState.ui.popoverDate;
     AppState.ui.popoverDate = iso;
     document.getElementById('ccp-date-label').textContent = fmtPopDate(iso);
+    // Escolha manual de data/hora trava o parser nesses campos
+    AppState.ui.popoverLocks.date = true;
+    AppState.ui.popoverLocks.time = true;
   }
 
   function popToggleAreaMenu(event) {
@@ -673,8 +678,7 @@ const CalendarView = (() => {
     document.getElementById('ccp-area-btn').appendChild(menu);
   }
 
-  function popPickArea(event, id) {
-    event.stopPropagation();
+  function setAreaDisplay(id) {
     AppState.ui.popoverArea = id;
     const area = id ? AreaService.getById(id) : null;
     document.getElementById('ccp-area-label').textContent = area ? area.name : 'Caixa de Entrada';
@@ -688,6 +692,12 @@ const CalendarView = (() => {
       icon.textContent = '';
       icon.style.color = '';
     }
+  }
+
+  function popPickArea(event, id) {
+    event.stopPropagation();
+    setAreaDisplay(id);
+    AppState.ui.popoverLocks.area = true; // edição manual trava o parser
     document.getElementById('ccp-area-menu')?.remove();
   }
 
@@ -709,14 +719,59 @@ const CalendarView = (() => {
     document.getElementById('cal-popover')?.remove();
   }
 
-  function popCyclePri() {
-    AppState.ui.popoverPriIdx = (AppState.ui.popoverPriIdx + 1) % 4;
-    AppState.ui.popoverPri = Constants.PRI_CYCLE[AppState.ui.popoverPriIdx];
-    const pri = AppState.ui.popoverPri;
+  function setPriDisplay(pri) {
+    AppState.ui.popoverPri = pri;
+    AppState.ui.popoverPriIdx = Constants.PRI_CYCLE.indexOf(pri);
     document.getElementById('pop-pri-icon').style.color =
       pri === 'nenhuma' ? '' : Constants.PRI_COLORS[pri];
     document.getElementById('pop-pri-btn').classList.toggle('active', pri !== 'nenhuma');
   }
+
+  function popCyclePri() {
+    setPriDisplay(Constants.PRI_CYCLE[(AppState.ui.popoverPriIdx + 1) % 4]);
+    AppState.ui.popoverLocks.priority = true; // edição manual trava o parser
+  }
+
+  // ===== Parser como helper de digitação (preenche os campos do popover) =====
+
+  /** Pisca uma borda indigo no campo preenchido pelo parser por ~1s */
+  function flashField(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add('qa-flash');
+    setTimeout(() => el.classList.remove('qa-flash'), 1000);
+  }
+
+  function applyParsedDate(iso, recurrence) {
+    const sched = AppState.ui.popoverSched;
+    sched.date = iso;
+    sched.recurrence = recurrence || sched.recurrence;
+    AppState.ui.popoverDate = iso;
+    document.getElementById('ccp-date-label').textContent = fmtPopDate(iso);
+    flashField('ccp-date-btn');
+  }
+
+  function applyParsedTime(start, end) {
+    const sched = AppState.ui.popoverSched;
+    sched.start = start;
+    sched.end = end || '';
+    flashField('ccp-date-btn'); // a hora mora dentro do popover de data
+  }
+
+  function popParseInputNow() {
+    const el = document.getElementById('pop-input');
+    if (!el) return;
+    const parsed = QuickParser.parse(el.value, AreaService.getAll());
+    const locks = AppState.ui.popoverLocks || {};
+    if (!locks.date && (parsed.date || parsed.recurrence)) {
+      applyParsedDate(parsed.date || AppState.ui.popoverDate, parsed.recurrence);
+    }
+    if (!locks.time && parsed.time) applyParsedTime(parsed.time, parsed.timeend);
+    if (!locks.priority && parsed.priority) { setPriDisplay(parsed.priority); flashField('pop-pri-btn'); }
+    if (!locks.area && parsed.areaId) { setAreaDisplay(parsed.areaId); flashField('ccp-area-btn'); }
+  }
+
+  const popParseInput = QuickAddShared.debounce(popParseInputNow, 50);
 
   function popKeyDown(event) {
     if (event.key === 'Enter') popSaveTask();
@@ -724,8 +779,10 @@ const CalendarView = (() => {
   }
 
   function popSaveTask() {
-    const name = document.getElementById('pop-input').value.trim();
-    if (!name) return;
+    const raw = document.getElementById('pop-input').value.trim();
+    if (!raw) return;
+    // Remove do nome os tokens que viraram campos (data/hora/prioridade/área)
+    const name = QuickParser.parse(raw, AreaService.getAll()).name || raw;
     const sched = AppState.ui.popoverSched;
     TaskService.create({
       name,
@@ -771,6 +828,6 @@ const CalendarView = (() => {
     miniCalNav, miniCalSelect,
     createTask,
     showDayPopover, closeDayPopover, popCyclePri, popKeyDown, popSaveTask, popOpenFull,
-    popOpenDate, popToggleAreaMenu, popPickArea
+    popOpenDate, popToggleAreaMenu, popPickArea, popParseInput
   };
 })();

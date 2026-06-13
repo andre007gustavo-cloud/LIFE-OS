@@ -28,6 +28,32 @@ const TaskModal = (() => {
     Modal.open('task-modal');
   }
 
+  /**
+   * Abre uma tarefa nova já pré-preenchida (vindo do QuickAddPopover via
+   * "+ Mais opções"). Espera os campos já mesclados parser + defaults.
+   */
+  function openPrefilled(fields) {
+    open();
+    // Após o setTimeout interno do open() (que repopula o select de projeto)
+    setTimeout(() => {
+      if (fields.name) document.getElementById('t-name').value = fields.name;
+      if (fields.priority) document.getElementById('t-priority').value = fields.priority;
+      if (fields.date) document.getElementById('t-date').value = fields.date;
+      if (fields.start) document.getElementById('t-start').value = fields.start;
+      if (fields.end) document.getElementById('t-end').value = fields.end;
+      if (fields.recurrence) document.getElementById('t-recurrence').value = fields.recurrence;
+      if (fields.area) {
+        document.getElementById('t-area').value = fields.area;
+        updateProjectSelect();
+        if (fields.project) {
+          setTimeout(() => { document.getElementById('t-project').value = fields.project; }, 50);
+        }
+      }
+      updateTimeFieldsVisibility();
+      document.getElementById('t-name').focus();
+    }, 60);
+  }
+
   /** Abre uma tarefa nova já vinculada ao hábito (nome, recorrência espelhada, habitId) */
   function openForHabit(habit) {
     open();
@@ -166,5 +192,5 @@ const TaskModal = (() => {
     document.getElementById('t-end').onchange = calcDuration;
   }
 
-  return { open, openForHabit, save, updateProjectSelect, populateAreaSelect };
+  return { open, openPrefilled, openForHabit, save, updateProjectSelect, populateAreaSelect };
 })();

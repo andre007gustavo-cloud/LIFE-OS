@@ -213,6 +213,10 @@
     window.NowView            = NowView;
     window.NextUpBar          = NextUpBar;
 
+    // --- Quick add universal (FAB, dashboard, projeto, paleta) ---
+    window.quickAdd            = (opts) => QuickAddPopover.open(opts);
+    window.QuickAddPopover     = QuickAddPopover;
+
     // --- Tasks (legacy modal + actions) ---
     window.openTaskModal       = TaskModal.open;
     window.saveTask            = TaskModal.save;
@@ -327,6 +331,7 @@
     window.popOpenDate       = CalendarView.popOpenDate;
     window.popToggleAreaMenu = CalendarView.popToggleAreaMenu;
     window.popPickArea       = CalendarView.popPickArea;
+    window.popParseInput     = CalendarView.popParseInput;
     window.calCreateTask     = CalendarView.createTask;
     window.miniCalNav        = CalendarView.miniCalNav;
     window.miniCalSelect     = CalendarView.miniCalSelect;

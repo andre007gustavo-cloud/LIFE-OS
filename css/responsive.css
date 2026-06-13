@@ -58,6 +58,10 @@
   #inbox-capture{bottom:146px;right:16px}
   .app-toast{bottom:150px}
 
+  /* Quick add popover: ocupa a largura, mais perto do topo */
+  .qap-overlay{padding:72px 12px 12px;align-items:flex-start}
+  .qap-modal{padding:14px}
+
   /* ===== Calendar fullscreen (iOS-like) ===== */
   #view-calendar.active{
     padding:env(safe-area-inset-top,0px) 0 0 0!important;

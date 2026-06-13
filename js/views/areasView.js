@@ -270,13 +270,10 @@ const AreasView = (() => {
   function addTaskToCurrent(projectId) {
     const project = ProjectService.getById(projectId);
     if (!project) return;
-    AppState.ui.editTaskId = null;
-    TaskModal.open();
-    setTimeout(() => {
-      document.getElementById('t-area').value = project.area;
-      TaskModal.updateProjectSelect();
-      setTimeout(() => document.getElementById('t-project').value = project.id, 50);
-    }, 100);
+    QuickAddPopover.open({
+      defaults: { projectId: project.id },
+      onSave: () => { Navigation.renderAll(); render(); }
+    });
   }
 
   function fileIcon(filename) {

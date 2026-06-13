@@ -49,7 +49,8 @@
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/dashboard.css">
   <link rel="stylesheet" href="css/tasks.css">
-  <link rel="stylesheet" href="css/calendar-finance.css">
+  <link rel="stylesheet" href="css/calendar.css">
+  <link rel="stylesheet" href="css/finance.css">
   <link rel="stylesheet" href="css/projects.css">
   <link rel="stylesheet" href="css/habits.css">
   <link rel="stylesheet" href="css/review.css">
@@ -133,7 +134,7 @@
         <button class="btn btn-ghost" id="hard-mode-btn" onclick="dashToggleHardMode()" title="Modo dia difícil — só o essencial conta hoje">
           <i class="ti ti-shield-half"></i> <span class="hm-label">Dia difícil</span>
         </button>
-        <button class="btn btn-primary" onclick="openTaskModal()">
+        <button class="btn btn-primary" onclick="quickAdd()">
           <i class="ti ti-plus"></i> Adicionar
         </button>
       </div>
@@ -401,7 +402,7 @@
   </div>
 
   <!-- ========== FAB ========== -->
-  <button id="fab" onclick="openTaskModal()" title="Nova Tarefa"><i class="ti ti-plus"></i></button>
+  <button id="fab" onclick="quickAdd()" title="Nova Tarefa"><i class="ti ti-plus"></i></button>
 
   <!-- ========== INBOX: captura rápida universal ========== -->
   <button id="inbox-fab" onclick="inboxToggleCapture()" title="Capturar na caixa de entrada"><i class="ti ti-inbox"></i></button>
@@ -783,6 +784,8 @@
 <script src="js/components/commandPalette.js"></script>
 <script src="js/components/nextUpBar.js"></script>
 <script src="js/components/datePopover.js"></script>
+<script src="js/components/quickAddShared.js"></script>
+<script src="js/components/quickAddPopover.js"></script>
 
 <script src="js/views/dashboardView.js"></script>
 <script src="js/views/tasksView.js"></script>

@@ -33,7 +33,7 @@ const CommandPalette = (() => {
     { id: 'nav-habits',    section: 'Navegar', icon: 'ti-repeat',           label: 'Ir para Hábitos',     run: () => Navigation.showView('habits') },
 
     // --- Criar ---
-    { id: 'new-task',    section: 'Criar', icon: 'ti-plus',      label: 'Nova tarefa',                 run: () => TaskModal.open() },
+    { id: 'new-task',    section: 'Criar', icon: 'ti-plus',      label: 'Nova tarefa',                 run: () => QuickAddPopover.open() },
     { id: 'new-fin',     section: 'Criar', icon: 'ti-cash',      label: 'Novo lançamento financeiro',  run: () => FinanceModal.open() },
     { id: 'new-project', section: 'Criar', icon: 'ti-briefcase', label: 'Novo projeto',                run: () => ProjectModal.open() },
     { id: 'new-habit',   section: 'Criar', icon: 'ti-repeat',    label: 'Novo hábito',                 run: () => HabitsView.openModal() },

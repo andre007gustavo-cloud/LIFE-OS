@@ -376,32 +376,9 @@ const TasksView = (() => {
       box.classList.remove('show');
       return;
     }
-    const chips = buildPreviewChips(QuickParser.parse(raw, AreaService.getAll()));
+    const chips = QuickAddShared.buildPreviewChips(QuickParser.parse(raw, AreaService.getAll()));
     box.innerHTML = chips.join('');
     box.classList.toggle('show', chips.length > 0);
-  }
-
-  function buildPreviewChips(parsed) {
-    const chips = [];
-    if (parsed.date) {
-      const dow = Constants.CALENDAR.WEEK_DAY_NAMES_FULL[Utils.parseISO(parsed.date).getDay()].toLowerCase();
-      chips.push(`<span class="ttq-chip">📅 ${dow} ${Utils.fmtDate(parsed.date)}</span>`);
-    }
-    if (parsed.time) {
-      chips.push(`<span class="ttq-chip">⏰ ${parsed.time}${parsed.timeend ? '–' + parsed.timeend : ''}</span>`);
-    }
-    if (parsed.recurrence) {
-      const labels = { daily: 'diária', weekly: 'semanal', monthly: 'mensal' };
-      chips.push(`<span class="ttq-chip">🔁 ${labels[parsed.recurrence]}</span>`);
-    }
-    if (parsed.priority) {
-      chips.push(`<span class="ttq-chip">${Constants.PRI_ICONS[parsed.priority]} ${parsed.priority}</span>`);
-    }
-    const area = parsed.areaId && AreaService.getById(parsed.areaId);
-    if (area) {
-      chips.push(`<span class="ttq-chip">${escapeHtml(area.icon)} ${escapeHtml(area.name)}</span>`);
-    }
-    return chips;
   }
 
   // ===== Task action helpers =====
