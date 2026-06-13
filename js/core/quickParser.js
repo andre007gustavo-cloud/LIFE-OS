@@ -200,5 +200,78 @@ const QuickParser = (() => {
     return { name, date, time, timeend, priority, areaId, recurrence };
   }
 
-  return { parse };
+  // ===== Modo finanças =====
+  // Reaproveita extract/parseDate/normalize do modo tarefa, sem alterá-los.
+
+  // Palavras que viram tipo 'entrada' (ficam na descrição, não são removidas)
+  const FIN_ENTRADA_RE = /\s(recebi|ganhei|sal[aá]rio|entrada|receita)(?=\s)/i;
+
+  /** Casa um token (#cat / @conta) com um item da lista por nome (sem acento). */
+  function matchByName(list, token) {
+    const t = normalize(token);
+    return list.find(x => {
+      const n = normalize(x.nome);
+      if (n === t || n.replace(/\s+/g, '') === t) return true;
+      return n.split(/[\s/]+/)[0] === t || n.startsWith(t);
+    }) || null;
+  }
+
+  /** Remove todos os tokens com o prefixo dado (# ou @) e devolve seus textos. */
+  function pullTokens(state, prefix) {
+    const tokens = [];
+    let t;
+    const re = new RegExp('\\s' + prefix + '(\\S+)(?=\\s)');
+    while ((t = extract(state, re, m => m[1])) !== null) tokens.push(t);
+    return tokens;
+  }
+
+  /**
+   * Interpreta o texto do quick-add financeiro.
+   * @param {string} text
+   * @param {{categorias:Array, contas:Array}} ctx  listas para casar #cat e @conta
+   * @param {string} todayISO data de referência (injetável p/ testes)
+   * @returns {{tipo, valorCentavos, categoriaId, contaId, descricao, data}}
+   *          tipo: 'saida' (default) | 'entrada' (palavra-gatilho ou '+')
+   */
+  function parseFinance(text, { categorias = [], contas = [] } = {}, todayISO = Utils.today()) {
+    const state = { text: ' ' + String(text || '') + ' ' };
+
+    // Tipo: '+' isolado (removido) ou palavra-gatilho (mantida na descrição)
+    let tipo = 'saida';
+    if (extract(state, /\s\+(?=\s)/, () => true)) tipo = 'entrada';
+    if (FIN_ENTRADA_RE.test(state.text)) tipo = 'entrada';
+
+    // Categoria (#) e conta (@)
+    let categoriaId = '';
+    for (const tk of pullTokens(state, '#')) {
+      const m = matchByName(categorias, tk);
+      if (m) { categoriaId = m.id; break; }
+    }
+    let contaId = '';
+    for (const tk of pullTokens(state, '@')) {
+      const m = matchByName(contas, tk);
+      if (m) { contaId = m.id; break; }
+    }
+
+    // Data antes do valor: "dia 5" não pode ser confundido com o valor
+    const data = parseDate(state, todayISO) || todayISO;
+
+    // Valor: primeiro número restante ("R$" opcional, vírgula ou ponto)
+    const valorCentavos = extract(state, /\s(?:r\$\s*)?(\d[\d.,]*)(?=\s)/i,
+      m => Utils.brlToCentavos(m[1])) || 0;
+
+    // Conta por nome solto (sem @), se ainda não identificada
+    if (!contaId) {
+      for (const c of contas) {
+        const esc = c.nome.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+        const found = extract(state, new RegExp('\\s(' + esc + ')(?=\\s)', 'i'), () => c.id);
+        if (found) { contaId = found; break; }
+      }
+    }
+
+    const descricao = state.text.replace(/\s+/g, ' ').trim();
+    return { tipo, valorCentavos, categoriaId, contaId, descricao, data };
+  }
+
+  return { parse, parseFinance };
 })();

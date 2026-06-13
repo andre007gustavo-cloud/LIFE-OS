@@ -47,7 +47,7 @@ const ReviewView = (() => {
       <div class="rv-stat-grid">
         ${statCard('ti-circle-check', 'Concluídas', s.completedTasks, 'nesta semana')}
         ${statCard('ti-repeat', 'Hábitos', s.habitRate === null ? '—' : s.habitRate + '%', 'cumpridos')}
-        ${statCard('ti-wallet', 'Saldo', Utils.fmtMoney(s.saldo), 'da semana', s.saldo < 0 ? 'var(--red)' : 'var(--emerald)')}
+        ${statCard('ti-wallet', 'Saldo', Utils.formatBRL(s.saldo), 'da semana', s.saldo < 0 ? 'var(--red)' : 'var(--emerald)')}
         ${statCard('ti-flame', 'Sequências', s.streaks, 'ativas')}
       </div>
       <button class="rv-start-btn" onclick="ReviewView.start()">
@@ -387,7 +387,7 @@ const ReviewView = (() => {
         <div class="rv-close-grid">
           ${closeStat(s.completedTasks, 'tarefas concluídas')}
           ${closeStat(habitLabel, `hábitos (${s.habitDone}/${s.habitDue})`)}
-          ${closeStat(Utils.fmtMoney(s.saldo), 'saldo da semana', saldoColor)}
+          ${closeStat(Utils.formatBRL(s.saldo), 'saldo da semana', saldoColor)}
           ${closeStat(s.streaks, s.streaks === 1 ? 'sequência ativa' : 'sequências ativas')}
         </div>
         ${comeback ? comebackLineHtml(comeback) : ''}

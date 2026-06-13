@@ -21,6 +21,7 @@ Princípios gerais: SOLID e Clean Code, aplicados conforme as regras concretas a
 3. CACHE_VERSION do sw.js: o atualizar.bat já incrementa automaticamente a cada publicação — só incrementar manualmente se publicar por outro caminho
 
 ## Segurança e qualidade
+- Dinheiro SEMPRE em centavos inteiros (int), nunca float. "R$ 85,50" é armazenado como 8550. Formatação só na view, via Utils.formatBRL(centavos); parse de texto via Utils.brlToCentavos
 - TODA interpolação de dado do usuário em innerHTML usa Utils.escapeHtml / Utils.escapeAttr
 - Datas: SEMPRE usar Utils.today/tomorrow/addDays e Utils.parseISO/toISO (parse local) — NUNCA toISOString() para extrair data, NUNCA new Date("YYYY-MM-DD") direto (interpreta como UTC; o app roda em UTC-3)
 - IDs com Utils.uid() (crypto.randomUUID)

@@ -318,16 +318,11 @@
   <div class="view padded" id="view-finance">
     <div class="section-title">
       <span>💰 Finanças</span>
-      <button class="btn btn-primary btn-sm" onclick="openFinModal()">
-        <i class="ti ti-plus"></i> Novo
-      </button>
-    </div>
-    <div class="tab-row">
-      <button class="tab-btn fin-tab active" data-tab="resumo" onclick="setFinTab('resumo')">Resumo</button>
-      <button class="tab-btn fin-tab" data-tab="lancamentos" onclick="setFinTab('lancamentos')">Lançamentos</button>
-      <button class="tab-btn fin-tab" data-tab="categorias" onclick="setFinTab('categorias')">Categorias</button>
     </div>
     <div id="fin-content"></div>
+    <button class="fin-fab" title="Novo lançamento" onclick="FinanceQuickAdd.open()">
+      <i class="ti ti-plus"></i>
+    </button>
   </div>
 
   <!-- ========== AREAS / PROJECTS VIEW ========== -->
@@ -554,25 +549,24 @@
 <div class="overlay" id="fin-modal">
   <div class="modal">
     <div class="modal-title">
-      <span>Novo Lançamento</span>
+      <span id="fin-modal-title">Novo lançamento</span>
       <button class="modal-close" onclick="closeModal('fin-modal')">×</button>
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:14px">
-      <button class="btn btn-ghost" id="fin-type-rec" onclick="setFinType('receita')" style="flex:1">
-        <i class="ti ti-trending-up"></i> Receita
+    <div class="fin-type-row">
+      <button class="btn btn-ghost fin-type-btn" id="fin-type-saida" onclick="setFinType('saida')">
+        <i class="ti ti-trending-down"></i> Saída
       </button>
-      <button class="btn btn-ghost" id="fin-type-desp" onclick="setFinType('despesa')" style="flex:1">
-        <i class="ti ti-trending-down"></i> Despesa
+      <button class="btn btn-ghost fin-type-btn" id="fin-type-entrada" onclick="setFinType('entrada')">
+        <i class="ti ti-trending-up"></i> Entrada
       </button>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Descrição</label>
-      <input class="form-input" id="f-desc">
+      <button class="btn btn-ghost fin-type-btn" id="fin-type-transf" onclick="setFinType('transferencia')">
+        <i class="ti ti-arrows-exchange"></i> Transf.
+      </button>
     </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Valor (R$)</label>
-        <input class="form-input" type="number" step="0.01" id="f-value">
+        <input class="form-input" id="f-value" inputmode="decimal" placeholder="0,00">
       </div>
       <div class="form-group">
         <label class="form-label">Data</label>
@@ -580,8 +574,20 @@
       </div>
     </div>
     <div class="form-group">
+      <label class="form-label">Descrição</label>
+      <input class="form-input" id="f-desc">
+    </div>
+    <div class="form-group" id="f-cat-group">
       <label class="form-label">Categoria</label>
       <select class="form-select" id="f-cat"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="f-conta-label">Conta</label>
+      <select class="form-select" id="f-conta"></select>
+    </div>
+    <div class="form-group" id="f-conta-dest-group" style="display:none">
+      <label class="form-label">Conta de destino</label>
+      <select class="form-select" id="f-conta-dest"></select>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button class="btn btn-ghost" onclick="closeModal('fin-modal')">Cancelar</button>
@@ -786,6 +792,7 @@
 <script src="js/components/datePopover.js"></script>
 <script src="js/components/quickAddShared.js"></script>
 <script src="js/components/quickAddPopover.js"></script>
+<script src="js/components/financeQuickAdd.js"></script>
 
 <script src="js/views/dashboardView.js"></script>
 <script src="js/views/tasksView.js"></script>

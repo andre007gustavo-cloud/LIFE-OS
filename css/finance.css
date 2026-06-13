@@ -10,10 +10,50 @@
 }
 .fin-bar-fill.over{background:var(--red)}
 
+/* ===== Fase 1: saldo, resumo, lista por dia, FAB ===== */
+.fin-balance-card{text-align:center;padding:18px}
+.fin-balance-label{font-size:12px;color:var(--text3);margin-bottom:4px}
+.fin-balance-value{font-size:30px;font-weight:700}
+
+.fin-resumo{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+
+.fin-day-group{margin-bottom:16px}
+.fin-day-head{
+  font-size:12px;font-weight:600;color:var(--text3);
+  text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px;
+}
+
+/* FAB de novo lançamento */
+.fin-fab{
+  position:fixed;right:24px;bottom:90px;z-index:80;
+  width:54px;height:54px;border-radius:50%;border:none;cursor:pointer;
+  background:var(--accent);color:#fff;font-size:24px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 6px 20px #00000055;transition:transform .12s,opacity .12s;
+}
+.fin-fab:hover{transform:scale(1.06)}
+#view-finance:not(.active) .fin-fab{display:none}
+
+/* Modal: seletor de tipo + barra do quick-add */
+.fin-type-row{display:flex;gap:8px;margin-bottom:14px}
+.fin-type-btn{flex:1}
+.fin-type-btn.active{border-color:var(--accent);color:var(--accent2)}
+
+.fqa-input-row{display:flex;align-items:center;gap:8px}
+.fqa-input-row .qap-input{flex:1}
+.fqa-mic{
+  flex-shrink:0;background:none;border:1px solid var(--border);
+  color:var(--text2);width:40px;height:40px;border-radius:50%;
+  cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.fqa-mic:hover{border-color:var(--accent);color:var(--text)}
+.fqa-mic.listening{background:var(--red);color:#fff;border-color:var(--red);animation:inbox-pulse 1s infinite}
+
 .fin-entry{
   display:flex;align-items:center;gap:10px;
   padding:9px 12px;border-radius:var(--radius-sm);
-  background:var(--bg3);margin-bottom:6px;
+  background:var(--bg3);margin-bottom:6px;cursor:pointer;
   border:1px solid transparent;transition:border .15s;
 }
 .fin-entry:hover{border-color:var(--border)}

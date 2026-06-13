@@ -113,6 +113,30 @@ const Constants = (() => {
     }
   };
 
+  /**
+   * Finanças (Fase 1). Seeds criados por FinanceService._seedDefaults no
+   * primeiro uso — não ficam no SEED_DATA pra não recriar ao apagar tudo.
+   */
+  const FINANCE = {
+    ACCOUNT_TYPES: ['corrente', 'poupanca', 'dinheiro'],
+    SEED_CONTA: {
+      nome: 'Carteira', tipo: 'dinheiro',
+      saldoInicialCentavos: 0, cor: '#34d399', icone: '💵'
+    },
+    SEED_CATEGORIAS: [
+      { nome: 'Alimentação', tipo: 'despesa', icone: '🍔', cor: '#f87171' },
+      { nome: 'Mercado/casa', tipo: 'despesa', icone: '🛒', cor: '#fb923c' },
+      { nome: 'Transporte', tipo: 'despesa', icone: '🚌', cor: '#fbbf24' },
+      { nome: 'Moradia', tipo: 'despesa', icone: '🏠', cor: '#60a5fa' },
+      { nome: 'Saúde', tipo: 'despesa', icone: '❤️', cor: '#4ade80' },
+      { nome: 'Diversão', tipo: 'despesa', icone: '🎮', cor: '#7c6fff' },
+      { nome: 'Outros', tipo: 'despesa', icone: '📦', cor: '#a78bfa' },
+      { nome: 'Salário', tipo: 'receita', icone: '💰', cor: '#34d399' },
+      { nome: 'Vendas', tipo: 'receita', icone: '🏷️', cor: '#4ade80' },
+      { nome: 'Outros', tipo: 'receita', icone: '➕', cor: '#60a5fa' }
+    ]
+  };
+
   /** Default storage key */
   const STORAGE_KEY = 'lifeos';
   const THEME_KEY = 'lifeos-theme';
@@ -146,7 +170,11 @@ const Constants = (() => {
       { id: 'fc4', name: 'Lazer', color: '#7c6fff' },
       { id: 'fc5', name: 'Moradia', color: '#60a5fa' },
       { id: 'fc6', name: 'Receita', color: '#34d399' }
-    ]
+    ],
+    // Finanças Fase 1 (modelo em centavos) — populadas por _seedDefaults
+    contas: [],
+    categorias: [],
+    transacoes: []
   };
 
   return Object.freeze({
@@ -164,6 +192,7 @@ const Constants = (() => {
     NEXTUP,
     REVIEW,
     FEEDBACK,
+    FINANCE,
     STORAGE_KEY,
     THEME_KEY,
     SEED_DATA

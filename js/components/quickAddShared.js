@@ -33,6 +33,24 @@ const QuickAddShared = (() => {
     return chips;
   }
 
+  /** Chips de preview do quick-add financeiro (valor, categoria, conta, data) */
+  function buildFinancePreviewChips(parsed, { categorias = [], contas = [] } = {}) {
+    const chips = [];
+    const isEntrada = parsed.tipo === 'entrada';
+    if (parsed.valorCentavos) {
+      chips.push(`<span class="ttq-chip">${isEntrada ? '🟢 +' : '🔴 −'}${Utils.formatBRL(parsed.valorCentavos)}</span>`);
+    }
+    const cat = parsed.categoriaId && categorias.find(c => c.id === parsed.categoriaId);
+    if (cat) chips.push(`<span class="ttq-chip">${escapeHtml(cat.icone)} ${escapeHtml(cat.nome)}</span>`);
+    const conta = parsed.contaId && contas.find(c => c.id === parsed.contaId);
+    if (conta) chips.push(`<span class="ttq-chip">${escapeHtml(conta.icone)} ${escapeHtml(conta.nome)}</span>`);
+    if (parsed.data) {
+      const dow = Constants.CALENDAR.WEEK_DAY_NAMES_FULL[Utils.parseISO(parsed.data).getDay()].toLowerCase();
+      chips.push(`<span class="ttq-chip">📅 ${dow} ${Utils.fmtDate(parsed.data)}</span>`);
+    }
+    return chips;
+  }
+
   /** Debounce simples para o parse ao vivo (chips/campos respondem em ~50ms) */
   function debounce(fn, ms) {
     let timer;
@@ -42,5 +60,5 @@ const QuickAddShared = (() => {
     };
   }
 
-  return { buildPreviewChips, debounce };
+  return { buildPreviewChips, buildFinancePreviewChips, debounce };
 })();

@@ -117,6 +117,43 @@ const Utils = (() => {
     });
   }
 
+  /** Centavos inteiros → "R$ 85,50". Toda exibição de dinheiro passa por aqui. */
+  function formatBRL(centavos) {
+    return 'R$ ' + ((Number(centavos) || 0) / 100).toLocaleString('pt-BR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  /**
+   * "R$ 85,50" / "85,50" / "1.500" / "1.500,50" / "85.50" → centavos inteiros.
+   * Vírgula ou ponto valem como decimal; um ponto seguido de 3 dígitos é milhar.
+   * Devolve null se não houver número.
+   */
+  function brlToCentavos(str) {
+    let s = String(str == null ? '' : str).replace(/r\$/i, '').replace(/\s/g, '');
+    if (!/\d/.test(s)) return null;
+    const lastComma = s.lastIndexOf(',');
+    const lastDot = s.lastIndexOf('.');
+    let decSep = '';
+    if (lastComma > -1 && lastDot > -1) decSep = lastComma > lastDot ? ',' : '.';
+    else if (lastComma > -1) decSep = ',';
+    else if (lastDot > -1) {
+      const after = s.length - lastDot - 1;
+      decSep = (after === 1 || after === 2) ? '.' : '';
+    }
+    let intPart = s, decPart = '0';
+    if (decSep) {
+      const idx = s.lastIndexOf(decSep);
+      intPart = s.slice(0, idx);
+      decPart = s.slice(idx + 1);
+    }
+    intPart = intPart.replace(/[.,]/g, '') || '0';
+    decPart = (decPart.replace(/[.,]/g, '') + '00').slice(0, 2);
+    const cents = parseInt(intPart, 10) * 100 + parseInt(decPart, 10);
+    return isNaN(cents) ? null : cents;
+  }
+
   // ===== Task helpers =====
 
   /** Tarefa "em aberto": não concluída e não arquivada (descartada) */
@@ -233,6 +270,8 @@ const Utils = (() => {
     getFileType,
     isMobile,
     formatPomodoroTime,
+    formatBRL,
+    brlToCentavos,
     escapeHtml,
     escapeAttr,
     extractHtmlText,

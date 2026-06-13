@@ -21,9 +21,8 @@ const AppState = (() => {
     editProjectId: null,
     editNoteId: null,
 
-    // Finance modal type
-    finType: 'despesa',
-    finTab: 'resumo',
+    // Finance modal type: 'saida' | 'entrada' | 'transferencia'
+    finType: 'saida',
 
     // Calendar
     calView: 'month',

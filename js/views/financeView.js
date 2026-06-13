@@ -1,135 +1,121 @@
 /**
  * ===================== FINANCE VIEW =====================
- * Three tabs: Resumo (summary), Lançamentos (entries list), Categorias (per-category totals).
+ * Fase 1: saldo total no topo, resumo do mês (entradas/saídas) e a lista de
+ * lançamentos do mês agrupada por dia. Criação rápida pelo FAB (FinanceQuickAdd).
  */
 
 const FinanceView = (() => {
 
   function render() {
-    const tab = AppState.ui.finTab;
-    if (tab === 'resumo') renderResumo();
-    else if (tab === 'lancamentos') renderLancamentos();
-    else if (tab === 'categorias') renderCategorias();
-    syncTabButtons();
+    const mes = FinanceService.currentMonthPrefix();
+    const saldoTotal = FinanceService.getSaldo();
+    const resumo = FinanceService.getResumoMes(mes);
+    const txs = FinanceService.listTransactions({ mes });
+
+    document.getElementById('fin-content').innerHTML =
+      headerHtml(saldoTotal, resumo) + listHtml(txs) + devButtonHtml();
   }
 
-  function setTab(tab) {
-    AppState.ui.finTab = tab;
-    render();
+  /** Botão de teste — só em localhost, nunca em produção */
+  function devButtonHtml() {
+    if (window.location.hostname !== 'localhost') return '';
+    return `<button class="btn btn-ghost btn-sm" style="margin-top:16px"
+              onclick="FinanceView.seedTest()">🧪 Semear lançamentos de teste</button>`;
   }
 
-  function syncTabButtons() {
-    document.querySelectorAll('.fin-tab').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.tab === AppState.ui.finTab);
-    });
-  }
-
-  // ===== Resumo =====
-
-  function renderResumo() {
-    const entries = FinanceService.forMonth(FinanceService.currentMonthPrefix());
-    const { receitas, despesas, saldo, pctComprometido } = FinanceService.summarize(entries);
-
-    document.getElementById('fin-content').innerHTML = `
-      <div class="grid3" style="margin-bottom:16px">
-        <div class="stat green">
-          <div class="stat-val">${Utils.fmtMoney(receitas)}</div>
-          <div class="stat-label">Receitas</div>
-        </div>
-        <div class="stat red">
-          <div class="stat-val">${Utils.fmtMoney(despesas)}</div>
-          <div class="stat-label">Despesas</div>
-        </div>
-        <div class="stat ${saldo >= 0 ? 'green' : 'red'}">
-          <div class="stat-val">${Utils.fmtMoney(saldo)}</div>
-          <div class="stat-label">Saldo</div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Comprometimento da renda</div>
-        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
-          <span>${pctComprometido.toFixed(0)}% comprometido</span>
-          <span style="color:var(--text3)">${Utils.fmtMoney(despesas)} / ${Utils.fmtMoney(receitas)}</span>
-        </div>
-        <div class="fin-bar">
-          <div class="fin-bar-fill${pctComprometido > 100 ? ' over' : ''}"
-               style="width:${Math.min(100, pctComprometido)}%"></div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Últimos lançamentos</div>
-        ${entries.slice(-5).reverse().map(entryHtml).join('') || '<div class="text-muted">Sem lançamentos este mês</div>'}
-      </div>
-    `;
-  }
-
-  // ===== Lançamentos =====
-
-  function renderLancamentos() {
-    const entries = [...FinanceService.getAll()].reverse();
-    document.getElementById('fin-content').innerHTML = `
-      <div class="card">
-        <div class="card-title">Todos os lançamentos</div>
-        ${entries.length
-          ? entries.map(entryHtml).join('')
-          : '<div class="empty"><i class="ti ti-coin"></i><p>Nenhum lançamento ainda</p></div>'
-        }
-      </div>
-    `;
-  }
-
-  // ===== Categorias =====
-
-  function renderCategorias() {
-    const entries = FinanceService.forMonth(FinanceService.currentMonthPrefix());
-    const cats = FinanceService.byCategory(entries);
-
-    document.getElementById('fin-content').innerHTML = `
-      <div class="card">
-        <div class="card-title">Categorias deste mês</div>
-        ${cats.length ? cats.map(c => `
-          <div class="cat-item">
-            <div class="cat-dot" style="background:${c.color}"></div>
-            <div style="flex:1">
-              <div style="font-size:13px;font-weight:500">${c.name}</div>
-            </div>
-            <div class="cat-val ${c.isRec ? 'rec' : 'desp'}">${Utils.fmtMoney(c.total)}</div>
-          </div>
-        `).join('') : '<div class="text-muted">Sem dados ainda</div>'}
-      </div>
-    `;
-  }
-
-  // ===== Internal =====
-
-  function entryHtml(entry) {
-    const cat = FinanceService.getCategoryById(entry.cat);
-    const isRec = entry.type === 'receita';
-    return `<div class="fin-entry">
-      <div class="fin-dot" style="background:${cat?.color || 'var(--bg4)'}22;color:${cat?.color || 'var(--text3)'}">
-        <i class="ti ti-${isRec ? 'trending-up' : 'trending-down'}"></i>
-      </div>
-      <div class="fin-info">
-        <div class="fin-title">${entry.desc}</div>
-        <div class="fin-sub">${cat?.name || ''} · ${Utils.fmtDate(entry.date)}</div>
-      </div>
-      <div class="fin-amount" style="color:${isRec ? 'var(--green)' : 'var(--red)'}">
-        ${isRec ? '+' : '-'}${Utils.fmtMoney(entry.value)}
-      </div>
-      <button class="icon-btn" onclick="deleteFinEntry('${entry.id}')" style="color:var(--red)">
-        <i class="ti ti-x"></i>
-      </button>
-    </div>`;
-  }
-
-  function deleteEntry(id) {
-    if (!confirm('Excluir lançamento?')) return;
-    FinanceService.remove(id);
+  function seedTest() {
+    FinanceService._seedTestData();
     render();
     if (window.DashboardView) DashboardView.render();
   }
 
-  return { render, setTab, deleteEntry };
+  // ===== Topo: saldo + resumo do mês =====
+
+  function headerHtml(saldoTotal, resumo) {
+    const saldoColor = saldoTotal >= 0 ? 'var(--green)' : 'var(--red)';
+    return `
+      <div class="card fin-balance-card">
+        <div class="fin-balance-label">Saldo total</div>
+        <div class="fin-balance-value" style="color:${saldoColor}">${Utils.formatBRL(saldoTotal)}</div>
+      </div>
+      <div class="fin-resumo">
+        <div class="stat green">
+          <div class="stat-val">${Utils.formatBRL(resumo.entradas)}</div>
+          <div class="stat-label">Entradas do mês</div>
+        </div>
+        <div class="stat red">
+          <div class="stat-val">${Utils.formatBRL(resumo.saidas)}</div>
+          <div class="stat-label">Saídas do mês</div>
+        </div>
+      </div>`;
+  }
+
+  // ===== Lista agrupada por dia =====
+
+  function listHtml(txs) {
+    if (!txs.length) {
+      return `<div class="empty"><i class="ti ti-coin"></i><p>Nenhum lançamento este mês</p></div>`;
+    }
+    const groups = {};
+    txs.forEach(t => { (groups[t.data] = groups[t.data] || []).push(t); });
+    return Object.keys(groups).sort((a, b) => b.localeCompare(a)).map(d => `
+      <div class="fin-day-group">
+        <div class="fin-day-head">${dayLabel(d)}</div>
+        ${groups[d].map(entryHtml).join('')}
+      </div>`).join('');
+  }
+
+  function dayLabel(d) {
+    if (d === Utils.today()) return 'Hoje';
+    if (d === Utils.tomorrow()) return 'Amanhã';
+    const dow = Constants.CALENDAR.WEEK_DAY_NAMES_FULL[Utils.parseISO(d).getDay()];
+    return `${dow}, ${Utils.fmtDayMonth(d)}`;
+  }
+
+  function entryHtml(t) {
+    if (t.tipo === 'transferencia') return transferHtml(t);
+    const cat = FinanceService.getCategoriaById(t.categoriaId);
+    const conta = FinanceService.getContaById(t.contaId);
+    const isEntrada = t.tipo === 'entrada';
+    const cor = cat?.cor || (isEntrada ? 'var(--green)' : 'var(--red)');
+    const icone = cat?.icone || (isEntrada ? '🟢' : '🔴');
+    const sub = [cat?.nome, conta?.nome].filter(Boolean).join(' · ');
+    return `<div class="fin-entry" onclick="FinanceModal.openEdit('${t.id}')">
+      <div class="fin-dot" style="background:${cor}22">${Utils.escapeHtml(icone)}</div>
+      <div class="fin-info">
+        <div class="fin-title">${Utils.escapeHtml(t.descricao || cat?.nome || 'Lançamento')}</div>
+        <div class="fin-sub">${Utils.escapeHtml(sub)}</div>
+      </div>
+      <div class="fin-amount" style="color:${isEntrada ? 'var(--green)' : 'var(--red)'}">
+        ${isEntrada ? '+' : '−'}${Utils.formatBRL(t.valorCentavos)}
+      </div>
+      <button class="icon-btn" title="Excluir"
+              onclick="event.stopPropagation();FinanceView.remove('${t.id}')"><i class="ti ti-x"></i></button>
+    </div>`;
+  }
+
+  function transferHtml(t) {
+    const origem = FinanceService.getContaById(t.contaId);
+    const destino = FinanceService.getContaById(t.contaDestinoId);
+    const rota = `${origem?.nome || '?'} → ${destino?.nome || '?'}`;
+    return `<div class="fin-entry" onclick="FinanceModal.openEdit('${t.id}')">
+      <div class="fin-dot" style="background:var(--bg4)">🔄</div>
+      <div class="fin-info">
+        <div class="fin-title">${Utils.escapeHtml(t.descricao || 'Transferência')}</div>
+        <div class="fin-sub">${Utils.escapeHtml(rota)}</div>
+      </div>
+      <div class="fin-amount" style="color:var(--text2)">${Utils.formatBRL(t.valorCentavos)}</div>
+      <button class="icon-btn" title="Excluir"
+              onclick="event.stopPropagation();FinanceView.remove('${t.id}')"><i class="ti ti-x"></i></button>
+    </div>`;
+  }
+
+  function remove(id) {
+    if (!confirm('Excluir lançamento?')) return;
+    FinanceService.deleteTransaction(id);
+    render();
+    if (window.DashboardView) DashboardView.render();
+  }
+
+  return { render, remove, seedTest };
 })();

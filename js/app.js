@@ -52,6 +52,10 @@
       const comeback = ReviewService.detectComeback();
       ReviewService.stampActivity();
 
+      // Seed de finanças só depois da detecção: o persist do seed carimba
+      // lastActivity=hoje e mascararia a ausência se rodasse antes
+      FinanceService._seedDefaults();
+
       if (comeback) {
         ComebackView.show(comeback.daysAway, renderActiveViews);
       } else {
@@ -297,8 +301,8 @@
     window.openFinModal     = FinanceModal.open;
     window.saveFinEntry     = FinanceModal.save;
     window.setFinType       = FinanceModal.setType;
-    window.setFinTab        = FinanceView.setTab;
-    window.deleteFinEntry   = FinanceView.deleteEntry;
+    window.FinanceModal     = FinanceModal;
+    window.FinanceQuickAdd  = FinanceQuickAdd;
 
     // --- Projects ---
     window.openNewProjectModal = ProjectModal.open;

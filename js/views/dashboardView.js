@@ -110,9 +110,8 @@ const DashboardView = (() => {
     const pct = dayTasks.length ? Math.round(doneCount / dayTasks.length * 100) : 0;
 
     const focus = PomodoroService.getFocusToday();
-    const month = FinanceService.summarize(
-      FinanceService.forMonth(FinanceService.currentMonthPrefix()));
-    const saldoColor = month.saldo >= 0 ? 'var(--emerald)' : 'var(--red)';
+    const month = FinanceService.getResumoMes(FinanceService.currentMonthPrefix());
+    const saldoColor = month.saldoMes >= 0 ? 'var(--emerald)' : 'var(--red)';
 
     document.getElementById('dash-metrics').innerHTML =
       metricCardHtml({
@@ -128,15 +127,15 @@ const DashboardView = (() => {
       streakCardHtml() +
       metricCardHtml({
         icon: 'ti-wallet', label: 'Saldo do mês',
-        value: `<span id="dash-saldo" style="color:${saldoColor}">${Utils.fmtMoney(month.saldo)}</span>`,
-        context: `+${Utils.fmtMoney(month.receitas)} · −${Utils.fmtMoney(month.despesas)}`
+        value: `<span id="dash-saldo" style="color:${saldoColor}">${Utils.formatBRL(month.saldoMes)}</span>`,
+        context: `+${Utils.formatBRL(month.entradas)} · −${Utils.formatBRL(month.saidas)}`
       });
 
     // Fase 8: saldo virou positivo → tick verde animado no card
-    if (lastSaldo !== null && lastSaldo < 0 && month.saldo >= 0) {
-      Feedback.numberTick('#dash-saldo', lastSaldo, month.saldo, Utils.fmtMoney);
+    if (lastSaldo !== null && lastSaldo < 0 && month.saldoMes >= 0) {
+      Feedback.numberTick('#dash-saldo', lastSaldo, month.saldoMes, Utils.formatBRL);
     }
-    lastSaldo = month.saldo;
+    lastSaldo = month.saldoMes;
   }
 
   // ===== Card de sequência (streak global do app) =====

@@ -164,9 +164,11 @@ const ReviewService = (() => {
     });
     const habitRate = habitDue ? Math.round(habitDone / habitDue * 100) : null;
 
-    const finEntries = FinanceService.getAll()
-      .filter(e => e.date >= weekStart && e.date <= end);
-    const saldo = FinanceService.summarize(finEntries).saldo;
+    // Saldo da semana em centavos (entradas − saídas; transferências não contam)
+    const saldo = FinanceService.listTransactions()
+      .filter(t => t.data >= weekStart && t.data <= end)
+      .reduce((s, t) => s + (t.tipo === 'entrada' ? t.valorCentavos
+        : t.tipo === 'saida' ? -t.valorCentavos : 0), 0);
 
     const streaks = habits.filter(h => HabitService.stats(h.id).streak > 0).length;
 
