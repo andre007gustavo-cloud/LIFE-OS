@@ -7,7 +7,17 @@
 
 const FinanceService = (() => {
 
-  const db = () => AppState.getDB();
+  /**
+   * Acesso ao DB garantindo que os arrays de finanças existem. Caches locais
+   * anteriores à Fase 1 não têm essas chaves; sem isso, leituras quebrariam.
+   */
+  function db() {
+    const d = AppState.getDB();
+    if (!d.contas) d.contas = [];
+    if (!d.categorias) d.categorias = [];
+    if (!d.transacoes) d.transacoes = [];
+    return d;
+  }
 
   // ===== Seed do primeiro uso =====
 

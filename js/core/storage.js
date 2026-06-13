@@ -56,7 +56,10 @@ const Storage = (() => {
   function load() {
     try {
       const raw = localStorage.getItem(Constants.STORAGE_KEY);
-      return JSON.parse(raw) || cloneSeedData();
+      const parsed = raw ? JSON.parse(raw) : null;
+      // Preenche chaves novas ausentes (ex.: contas/categorias/transacoes da
+      // Fase 1) sem sobrescrever os dados já existentes do usuário.
+      return parsed ? { ...cloneSeedData(), ...parsed } : cloneSeedData();
     } catch {
       return cloneSeedData();
     }
