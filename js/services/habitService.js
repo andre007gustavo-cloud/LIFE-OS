@@ -224,6 +224,12 @@ const HabitService = (() => {
     return _db().habitLogs.filter(l => l.status === 'shielded').length;
   }
 
+  /** Datas com algum registro de hábito (qualquer status) — sinal de atividade
+   *  para a sequência global do app. */
+  function loggedDates() {
+    return _db().habitLogs.map(l => l.date);
+  }
+
   // ===== Modo dia difícil (estado por dia, sincronizado) =====
 
   function isHardDay(date) {
@@ -268,7 +274,7 @@ const HabitService = (() => {
   return {
     getAll, getById, create, update, archive,
     getLog, toggle, markFromTask, unmarkFromTask,
-    isDueOn, streak, monthlyRate, longestStreak, shieldsConsumed, stats,
+    isDueOn, streak, monthlyRate, longestStreak, shieldsConsumed, loggedDates, stats,
     isHardDay, toggleHardDay,
     _seedTestData
   };

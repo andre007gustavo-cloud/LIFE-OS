@@ -10,14 +10,17 @@ const DashboardView = (() => {
   let pomoWired = false;
   let lastPomoSig = '';
   let lastSaldo = null;     // detecta a virada do saldo do mês para positivo
+  let lastStreak = null;    // detecta o salto de sequência ao bater novo recorde
 
   function render() {
     wirePomodoroOnce();
     const td = Utils.today();
+    const streakInfo = ActivityService.refresh();
     renderHeader(td);
     renderHardMode(td);
     renderReviewNudge(td);
     renderMetrics(td);
+    applyStreakFeedback(streakInfo);
     renderHabitsCard(td);
     renderTimeline(td);
     renderInbox();
@@ -122,6 +125,7 @@ const DashboardView = (() => {
         value: `<span id="dash-focus-time">${fmtFocus(focus.seconds)}</span>`,
         context: `<span id="dash-focus-count">${focus.count} ${focus.count === 1 ? 'pomodoro' : 'pomodoros'}</span>`
       }) +
+      streakCardHtml() +
       metricCardHtml({
         icon: 'ti-wallet', label: 'Saldo do mês',
         value: `<span id="dash-saldo" style="color:${saldoColor}">${Utils.fmtMoney(month.saldo)}</span>`,
@@ -133,6 +137,51 @@ const DashboardView = (() => {
       Feedback.numberTick('#dash-saldo', lastSaldo, month.saldo, Utils.fmtMoney);
     }
     lastSaldo = month.saldo;
+  }
+
+  // ===== Card de sequência (streak global do app) =====
+
+  const STREAK_TITLE = 'Dias ativos seguidos. Qualquer ação real conta: '
+    + 'concluir tarefa, marcar hábito, processar inbox.';
+
+  function streakCardHtml() {
+    const streak = ActivityService.currentStreak();
+    const record = ActivityService.personalRecord();
+    const shields = ActivityService.shieldsAvailable();
+
+    const value = streak > 0
+      ? `<span id="dash-streak-value">${streak} dias</span>${shieldIconsHtml(shields)}`
+      : `<span class="metric-streak-start">Comece hoje</span>`;
+
+    let context = '';
+    if (streak > 0 && streak >= record.max) {
+      context = `<span style="color:#F59E0B">Novo recorde 🔥</span>`;
+    } else if (record.max > 0) {
+      context = `<span style="color:#F59E0B">Recorde pessoal: ${record.max}</span>`;
+    }
+
+    return metricCardHtml({ icon: 'ti-flame', label: 'Sequência', value, context, title: STREAK_TITLE });
+  }
+
+  /** Um ícone de escudo por escudo disponível, ao lado do número */
+  function shieldIconsHtml(n) {
+    if (!n) return '';
+    const icons = Array.from({ length: n }, () =>
+      `<i class="ti ti-shield" style="font-size:12px;color:#A78BFA"
+          title="Escudo protege você em um dia difícil"></i>`).join('');
+    return ` <span class="metric-streak-shields">${icons}</span>`;
+  }
+
+  /** Novo recorde: a view dispara a comemoração (o service é DOM-free) */
+  function applyStreakFeedback({ streak, recordBeaten }) {
+    if (recordBeaten && streak > 0) {
+      Feedback.celebrate('large');
+      Feedback.toast(`Novo recorde: ${streak} dias`, 'success');
+      if (lastStreak !== null) {
+        Feedback.numberTick('#dash-streak-value', lastStreak, streak, v => `${Math.round(v)} dias`);
+      }
+    }
+    lastStreak = streak;
   }
 
   // ===== Card de hábitos (resumo da semana seg–dom) =====
@@ -193,8 +242,9 @@ const DashboardView = (() => {
   }
 
   /** Card de métrica genérico (reutilizável para futuros cards, ex.: hábitos) */
-  function metricCardHtml({ icon, label, value, context, onclick }) {
-    return `<div class="metric-card${onclick ? ' clickable' : ''}"${onclick ? ` onclick="${onclick}"` : ''}>
+  function metricCardHtml({ icon, label, value, context, onclick, title }) {
+    const titleAttr = title ? ` title="${Utils.escapeAttr(title)}"` : '';
+    return `<div class="metric-card${onclick ? ' clickable' : ''}"${onclick ? ` onclick="${onclick}"` : ''}${titleAttr}>
       <div class="metric-label"><i class="ti ${icon}"></i> ${label}</div>
       <div class="metric-value">${value}</div>
       <div class="metric-context">${context || ''}</div>

@@ -59,6 +59,11 @@ const FinanceService = (() => {
     return { receitas, despesas, saldo, pctComprometido };
   }
 
+  /** Datas com algum lançamento — sinal de atividade para a sequência global. */
+  function entryDates() {
+    return getAll().filter(e => e.date).map(e => e.date);
+  }
+
   /** Returns per-category totals for given entries */
   function byCategory(entries) {
     return getCategories().map(c => {

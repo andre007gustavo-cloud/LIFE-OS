@@ -91,6 +91,8 @@ const Storage = (() => {
           weeklyGoals: data.weeklyGoals || [],
           reviewLogs: data.reviewLogs || [],
           events: data.events || [],
+          activityShields: data.activityShields || { available: 0, history: [] },
+          activityRecord: data.activityRecord || { max: 0, achievedAt: '' },
           meta: data.meta || {}
         };
       }
@@ -121,6 +123,8 @@ const Storage = (() => {
         weeklyGoals: db.weeklyGoals || [],
         reviewLogs: db.reviewLogs || [],
         events: db.events || [],
+        activityShields: db.activityShields || { available: 0, history: [] },
+        activityRecord: db.activityRecord || { max: 0, achievedAt: '' },
         meta: db.meta || {},
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       });
@@ -188,6 +192,8 @@ const Storage = (() => {
           weeklyGoals: data.weeklyGoals || [],
           reviewLogs: data.reviewLogs || [],
           events: data.events || [],
+          activityShields: data.activityShields || { available: 0, history: [] },
+          activityRecord: data.activityRecord || { max: 0, achievedAt: '' },
           meta: data.meta || {}
         });
       }

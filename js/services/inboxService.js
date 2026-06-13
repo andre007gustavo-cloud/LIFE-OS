@@ -53,5 +53,11 @@ const InboxService = (() => {
     AppState.persist();
   }
 
-  return { getAll, getById, count, add, update, remove };
+  /** Datas de captura ainda pendentes — sinal de atividade para a sequência
+   *  global. Itens processados são removidos; a captura é o rastro durável. */
+  function capturedDates() {
+    return _items().map(i => Utils.toISO(new Date(i.createdAt)));
+  }
+
+  return { getAll, getById, count, add, update, remove, capturedDates };
 })();

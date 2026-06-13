@@ -71,6 +71,12 @@ const Constants = (() => {
     TASK_LIMIT: 3      // máximo de tarefas visíveis nas listas de hoje
   };
 
+  /** Sequência global do app (ActivityService): escudos derivados da atividade real */
+  const ACTIVITY = {
+    SHIELD_EVERY: 7,   // dias ativos consecutivos para ganhar 1 escudo
+    SHIELD_MAX: 3      // máximo de escudos acumulados
+  };
+
   /** Contador "próximo compromisso" + limiares de cor */
   const NEXTUP = {
     REFRESH_MS: 30000,      // recálculo da faixa a cada 30s
@@ -121,6 +127,8 @@ const Constants = (() => {
     weeklyGoals: [],
     reviewLogs: [],
     events: [],
+    activityShields: { available: 0, history: [] },
+    activityRecord: { max: 0, achievedAt: '' },
     meta: {},
     areas: [
       { id: 'a1', name: 'Trabalho', icon: '💼', color: '#7c6fff',
@@ -152,6 +160,7 @@ const Constants = (() => {
     CALENDAR,
     HABITS,
     HARD_MODE,
+    ACTIVITY,
     NEXTUP,
     REVIEW,
     FEEDBACK,

@@ -59,7 +59,19 @@ const CommandPalette = (() => {
       label: () => HabitService.isHardDay(Utils.today()) ? 'Desativar modo dia difícil' : 'Ativar modo dia difícil',
       run: () => DashboardView.toggleHardMode()
     },
-    { id: 'logout', section: 'Ação', icon: 'ti-logout', label: 'Sair', run: () => LoginScreen.logout() }
+    { id: 'logout', section: 'Ação', icon: 'ti-logout', label: 'Sair', run: () => LoginScreen.logout() },
+
+    // --- Dev (apenas localhost) ---
+    {
+      id: 'test-streak', section: 'Ação', icon: 'ti-flask',
+      when: () => window.location.hostname === 'localhost',
+      label: '🧪 Testar sequência',
+      run: () => {
+        ActivityService._seedTestActivity('AAAAAAAA.AAAA');
+        Navigation.renderAll();
+        Feedback.toast(`Sequência: ${ActivityService.currentStreak()} dias · escudos: ${ActivityService.shieldsAvailable()}`, 'info');
+      }
+    }
   ];
 
   // ===== Boot =====

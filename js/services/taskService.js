@@ -198,6 +198,15 @@ const TaskService = (() => {
     return getAll().filter(t => Utils.taskCoversDay(t, isoDate));
   }
 
+  /**
+   * Datas (YYYY-MM-DD) com ao menos uma tarefa concluída — sinal de atividade
+   * para a sequência global. Tarefas não guardam a data de conclusão, então
+   * usa-se a data agendada da tarefa concluída como melhor proxy derivado.
+   */
+  function completedDates() {
+    return getAll().filter(t => t.status === 'concluida' && t.date).map(t => t.date);
+  }
+
   function forProject(projectId) {
     return getAll().filter(t => t.project === projectId);
   }
@@ -250,6 +259,6 @@ const TaskService = (() => {
     completionLevel, cyclePriority, duplicate,
     addSubtask, toggleSubtask, renameSubtask, removeSubtask,
     addTag, removeTag, clearHabitLink,
-    pending, completed, forDay, forProject
+    pending, completed, forDay, forProject, completedDates
   };
 })();

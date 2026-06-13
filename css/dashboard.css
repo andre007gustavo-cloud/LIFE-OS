@@ -10,7 +10,7 @@
 
 /* ===== Cards de métrica ===== */
 .metric-grid{
-  display:grid;grid-template-columns:repeat(3,1fr);
+  display:grid;grid-template-columns:repeat(4,1fr);
   gap:12px;margin-bottom:16px;
 }
 .metric-card{
@@ -29,6 +29,8 @@
 }
 .metric-value{font-size:21px;font-weight:500;line-height:1.2;white-space:nowrap}
 .metric-context{font-size:11px;color:var(--text3);margin-top:6px;min-height:12px}
+.metric-streak-start{font-size:16px;color:var(--text3)}
+.metric-streak-shields{margin-left:6px;white-space:nowrap}
 
 /* ===== Grid principal 2 colunas ===== */
 .dash-grid{
