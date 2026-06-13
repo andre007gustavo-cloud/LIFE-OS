@@ -79,6 +79,6 @@ const FinanceService = (() => {
   return {
     getAll, getCategories, getCategoryById,
     create, remove,
-    forMonth, currentMonthPrefix, summarize, byCategory
+    forMonth, currentMonthPrefix, summarize, byCategory, entryDates
   };
 })();
