@@ -136,7 +136,8 @@ const Storage = (() => {
         activityRecord: db.activityRecord || { max: 0, achievedAt: '' },
         meta: db.meta || {},
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
+      }, { merge: true }); // não deixa um cliente que omite um campo (ex.: versão
+      // antiga sem 'transacoes') apagá-lo; clientes atuais enviam tudo
       _setSyncState('synced');
       // Aguarda um pouco antes de voltar a escutar updates remotos
       setTimeout(() => { _isSaving = false; }, 1000);
