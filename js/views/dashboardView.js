@@ -9,7 +9,7 @@ const DashboardView = (() => {
 
   let pomoWired = false;
   let lastPomoSig = '';
-  let lastSaldo = null; // detecta a virada do saldo do mês para positivo
+  let lastSaldo = null;     // detecta a virada do saldo do mês para positivo
 
   function render() {
     wirePomodoroOnce();
@@ -18,6 +18,7 @@ const DashboardView = (() => {
     renderHardMode(td);
     renderReviewNudge(td);
     renderMetrics(td);
+    renderHabitsCard(td);
     renderTimeline(td);
     renderInbox();
     renderWeek(td);
@@ -41,11 +42,7 @@ const DashboardView = (() => {
   // ===== Modo dia difícil =====
 
   function renderHardMode(td) {
-    const active = HabitService.isHardDay(td);
-    document.getElementById('hard-mode-btn').classList.toggle('active', active);
-    document.getElementById('dash-hardmode').innerHTML = active
-      ? '<div class="hard-mode-banner"><i class="ti ti-shield-half"></i> Modo dia difícil ativo — só o essencial conta hoje</div>'
-      : '';
+    document.getElementById('hard-mode-btn').classList.toggle('active', HabitService.isHardDay(td));
   }
 
   /** O modo NUNCA se ativa sozinho; sempre escolha do usuário (este toggle) */
@@ -129,8 +126,7 @@ const DashboardView = (() => {
         icon: 'ti-wallet', label: 'Saldo do mês',
         value: `<span id="dash-saldo" style="color:${saldoColor}">${Utils.fmtMoney(month.saldo)}</span>`,
         context: `+${Utils.fmtMoney(month.receitas)} · −${Utils.fmtMoney(month.despesas)}`
-      }) +
-      metricCardHtml(habitsMetric(td));
+      });
 
     // Fase 8: saldo virou positivo → tick verde animado no card
     if (lastSaldo !== null && lastSaldo < 0 && month.saldo >= 0) {
@@ -139,27 +135,61 @@ const DashboardView = (() => {
     lastSaldo = month.saldo;
   }
 
-  /** Card "Hábitos hoje": cumpridos/devidos + melhor sequência ativa */
-  function habitsMetric(td) {
+  // ===== Card de hábitos (resumo da semana seg–dom) =====
+
+  /** Recalcula só ao renderizar o painel; cada hábito mostra a barra segmentada da semana */
+  function renderHabitsCard(td) {
+    const el = document.getElementById('dash-habits');
+    if (!el) return;
     const habits = HabitService.getAll();
-    const due = habits.filter(h => HabitService.isDueOn(h, td));
-    const done = due.filter(h => HabitService.getLog(h.id, td)).length;
-    const best = habits
-      .map(h => ({ name: h.name, streak: HabitService.stats(h.id).streak }))
-      .filter(s => s.streak > 0)
-      .sort((a, b) => b.streak - a.streak)[0];
+    const rows = habits.length
+      ? habits.map(h => habitCardRowHtml(h, td)).join('')
+      : `<div class="text-muted" style="margin-bottom:4px">Nenhum hábito ainda</div>`;
+    el.innerHTML = rows + hardModeBannerHtml(td);
+  }
 
-    const context = !habits.length ? 'crie seu primeiro hábito'
-      : HabitService.isHardDay(td) ? 'só a versão mínima conta hoje'
-      : best ? `🔥 ${best.streak} ${best.streak === 1 ? 'dia' : 'dias'} — ${escapeHtml(best.name)}`
-      : 'nenhuma sequência ativa';
+  /** Dias da semana corrente, de segunda a domingo (ISO) */
+  function weekDays(td) {
+    const dow = Utils.parseISO(td).getDay();           // 0=Dom..6=Sáb
+    const monday = Utils.addDays(td, dow === 0 ? -6 : 1 - dow);
+    return Array.from({ length: 7 }, (_, i) => Utils.addDays(monday, i));
+  }
 
-    return {
-      icon: 'ti-repeat', label: 'Hábitos hoje',
-      value: due.length ? `${done}/${due.length}` : '—',
-      context,
-      onclick: "showView('habits')"
-    };
+  function habitCardRowHtml(habit, td) {
+    const week = weekDays(td);
+    const due = week.filter(d => HabitService.isDueOn(habit, d));
+    const met = due.filter(d => HabitService.getLog(habit.id, d)).length;
+    const segs = week.map(d => habitSegHtml(habit, d, td)).join('');
+    return `<div class="dh-habit" onclick="showView('habits')">
+      <div class="dh-habit-head">
+        <span class="dh-habit-name">${escapeHtml(habit.name)}</span>
+        <span class="dh-habit-count">${due.length ? `${met}/${due.length}` : '—'}</span>
+      </div>
+      <div class="dh-segs">${segs}</div>
+    </div>`;
+  }
+
+  /** Um segmento do dia (mesma convenção de cor da view de hábitos: verde = feito) */
+  function habitSegHtml(habit, date, td) {
+    const title = Utils.fmtDate(date);
+    if (!HabitService.isDueOn(habit, date)) return `<span class="dh-seg dh-skip" title="${title} — não devido"></span>`;
+    const log = HabitService.getLog(habit.id, date);
+    if (log?.status === 'done') return `<span class="dh-seg dh-done" title="${title} — feito"></span>`;
+    if (log?.status === 'minimal') return `<span class="dh-seg dh-min" title="${title} — versão mínima"></span>`;
+    if (log?.status === 'shielded') return `<span class="dh-seg dh-shield" title="${title} — protegido por escudo"></span>`;
+    if (date > td) return `<span class="dh-seg dh-future" title="${title}"></span>`;
+    if (date === td) return `<span class="dh-seg dh-today" title="hoje"></span>`;
+    return `<span class="dh-seg dh-fail" title="${title} — não cumprido"></span>`;
+  }
+
+  /** Banner do modo dia difícil dentro do card; clicar ativa/desativa */
+  function hardModeBannerHtml(td) {
+    if (HabitService.isHardDay(td)) {
+      return `<div class="dh-hardmode active" onclick="dashToggleHardMode()">
+        <i class="ti ti-shield-half"></i> Modo dia difícil ativo — só o essencial conta hoje</div>`;
+    }
+    return `<div class="dh-hardmode" onclick="dashToggleHardMode()">
+      <i class="ti ti-shield-half"></i> Modo dia difícil: ative para reduzir tudo ao mínimo essencial sem quebrar a sequência</div>`;
   }
 
   /** Card de métrica genérico (reutilizável para futuros cards, ex.: hábitos) */

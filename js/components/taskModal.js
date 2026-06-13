@@ -13,6 +13,7 @@ const TaskModal = (() => {
     document.getElementById('task-modal-title').textContent =
       taskId ? 'Editar Tarefa' : 'Nova Tarefa';
 
+    populateHabitSelect();
     fillFields(task);
     populateAreaSelect('t-area', task.area);
 
@@ -25,6 +26,21 @@ const TaskModal = (() => {
     wireTimeCalculation();
 
     Modal.open('task-modal');
+  }
+
+  /** Abre uma tarefa nova já vinculada ao hábito (nome, recorrência espelhada, habitId) */
+  function openForHabit(habit) {
+    open();
+    document.getElementById('t-name').value = habit.name;
+    document.getElementById('t-date').value = Utils.today();
+    document.getElementById('t-recurrence').value = freqToRecurrence(habit.frequency);
+    document.getElementById('t-habit').value = habit.id;
+  }
+
+  /** Frequência do hábito → recorrência de tarefa (a tarefa só tem diária/semanal/mensal) */
+  function freqToRecurrence(freq) {
+    if (!freq || freq.type === 'daily' || freq.type === 'weekdays') return 'daily';
+    return 'weekly';
   }
 
   function save() {
@@ -65,8 +81,17 @@ const TaskModal = (() => {
 
   // ===== Internal =====
 
+  function populateHabitSelect() {
+    document.getElementById('t-habit').innerHTML =
+      '<option value="">Nenhum</option>' +
+      HabitService.getAll()
+        .map(h => `<option value="${h.id}">${Utils.escapeHtml(h.icon)} ${Utils.escapeHtml(h.name)}</option>`)
+        .join('');
+  }
+
   function fillFields(task) {
     document.getElementById('t-name').value = task.name || '';
+    document.getElementById('t-habit').value = task.habitId || '';
     document.getElementById('t-priority').value = task.priority || 'media';
     document.getElementById('t-status').value = task.status || 'afazer';
     document.getElementById('t-date').value = task.date || '';
@@ -96,6 +121,7 @@ const TaskModal = (() => {
       duration: isMulti ? '' : document.getElementById('t-duration').value,
       recurrence: document.getElementById('t-recurrence').value,
       estimate: document.getElementById('t-estimate').value,
+      habitId: document.getElementById('t-habit').value || null,
       tags: document.getElementById('t-tags').value
         .split(',').map(x => x.trim()).filter(Boolean),
       notes: document.getElementById('t-notes').value
@@ -140,5 +166,5 @@ const TaskModal = (() => {
     document.getElementById('t-end').onchange = calcDuration;
   }
 
-  return { open, save, updateProjectSelect, populateAreaSelect };
+  return { open, openForHabit, save, updateProjectSelect, populateAreaSelect };
 })();

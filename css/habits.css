@@ -106,10 +106,93 @@ body.light #hard-mode-btn.active{background:#7C3AED14;color:#6D28D9}
 }
 .hard-more-btn:hover{border-color:var(--accent);color:var(--text)}
 
+/* ===== Tarefa vinculada (modal de hábito) ===== */
+.h-linked-info{
+  font-size:13px;color:var(--text2);
+  display:flex;align-items:center;gap:6px;padding:4px 0;
+}
+.h-linked-rec{color:var(--text3);font-size:12px}
+
+/* ===== Indicador de hábito no calendário ===== */
+.cal-habit-tag{font-size:9px;opacity:.6;vertical-align:1px}
+.cal-habit-tag.done{color:var(--green);opacity:1}
+
+/* ===== Visão geral / linha do tempo ===== */
+.ov-summary{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:12px;margin-bottom:16px;
+}
+.ov-card{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);padding:14px 16px;min-width:0;
+}
+.ov-card-label{
+  font-size:11px;color:var(--text3);
+  display:flex;align-items:center;gap:5px;margin-bottom:6px;
+}
+.ov-card-value{font-size:21px;font-weight:500;line-height:1.2}
+.ov-card-context{
+  font-size:11px;color:var(--text3);margin-top:6px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+
+.ov-section{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;
+}
+.ov-section-head{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;margin-bottom:12px;
+}
+.ov-section-title{
+  font-size:13px;font-weight:600;
+  display:flex;align-items:center;gap:6px;
+}
+.ov-select{width:auto;max-width:55%;font-size:12px;padding:5px 8px}
+
+/* Gráfico de barras (taxa mensal) */
+.ov-bars{display:flex;align-items:flex-end;gap:10px;height:140px}
+.ov-bar-col{
+  flex:1;height:100%;
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:flex-end;gap:4px;
+}
+.ov-bar-val{font-size:10px;color:var(--text3)}
+.ov-bar-track{
+  width:100%;max-width:34px;height:100px;
+  background:var(--bg3);border-radius:4px;
+  display:flex;align-items:flex-end;overflow:hidden;
+}
+.ov-bar-fill{
+  width:100%;background:var(--accent);
+  border-radius:4px 4px 0 0;transition:height .4s ease;
+}
+.ov-bar-label{font-size:10px;color:var(--text3)}
+
+/* Heatmap estilo GitHub */
+.ov-habit{margin-bottom:16px}
+.ov-habit:last-child{margin-bottom:0}
+.ov-habit-head{
+  font-size:12px;font-weight:600;margin-bottom:6px;
+  display:flex;align-items:center;gap:6px;
+}
+.ov-habit-icon{font-size:14px}
+.ov-heatmap-wrap{overflow-x:auto;padding-bottom:4px}
+.ov-heatmap{
+  display:grid;grid-template-rows:repeat(7,12px);
+  grid-auto-flow:column;grid-auto-columns:12px;gap:3px;width:max-content;
+}
+.ov-cell{width:12px;height:12px;border-radius:3px;background:var(--bg3)}
+.ov-skip{background:var(--bg3);opacity:.3}
+.ov-fail{background:#F8717122}
+.ov-shield{background:var(--blue)}
+.ov-today{background:transparent;border:1px solid var(--text3)}
+
 /* ===== Responsivo ===== */
 @media(max-width:600px){
   .hd{width:13px;height:13px}
   .hd .ti{font-size:8px}
   .habit-week{gap:3px}
   #hard-mode-btn .hm-label{display:none}
+  .ov-summary{grid-template-columns:1fr}
 }

@@ -31,6 +31,7 @@ const TaskService = (() => {
     if (!wasDone && tasks[idx].status === 'concluida' && tasks[idx].recurrence) {
       tasks.push(buildNextRecurrence(tasks[idx]));
     }
+    syncHabitFromTask(tasks[idx], wasDone);
     AppState.persist();
     return tasks[idx];
   }
@@ -43,6 +44,7 @@ const TaskService = (() => {
     if (field === 'status' && !wasDone && value === 'concluida' && t.recurrence) {
       AppState.getDB().tasks.push(buildNextRecurrence(t));
     }
+    if (field === 'status') syncHabitFromTask(t, wasDone);
     AppState.persist();
   }
 
@@ -55,11 +57,34 @@ const TaskService = (() => {
   function toggle(id) {
     const t = getById(id);
     if (!t) return;
-    t.status = (t.status === 'concluida') ? 'afazer' : 'concluida';
+    const wasDone = t.status === 'concluida';
+    t.status = wasDone ? 'afazer' : 'concluida';
     if (t.status === 'concluida' && t.recurrence) {
       AppState.getDB().tasks.push(buildNextRecurrence(t));
     }
+    syncHabitFromTask(t, wasDone);
     AppState.persist();
+  }
+
+  /**
+   * Reflete a conclusão/reabertura de uma tarefa no hábito vinculado (habitId).
+   * Concluir marca o hábito 'done' na data da tarefa (origem 'task'); reabrir
+   * desmarca apenas se o log foi criado por essa via (marcação manual fica intacta).
+   */
+  function syncHabitFromTask(task, wasDone) {
+    if (!task.habitId || !task.date || typeof HabitService === 'undefined') return;
+    const nowDone = task.status === 'concluida';
+    if (!wasDone && nowDone) HabitService.markFromTask(task.habitId, task.date);
+    else if (wasDone && !nowDone) HabitService.unmarkFromTask(task.habitId, task.date);
+  }
+
+  /** Remove o vínculo de hábito de todas as tarefas (ao arquivar/excluir o hábito) */
+  function clearHabitLink(habitId) {
+    let changed = false;
+    getAll().forEach(t => {
+      if (t.habitId === habitId) { t.habitId = null; changed = true; }
+    });
+    if (changed) AppState.persist();
   }
 
   /** Cycle priority through 4 levels */
@@ -194,6 +219,7 @@ const TaskService = (() => {
       duration: data.duration || '',
       recurrence: data.recurrence || '',
       estimate: data.estimate || '',
+      habitId: data.habitId || null,
       tags: data.tags || [],
       notes: data.notes || '',
       subtasks: data.subtasks || []
@@ -223,7 +249,7 @@ const TaskService = (() => {
     getAll, getById, create, update, updateField, remove, toggle, archive,
     completionLevel, cyclePriority, duplicate,
     addSubtask, toggleSubtask, renameSubtask, removeSubtask,
-    addTag, removeTag,
+    addTag, removeTag, clearHabitLink,
     pending, completed, forDay, forProject
   };
 })();

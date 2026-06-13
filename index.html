@@ -139,7 +139,6 @@
       </div>
     </div>
 
-    <div id="dash-hardmode"></div>
     <div id="dash-review-nudge"></div>
 
     <div class="metric-grid" id="dash-metrics"></div>
@@ -151,6 +150,13 @@
       </div>
 
       <div class="dash-col-side">
+        <div class="card">
+          <div class="card-title dash-habits-title">
+            <span><i class="ti ti-repeat"></i> Hábitos</span>
+            <span class="dash-habits-range">seg–dom</span>
+          </div>
+          <div id="dash-habits"></div>
+        </div>
         <div class="card">
           <div class="card-title"><i class="ti ti-inbox"></i> Caixa de entrada <span class="inbox-badge" id="dash-inbox-badge"></span></div>
           <div id="dash-inbox"></div>
@@ -382,9 +388,14 @@
   <div class="view padded" id="view-habits">
     <div class="section-title">
       <span><i class="ti ti-repeat"></i> Hábitos</span>
-      <button class="btn btn-primary btn-sm" onclick="HabitsView.openModal()">
-        <i class="ti ti-plus"></i> Novo
-      </button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" id="habits-overview-btn" onclick="HabitsView.toggleOverview()">
+          <i class="ti ti-chart-bar"></i> Visão geral
+        </button>
+        <button class="btn btn-primary btn-sm" id="habits-new-btn" onclick="HabitsView.openModal()">
+          <i class="ti ti-plus"></i> Novo
+        </button>
+      </div>
     </div>
     <div id="habits-list"></div>
   </div>
@@ -482,6 +493,10 @@
         <label class="form-label">Projeto</label>
         <select class="form-select" id="t-project"></select>
       </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Vincular a hábito (opcional)</label>
+      <select class="form-select" id="t-habit"></select>
     </div>
     <div class="form-group">
       <label class="form-label">Tags (separadas por vírgula)</label>
@@ -662,6 +677,7 @@
       <input class="form-input" id="h-minversion" placeholder="Ex: 1 flexão">
       <div class="form-hint">O que conta como feito num dia péssimo? Garante a sequência mesmo no pior dia.</div>
     </div>
+    <div class="form-group" id="h-linked-task"></div>
     <div style="display:flex;gap:8px;justify-content:space-between">
       <button class="btn btn-ghost" id="h-archive-btn" onclick="HabitsView.archive()" style="color:var(--red);display:none">
         <i class="ti ti-archive"></i> Arquivar

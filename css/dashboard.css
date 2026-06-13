@@ -10,7 +10,7 @@
 
 /* ===== Cards de métrica ===== */
 .metric-grid{
-  display:grid;grid-template-columns:repeat(4,1fr);
+  display:grid;grid-template-columns:repeat(3,1fr);
   gap:12px;margin-bottom:16px;
 }
 .metric-card{
@@ -37,6 +37,49 @@
 }
 .dash-grid .card{margin-bottom:0}
 .dash-col-side{display:flex;flex-direction:column;gap:12px;min-width:0}
+
+/* ===== Card de hábitos (resumo da semana) ===== */
+.dash-habits-title{display:flex;align-items:center;justify-content:space-between}
+.dash-habits-range{
+  font-size:10px;color:var(--text3);font-weight:600;
+  letter-spacing:.5px;text-transform:none;
+}
+.dh-habit{
+  padding:8px 6px;border-radius:var(--radius-sm);cursor:pointer;
+  transition:background .15s;
+}
+.dh-habit:hover{background:var(--bg3)}
+.dh-habit-head{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:8px;margin-bottom:6px;
+}
+.dh-habit-name{
+  font-size:13px;font-weight:500;color:var(--text);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.dh-habit-count{font-size:12px;font-weight:600;color:var(--text3);flex-shrink:0}
+.dh-segs{display:flex;gap:5px}
+.dh-seg{flex:1;height:8px;border-radius:4px;background:var(--bg4)}
+.dh-seg.dh-skip,
+.dh-seg.dh-fail,
+.dh-seg.dh-future{background:transparent;border:1px dashed var(--border)}
+.dh-seg.dh-skip{opacity:.6}
+.dh-seg.dh-today{background:transparent;border:1px solid var(--text3)}
+.dh-seg.dh-shield{background:var(--blue)}
+/* done/minimal recebem a cor verde via classe; minimal mais clara */
+.dh-seg.dh-done{background:var(--green)}
+.dh-seg.dh-min{background:#22C55E66}
+
+.dh-hardmode{
+  display:flex;align-items:flex-start;gap:8px;
+  background:#7C3AED1f;border:1px solid #7C3AED44;color:#C4B5FD;
+  border-radius:var(--radius-sm);padding:10px 12px;margin-top:10px;
+  font-size:12px;line-height:1.4;cursor:pointer;transition:background .15s;
+}
+.dh-hardmode:hover{background:#7C3AED2e}
+.dh-hardmode .ti{font-size:15px;margin-top:1px;flex-shrink:0}
+.dh-hardmode.active{background:#7C3AED2e;color:#DDD6FE}
+body.light .dh-hardmode{background:#7C3AED12;color:#6D28D9}
 
 /* ===== Linha do tempo de hoje ===== */
 .tl-item{

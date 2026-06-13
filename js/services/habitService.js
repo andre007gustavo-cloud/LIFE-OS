@@ -5,7 +5,7 @@
  * Knows nothing about the DOM.
  *
  * habit:    { id, name, icon, color, frequency:{type,days}, minVersion, createdAt, archived }
- * habitLog: { habitId, date:'YYYY-MM-DD', status:'done'|'minimal'|'shielded' }
+ * habitLog: { habitId, date:'YYYY-MM-DD', status:'done'|'minimal'|'shielded', source?:'manual'|'task' }
  */
 
 const HabitService = (() => {
@@ -53,8 +53,9 @@ const HabitService = (() => {
     return habit;
   }
 
-  /** Arquiva o hábito; os logs nunca são apagados */
+  /** Arquiva o hábito; os logs nunca são apagados. Limpa o vínculo das tarefas. */
   function archive(id) {
+    if (typeof TaskService !== 'undefined') TaskService.clearHabitLink(id);
     return update(id, { archived: true });
   }
 
@@ -76,8 +77,27 @@ const HabitService = (() => {
     } else if (log) {
       log.status = status;
     } else if (status) {
-      db.habitLogs.push({ habitId, date, status });
+      db.habitLogs.push({ habitId, date, status, source: 'manual' });
     }
+    AppState.persist();
+  }
+
+  /**
+   * Marca o hábito 'done' a partir da conclusão de uma tarefa vinculada.
+   * Se já existe log no dia (ex.: marcação manual anterior), mantém — não duplica.
+   */
+  function markFromTask(habitId, date) {
+    if (!date || getLog(habitId, date)) return;
+    _db().habitLogs.push({ habitId, date, status: 'done', source: 'task' });
+    AppState.persist();
+  }
+
+  /** Desfaz a marcação SÓ se o log veio da tarefa (marcação manual fica intacta) */
+  function unmarkFromTask(habitId, date) {
+    const log = getLog(habitId, date);
+    if (!log || log.source !== 'task') return;
+    const db = _db();
+    db.habitLogs = db.habitLogs.filter(l => l !== log);
     AppState.persist();
   }
 
@@ -186,6 +206,24 @@ const HabitService = (() => {
     return due ? Math.round(met / due * 100) : null;
   }
 
+  /** Maior sequência histórica de dias devidos cumpridos (hoje em aberto não quebra) */
+  function longestStreak(habitId) {
+    const habit = getById(habitId);
+    if (!habit) return 0;
+    const td = Utils.today();
+    let best = 0, run = 0;
+    for (const date of _dueDates(habit, td)) {
+      if (getLog(habitId, date)) { run++; best = Math.max(best, run); }
+      else if (date !== td) run = 0; // hoje sem marcar ainda não quebra
+    }
+    return best;
+  }
+
+  /** Total de escudos já consumidos (logs 'shielded' materializados) */
+  function shieldsConsumed() {
+    return _db().habitLogs.filter(l => l.status === 'shielded').length;
+  }
+
   // ===== Modo dia difícil (estado por dia, sincronizado) =====
 
   function isHardDay(date) {
@@ -229,8 +267,8 @@ const HabitService = (() => {
 
   return {
     getAll, getById, create, update, archive,
-    getLog, toggle,
-    isDueOn, streak, monthlyRate, stats,
+    getLog, toggle, markFromTask, unmarkFromTask,
+    isDueOn, streak, monthlyRate, longestStreak, shieldsConsumed, stats,
     isHardDay, toggleHardDay,
     _seedTestData
   };

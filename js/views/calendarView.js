@@ -20,6 +20,15 @@ const CalendarView = (() => {
       : '';
   }
 
+  /** Indicador de tarefa vinculada a hábito; com check quando o hábito do dia foi cumprido */
+  function habitTag(t, iso) {
+    if (!t.habitId) return '';
+    const done = !!HabitService.getLog(t.habitId, iso);
+    const icon = done ? 'ti-circle-check' : 'ti-repeat';
+    const title = done ? 'Hábito cumprido neste dia' : 'Tarefa vinculada a hábito';
+    return `<i class="ti ${icon} cal-habit-tag${done ? ' done' : ''}" title="${title}"></i> `;
+  }
+
   // ===== Top-level render =====
 
   function render() {
@@ -244,7 +253,7 @@ const CalendarView = (() => {
     return `<div style="display:flex;align-items:center;gap:6px;padding:4px 0;cursor:pointer"
                  onclick="ttOpenDetail('${t.id}');showView('tasks')">
       <span>${Constants.PRI_ICONS[t.priority]}</span>
-      <span style="flex:1;font-size:13px">${recBadge(t, iso)}${escapeHtml(t.name)}</span>
+      <span style="flex:1;font-size:13px">${habitTag(t, iso)}${recBadge(t, iso)}${escapeHtml(t.name)}</span>
       ${area ? `<span style="font-size:11px;color:${area.color}">${escapeHtml(area.icon)}</span>` : ''}
     </div>`;
   }
@@ -303,7 +312,7 @@ const CalendarView = (() => {
         return `<div class="time-block"
                      style="top:${top}px;height:${height - 2}px;left:${leftPct}%;width:calc(${widthPct}% - 2px);background:${color}18;border-left-color:${color}"
                      onclick="ttOpenDetail('${t.id}');showView('tasks')">
-          <div class="time-block-name">${recBadge(t, iso)}${escapeHtml(t.name)}</div>
+          <div class="time-block-name">${habitTag(t, iso)}${recBadge(t, iso)}${escapeHtml(t.name)}</div>
           <div class="time-block-meta">${t.start}${t.end ? '–' + t.end : ''}</div>
         </div>`;
       }).join('') +
@@ -384,7 +393,7 @@ const CalendarView = (() => {
         ${dayTasks.slice(0, 5).map(t => {
           const c = taskColor(t);
           return `<div class="week-task-chip" style="background:${c}2e;color:var(--text2)"
-               onclick="ttOpenDetail('${t.id}');showView('tasks')">${recBadge(t, iso)}${escapeHtml(t.name)}</div>`;
+               onclick="ttOpenDetail('${t.id}');showView('tasks')">${habitTag(t, iso)}${recBadge(t, iso)}${escapeHtml(t.name)}</div>`;
         }).join('')}
         ${dayTasks.length > 5 ? `<div style="font-size:10px;color:var(--text3);text-align:center;margin-top:4px;cursor:pointer"
              onclick="AppState.ui.calDate=Utils.parseISO('${iso}');setCalView('day')">+${dayTasks.length - 5}</div>` : ''}
@@ -445,7 +454,7 @@ const CalendarView = (() => {
           const tc = taskColor(t);
           html += `<div class="month-chip" style="background:${tc}2e;color:var(--text2)"
                        onclick="event.stopPropagation();ttOpenDetail('${t.id}');showView('tasks')">
-            ${recBadge(t, iso)}${t.start ? t.start + ' ' : ''}${escapeHtml(t.name)}
+            ${habitTag(t, iso)}${recBadge(t, iso)}${t.start ? t.start + ' ' : ''}${escapeHtml(t.name)}
           </div>`;
         });
         if (hidden > 0) {

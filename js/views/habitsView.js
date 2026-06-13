@@ -24,6 +24,8 @@ const HabitsView = (() => {
 
   function render() {
     wireMenuCloseOnce();
+    syncOverviewButton();
+    if (AppState.ui.habitsOverview) { renderOverview(); return; }
     const el = document.getElementById('habits-list');
     const habits = HabitService.getAll();
     const td = Utils.today();
@@ -32,6 +34,153 @@ const HabitsView = (() => {
       ? habits.map(h => habitRowHtml(h, td, hard)).join('')
       : emptyStateHtml();
     el.innerHTML = body + testButtonHtml();
+  }
+
+  // ===== Visão geral / linha do tempo (modo da própria view) =====
+
+  function toggleOverview() {
+    AppState.ui.habitsOverview = !AppState.ui.habitsOverview;
+    render();
+  }
+
+  /** Reflete o modo atual no botão do topo e esconde "Novo" na visão geral */
+  function syncOverviewButton() {
+    const on = !!AppState.ui.habitsOverview;
+    const btn = document.getElementById('habits-overview-btn');
+    if (btn) btn.innerHTML = on
+      ? '<i class="ti ti-arrow-left"></i> Hábitos'
+      : '<i class="ti ti-chart-bar"></i> Visão geral';
+    const newBtn = document.getElementById('habits-new-btn');
+    if (newBtn) newBtn.style.display = on ? 'none' : '';
+  }
+
+  /** Recalcula tudo só aqui (ao abrir a visão), não a cada render da lista */
+  function renderOverview() {
+    const el = document.getElementById('habits-list');
+    const habits = HabitService.getAll();
+    if (!habits.length) {
+      el.innerHTML = `<div class="empty"><i class="ti ti-chart-bar"></i>
+        <p style="font-weight:600;color:var(--text2)">Sem hábitos para resumir</p></div>`;
+      return;
+    }
+    habits.forEach(h => HabitService.stats(h.id)); // materializa escudos antes de contar
+    el.innerHTML = summaryCardsHtml(habits) + chartSectionHtml(habits) + heatmapSectionHtml(habits);
+  }
+
+  // ---- Cartões-resumo ----
+
+  function summaryCardsHtml(habits) {
+    const td = Utils.today();
+    let best = { streak: 0, name: '' };
+    habits.forEach(h => {
+      const s = HabitService.longestStreak(h.id);
+      if (s > best.streak) best = { streak: s, name: h.name };
+    });
+    const ym = td.slice(0, 7);
+    const monthName = Utils.parseISO(td).toLocaleDateString('pt-BR', { month: 'long' });
+    const rates = habits.map(h => HabitService.monthlyRate(h.id, ym)).filter(r => r !== null);
+    const monthRate = rates.length ? Math.round(rates.reduce((a, b) => a + b, 0) / rates.length) : null;
+    const shields = HabitService.shieldsConsumed();
+
+    return `<div class="ov-summary">
+      ${ovCardHtml('ti-flame', 'Melhor sequência',
+        best.streak ? `${best.streak} ${best.streak === 1 ? 'dia' : 'dias'}` : '—',
+        best.name ? escapeHtml(best.name) : 'sem dados')}
+      ${ovCardHtml('ti-percentage', 'Taxa do mês',
+        monthRate !== null ? monthRate + '%' : '—', monthName)}
+      ${ovCardHtml('ti-shield', 'Escudos usados',
+        String(shields), 'proteções de sequência')}
+    </div>`;
+  }
+
+  function ovCardHtml(icon, label, value, context) {
+    return `<div class="ov-card">
+      <div class="ov-card-label"><i class="ti ${icon}"></i> ${label}</div>
+      <div class="ov-card-value">${value}</div>
+      <div class="ov-card-context">${context}</div>
+    </div>`;
+  }
+
+  // ---- Gráfico de barras: taxa mensal (6 meses) ----
+
+  function chartSectionHtml(habits) {
+    const sel = AppState.ui.habitsChartSel || 'all';
+    const months = lastMonths(6);
+    const bars = months.map(m => barHtml(m.label, monthRateFor(sel, m.ym, habits))).join('');
+    const options = `<option value="all"${sel === 'all' ? ' selected' : ''}>Todos os hábitos</option>` +
+      habits.map(h => `<option value="${h.id}"${sel === h.id ? ' selected' : ''}>${escapeHtml(h.name)}</option>`).join('');
+    return `<div class="ov-section">
+      <div class="ov-section-head">
+        <span class="ov-section-title"><i class="ti ti-chart-bar"></i> Taxa mensal</span>
+        <select class="form-select ov-select" onchange="HabitsView.setChartHabit(this.value)">${options}</select>
+      </div>
+      <div class="ov-bars">${bars}</div>
+    </div>`;
+  }
+
+  /** Taxa de um mês: hábito específico ou média (não-nula) de todos */
+  function monthRateFor(sel, ym, habits) {
+    if (sel !== 'all') return HabitService.monthlyRate(sel, ym);
+    const rates = habits.map(h => HabitService.monthlyRate(h.id, ym)).filter(r => r !== null);
+    return rates.length ? Math.round(rates.reduce((a, b) => a + b, 0) / rates.length) : null;
+  }
+
+  function barHtml(label, rate) {
+    const height = rate == null ? 0 : rate;
+    return `<div class="ov-bar-col">
+      <div class="ov-bar-val">${rate == null ? '–' : rate + '%'}</div>
+      <div class="ov-bar-track"><div class="ov-bar-fill" style="height:${height}%"></div></div>
+      <div class="ov-bar-label">${label}</div>
+    </div>`;
+  }
+
+  function setChartHabit(value) {
+    AppState.ui.habitsChartSel = value;
+    renderOverview();
+  }
+
+  /** Últimos n meses (incluindo o atual) como { ym:'YYYY-MM', label:'jun' } */
+  function lastMonths(n) {
+    const now = Utils.parseISO(Utils.today());
+    const res = [];
+    for (let i = n - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      res.push({ ym, label: d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '') });
+    }
+    return res;
+  }
+
+  // ---- Heatmap estilo GitHub (últimos 4 meses) ----
+
+  function heatmapSectionHtml(habits) {
+    return `<div class="ov-section">
+      <div class="ov-section-title"><i class="ti ti-layout-grid"></i> Últimos 4 meses</div>
+      ${habits.map(heatmapHtml).join('')}
+    </div>`;
+  }
+
+  function heatmapHtml(habit) {
+    const td = Utils.today();
+    const begin = Utils.addDays(td, -119);                          // ~4 meses
+    const start = Utils.addDays(begin, -Utils.parseISO(begin).getDay()); // alinha ao domingo
+    let cells = '';
+    for (let d = start; d <= td; d = Utils.addDays(d, 1)) cells += heatCellHtml(habit, d, td);
+    return `<div class="ov-habit">
+      <div class="ov-habit-head"><span class="ov-habit-icon">${escapeHtml(habit.icon)}</span> ${escapeHtml(habit.name)}</div>
+      <div class="ov-heatmap-wrap"><div class="ov-heatmap">${cells}</div></div>
+    </div>`;
+  }
+
+  function heatCellHtml(habit, date, td) {
+    const title = Utils.fmtDate(date);
+    if (!HabitService.isDueOn(habit, date)) return `<div class="ov-cell ov-skip" title="${title} — não devido"></div>`;
+    const log = HabitService.getLog(habit.id, date);
+    if (log?.status === 'done') return `<div class="ov-cell" style="background:${habit.color}" title="${title} — feito"></div>`;
+    if (log?.status === 'minimal') return `<div class="ov-cell" style="background:${habit.color}55" title="${title} — versão mínima"></div>`;
+    if (log?.status === 'shielded') return `<div class="ov-cell ov-shield" title="${title} — protegido por escudo"></div>`;
+    if (date === td) return `<div class="ov-cell ov-today" title="hoje"></div>`;
+    return `<div class="ov-cell ov-fail" title="${title} — não cumprido"></div>`;
   }
 
   /** Botão de teste do escudo — só em localhost, nunca em produção */
@@ -267,6 +416,33 @@ const HabitsView = (() => {
     renderColorPicker();
     renderDayChips(h.frequency?.days || []);
     onFreqChange();
+    renderLinkedTaskSection(h);
+  }
+
+  /** Seção "Tarefa vinculada": mostra a tarefa recorrente ligada ou oferece criá-la */
+  function renderLinkedTaskSection(h) {
+    const el = document.getElementById('h-linked-task');
+    if (!el) return;
+    if (!h.id) { el.innerHTML = ''; return; }
+    const linked = TaskService.getAll().find(t => t.habitId === h.id && t.recurrence);
+    if (linked) {
+      const recLabel = { daily: 'diária', weekly: 'semanal', monthly: 'mensal' }[linked.recurrence] || linked.recurrence;
+      el.innerHTML = `<label class="form-label">Tarefa vinculada</label>
+        <div class="h-linked-info"><i class="ti ti-link"></i> ${escapeHtml(linked.name)} <span class="h-linked-rec">(${recLabel})</span></div>`;
+    } else {
+      el.innerHTML = `<label class="form-label">Tarefa vinculada</label>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="HabitsView.createLinkedTask()">
+          <i class="ti ti-plus"></i> Criar tarefa recorrente
+        </button>`;
+    }
+  }
+
+  /** Fecha o modal do hábito e abre o de tarefa já pré-preenchido com o vínculo */
+  function createLinkedTask() {
+    const habit = HabitService.getById(AppState.ui.habitEditId);
+    if (!habit) return;
+    Modal.close('habit-modal');
+    TaskModal.openForHabit(habit);
   }
 
   function renderColorPicker() {
@@ -333,6 +509,7 @@ const HabitsView = (() => {
     render, highlight,
     tap, pressStart, pressEnd, openMenu, menuAction,
     openModal, useSuggestion, selectColor, onFreqChange, save, archive,
+    createLinkedTask, toggleOverview, setChartHabit,
     seedShieldTest
   };
 })();
