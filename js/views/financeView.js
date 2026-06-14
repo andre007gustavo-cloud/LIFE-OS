@@ -13,7 +13,8 @@ const FinanceView = (() => {
     const txs = FinanceService.listTransactions({ mes });
 
     document.getElementById('fin-content').innerHTML =
-      headerHtml(saldoTotal, resumo) + listHtml(txs) + devButtonHtml();
+      headerHtml(saldoTotal, resumo) + FinanceBudget.sectionHtml(mes) +
+      listHtml(txs) + devButtonHtml();
   }
 
   /** Botão de teste — só em localhost, nunca em produção */

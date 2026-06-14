@@ -119,6 +119,8 @@ const Constants = (() => {
    */
   const FINANCE = {
     ACCOUNT_TYPES: ['corrente', 'poupanca', 'dinheiro'],
+    // Orçamento (Fase 2): limiar de % (sobre a base) a partir do qual entra em "alerta"
+    ORCAMENTO: { ALERTA_PCT: 80 },
     SEED_CONTA: {
       nome: 'Carteira', tipo: 'dinheiro',
       saldoInicialCentavos: 0, cor: '#34d399', icone: '💵'
@@ -174,7 +176,9 @@ const Constants = (() => {
     // Finanças Fase 1 (modelo em centavos) — populadas por _seedDefaults
     contas: [],
     categorias: [],
-    transacoes: []
+    transacoes: [],
+    // Finanças Fase 2: orçamentos por categoria
+    orcamentos: []
   };
 
   return Object.freeze({

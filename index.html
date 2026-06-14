@@ -162,6 +162,10 @@
           <div class="card-title"><i class="ti ti-inbox"></i> Caixa de entrada <span class="inbox-badge" id="dash-inbox-badge"></span></div>
           <div id="dash-inbox"></div>
         </div>
+        <div class="card" id="dash-budget-card" style="display:none">
+          <div class="card-title"><i class="ti ti-target-arrow"></i> Orçamento por categoria</div>
+          <div id="dash-budget"></div>
+        </div>
         <div class="card">
           <div class="card-title"><i class="ti ti-calendar-week"></i> Esta semana</div>
           <div id="dash-week"></div>
@@ -596,6 +600,35 @@
   </div>
 </div>
 
+<!-- ========== MODAL: ORÇAMENTO (Fase 2) ========== -->
+<div class="overlay" id="orc-modal">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="orc-modal-title">Definir orçamento</span>
+      <button class="modal-close" onclick="closeModal('orc-modal')">×</button>
+    </div>
+    <div class="orc-modal-cat" id="orc-modal-cat"></div>
+    <div class="form-group">
+      <label class="form-label">Limite mensal (R$)</label>
+      <input class="form-input" id="orc-value" inputmode="decimal" placeholder="0,00">
+    </div>
+    <label class="orc-toggle">
+      <input type="checkbox" id="orc-rollover">
+      <span>Acumular sobra para o próximo mês (rollover)</span>
+    </label>
+    <div style="display:flex;gap:8px;justify-content:space-between;margin-top:14px">
+      <button class="btn btn-ghost" id="orc-remove-btn" style="color:var(--red);display:none"
+              onclick="FinanceBudget.removeCurrent()">
+        <i class="ti ti-trash"></i> Remover
+      </button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="btn btn-ghost" onclick="closeModal('orc-modal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="FinanceBudget.save()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ========== MODAL: NEW/EDIT PROJECT ========== -->
 <div class="overlay" id="new-proj-modal">
   <div class="modal">
@@ -793,6 +826,7 @@
 <script src="js/components/quickAddShared.js"></script>
 <script src="js/components/quickAddPopover.js"></script>
 <script src="js/components/financeQuickAdd.js"></script>
+<script src="js/components/financeBudget.js"></script>
 
 <script src="js/views/dashboardView.js"></script>
 <script src="js/views/tasksView.js"></script>

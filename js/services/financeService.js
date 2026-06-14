@@ -16,7 +16,42 @@ const FinanceService = (() => {
     if (!d.contas) d.contas = [];
     if (!d.categorias) d.categorias = [];
     if (!d.transacoes) d.transacoes = [];
+    if (!d.orcamentos) d.orcamentos = [];
     return d;
+  }
+
+  // ===== Helpers de mês (prefixo 'YYYY-MM') =====
+
+  /** Soma 'delta' meses ao prefixo 'YYYY-MM' (delta pode ser negativo). */
+  function _addMonths(prefix, delta) {
+    let [y, m] = prefix.split('-').map(Number);
+    m += delta;
+    while (m < 1) { m += 12; y--; }
+    while (m > 12) { m -= 12; y++; }
+    return `${y}-${String(m).padStart(2, '0')}`;
+  }
+
+  /** Dias restantes do mês a partir de 'hoje' (ISO), incluindo o próprio dia. */
+  function _diasRestantesMes(hoje) {
+    const d = Utils.parseISO(hoje);
+    const ultimoDia = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    return ultimoDia - d.getDate() + 1;
+  }
+
+  /** Gasto (saídas) de uma categoria no mês 'YYYY-MM', em centavos. */
+  function _gastoCategoriaMes(categoriaId, mes) {
+    return db().transacoes
+      .filter(t => t.tipo === 'saida' && t.categoriaId === categoriaId && (t.data || '').startsWith(mes))
+      .reduce((s, t) => s + t.valorCentavos, 0);
+  }
+
+  /** Estado do orçamento (sobre a base): ok < alerta < estourado. */
+  function _estado(gastoCentavos, baseCentavos) {
+    if (baseCentavos <= 0) return gastoCentavos > 0 ? 'estourado' : 'ok';
+    const pct = gastoCentavos / baseCentavos * 100;
+    if (pct > 100) return 'estourado';
+    if (pct >= Constants.FINANCE.ORCAMENTO.ALERTA_PCT) return 'alerta';
+    return 'ok';
   }
 
   // ===== Seed do primeiro uso =====
@@ -194,6 +229,100 @@ const FinanceService = (() => {
     return db().transacoes.filter(t => t.data).map(t => t.data);
   }
 
+  // ===== Orçamentos (Fase 2) =====
+
+  function listOrcamentos() {
+    return db().orcamentos;
+  }
+
+  function getOrcamentoByCategoria(categoriaId) {
+    return db().orcamentos.find(o => o.categoriaId === categoriaId);
+  }
+
+  /** Cria ou atualiza o orçamento (um por categoria de despesa). */
+  function setOrcamento({ categoriaId, limiteCentavos, rollover = false }) {
+    if (!categoriaId) return null;
+    const limite = Math.abs(parseInt(limiteCentavos, 10) || 0);
+    const now = new Date().toISOString();
+    let o = getOrcamentoByCategoria(categoriaId);
+    if (o) {
+      o.limiteCentavos = limite;
+      o.rollover = !!rollover;
+      o.atualizadoEm = now;
+    } else {
+      o = {
+        id: Utils.uid(), categoriaId, limiteCentavos: limite,
+        rollover: !!rollover, criadoEm: Utils.today(), atualizadoEm: now
+      };
+      db().orcamentos.push(o);
+    }
+    AppState.persist();
+    return o;
+  }
+
+  function removeOrcamento(categoriaId) {
+    db().orcamentos = db().orcamentos.filter(o => o.categoriaId !== categoriaId);
+    AppState.persist();
+  }
+
+  /**
+   * Carryover (rollover) de uma categoria para o mês 'YYYY-MM': acumulado de
+   * (limite − gasto) de cada mês anterior em que o orçamento existiu. Pode ser
+   * negativo (um estouro passado reduz a base do mês). Zero se rollover desligado.
+   */
+  function getCarryover(categoriaId, mes) {
+    const o = getOrcamentoByCategoria(categoriaId);
+    if (!o || !o.rollover) return 0;
+    const inicio = (o.criadoEm || '').slice(0, 7);
+    if (!inicio || inicio >= mes) return 0;
+    let carry = 0;
+    for (let m = inicio; m < mes; m = _addMonths(m, 1)) {
+      carry += o.limiteCentavos - _gastoCategoriaMes(categoriaId, m);
+    }
+    return carry;
+  }
+
+  /** Métricas de cada orçamento para o mês 'YYYY-MM'. */
+  function getOrcamentoMes(mes) {
+    const ehMesCorrente = mes === currentMonthPrefix();
+    const diasRestantes = ehMesCorrente ? _diasRestantesMes(Utils.today()) : null;
+    return db().orcamentos.map(o => {
+      const gastoCentavos = _gastoCategoriaMes(o.categoriaId, mes);
+      const carryoverCentavos = getCarryover(o.categoriaId, mes);
+      const baseCentavos = o.limiteCentavos + carryoverCentavos;
+      const restanteCentavos = baseCentavos - gastoCentavos;
+      const percentual = baseCentavos > 0
+        ? Math.round(gastoCentavos / baseCentavos * 100)
+        : (gastoCentavos > 0 ? 100 : 0);
+      const porDiaCentavos = ehMesCorrente
+        ? Math.floor(Math.max(0, restanteCentavos) / Math.max(1, diasRestantes))
+        : null;
+      return {
+        categoriaId: o.categoriaId, limiteCentavos: o.limiteCentavos,
+        gastoCentavos, carryoverCentavos, baseCentavos, restanteCentavos,
+        percentual, estado: _estado(gastoCentavos, baseCentavos), porDiaCentavos
+      };
+    });
+  }
+
+  /** Dias restantes do mês corrente; null se 'mes' não for o mês atual. */
+  function diasRestantesMes(mes) {
+    return mes === currentMonthPrefix() ? _diasRestantesMes(Utils.today()) : null;
+  }
+
+  /** Totais do mês + categorias de despesa ainda sem orçamento. */
+  function getResumoOrcamento(mes) {
+    const orcs = getOrcamentoMes(mes);
+    const comOrcamento = new Set(orcs.map(o => o.categoriaId));
+    return {
+      totalOrcadoCentavos: orcs.reduce((s, o) => s + o.limiteCentavos, 0),
+      totalGastoCentavos: orcs.reduce((s, o) => s + o.gastoCentavos, 0),
+      totalRestanteCentavos: orcs.reduce((s, o) => s + o.restanteCentavos, 0),
+      categoriasSemOrcamento: listCategorias('despesa')
+        .filter(c => !comOrcamento.has(c.id)).map(c => c.id)
+    };
+  }
+
   // ===== Teste manual (apenas localhost) =====
 
   /** APENAS localhost — semeia lançamentos do mês atual para testar a view. */
@@ -215,6 +344,27 @@ const FinanceService = (() => {
       categoriaId: desp[a[2]] && desp[a[2]].id, contaId: conta.id,
       data: dia(6 + i), fonte: 'manual'
     }));
+
+    _seedRolloverBudget(conta, desp[2], mes); // Transporte: orçamento com rollover
+  }
+
+  /**
+   * Cenário de carryover: orçamento de Transporte (R$600/mês, rollover) criado
+   * há 3 meses, com gasto abaixo do teto nos meses anteriores. A sobra acumulada
+   * deve somar à base do mês atual.
+   */
+  function _seedRolloverBudget(conta, cat, mes) {
+    if (!cat) return;
+    const o = setOrcamento({ categoriaId: cat.id, limiteCentavos: 60000, rollover: true });
+    o.criadoEm = `${_addMonths(mes, -3)}-01`; // backdata para acumular 3 meses
+    [[-3, 52000], [-2, 45000], [-1, 50000]].forEach(([delta, valor]) => {
+      addTransaction({
+        tipo: 'saida', valorCentavos: valor, descricao: 'Transporte',
+        categoriaId: cat.id, contaId: conta.id,
+        data: `${_addMonths(mes, delta)}-15`, fonte: 'manual'
+      });
+    });
+    AppState.persist();
   }
 
   return {
@@ -223,6 +373,8 @@ const FinanceService = (() => {
     listCategorias, getCategoriaById, addCategoria,
     addTransaction, updateTransaction, deleteTransaction,
     getTransacaoById, listTransactions,
-    getSaldo, getResumoMes, currentMonthPrefix, entryDates
+    getSaldo, getResumoMes, currentMonthPrefix, entryDates,
+    listOrcamentos, getOrcamentoByCategoria, setOrcamento, removeOrcamento,
+    getCarryover, getOrcamentoMes, getResumoOrcamento, diasRestantesMes
   };
 })();

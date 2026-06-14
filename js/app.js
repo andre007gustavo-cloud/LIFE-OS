@@ -305,6 +305,7 @@
     window.setFinType       = FinanceModal.setType;
     window.FinanceModal     = FinanceModal;
     window.FinanceQuickAdd  = FinanceQuickAdd;
+    window.FinanceBudget    = FinanceBudget;
 
     // --- Projects ---
     window.openNewProjectModal = ProjectModal.open;

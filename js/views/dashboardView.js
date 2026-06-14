@@ -25,6 +25,18 @@ const DashboardView = (() => {
     renderTimeline(td);
     renderInbox();
     renderWeek(td);
+    renderBudget();
+  }
+
+  // ===== Card: orçamento por categoria =====
+
+  /** Espelha a seção Orçamento de Finanças (mesmas barras/cores); some se vazio. */
+  function renderBudget() {
+    const card = document.getElementById('dash-budget-card');
+    if (!card) return;
+    const rows = FinanceBudget.dashRowsHtml(FinanceService.currentMonthPrefix());
+    card.style.display = rows ? '' : 'none';
+    document.getElementById('dash-budget').innerHTML = rows;
   }
 
   // ===== Gatilho sutil de revisão semanal =====
