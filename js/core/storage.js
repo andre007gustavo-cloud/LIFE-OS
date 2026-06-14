@@ -181,13 +181,15 @@ const Storage = (() => {
     const docRef = FirebaseApp.getUserDoc();
     if (!docRef) return;
 
-    _unsubscribe = docRef.onSnapshot(snap => {
-      // Ignora enquanto há escrita local em andamento OU pendente (debounce):
-      // sem o _saveTimer/_pendingDB, um snapshot remoto chegando na janela do
-      // debounce traz o estado ANTERIOR e sobrescreve a mudança recém-feita
-      // (era o que apagava um lançamento financeiro logo após criá-lo).
+    _unsubscribe = docRef.onSnapshot({ includeMetadataChanges: false }, snap => {
+      // Só reage a mudanças CONFIRMADAS pelo servidor (outros dispositivos).
+      // O cache local do Firestore pode emitir um snapshot com estado ANTIGO
+      // (ex.: transacoes=0 guardado de antes), que sobrescreveria os dados bons
+      // recém-salvos — era o que apagava lançamentos logo após criá-los.
+      if (snap.metadata.fromCache) return;
+      // Ignora enquanto há escrita local em andamento OU pendente (debounce)
       if (_isSaving || _saveTimer || _pendingDB) return;
-      // Ignora escritas locais pendentes
+      // Ignora escritas locais ainda não confirmadas
       if (snap.metadata.hasPendingWrites) return;
 
       if (snap.exists) {
