@@ -164,6 +164,8 @@ const Constants = (() => {
       { id: 'a4', name: 'Financeiro', icon: '💰', color: '#fbbf24', projects: [] },
       { id: 'a5', name: 'Espiritual', icon: '🙏', color: '#60a5fa', projects: [] }
     ],
+    // Projetos top-level (migrados de area.projects pelo projectService)
+    projects: [],
     finance: [],
     finCats: [
       { id: 'fc1', name: 'Alimentação', color: '#f87171' },

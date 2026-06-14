@@ -15,6 +15,29 @@ const Storage = (() => {
   let _isSaving = false;
   const DEBOUNCE_MS = 1500;
 
+  // ===== Campos sincronizados (fonte única) =====
+  // Derivados das chaves do SEED_DATA: criar um campo novo no SEED_DATA passa a
+  // sincronizá-lo na nuvem automaticamente (load/save/listener), sem precisar
+  // editar 3 listas à mão. Era o esquecimento dessas listas que fazia campos
+  // (transacoes, orcamentos) sumirem da tela segundos após salvar.
+  const DB_KEYS = Object.keys(Constants.SEED_DATA);
+
+  /** Valor padrão de um campo ausente: [] para arrays, cópia do seed p/ objetos. */
+  function _defaultFor(key) {
+    const seed = Constants.SEED_DATA[key];
+    return Array.isArray(seed) ? [] : JSON.parse(JSON.stringify(seed));
+  }
+
+  /** Monta um DB completo a partir de uma fonte (nuvem/local), campo a campo. */
+  function _pickDbFields(source) {
+    const src = source || {};
+    const out = {};
+    for (const key of DB_KEYS) {
+      out[key] = src[key] != null ? src[key] : _defaultFor(key);
+    }
+    return out;
+  }
+
   // ===== Sync state observer ('synced' | 'saving' | 'offline') =====
   // Permite à UI (indicador na nav) reagir sem conhecer o storage por dentro.
 
@@ -80,28 +103,7 @@ const Storage = (() => {
     try {
       const snap = await docRef.get();
       if (snap.exists) {
-        const data = snap.data();
-        return {
-          tasks: data.tasks || [],
-          areas: data.areas || [],
-          projects: data.projects || [],
-          finance: data.finance || [],
-          finCats: data.finCats || [],
-          contas: data.contas || [],
-          categorias: data.categorias || [],
-          transacoes: data.transacoes || [],
-          orcamentos: data.orcamentos || [],
-          inbox: data.inbox || [],
-          habits: data.habits || [],
-          habitLogs: data.habitLogs || [],
-          hardModeDates: data.hardModeDates || [],
-          weeklyGoals: data.weeklyGoals || [],
-          reviewLogs: data.reviewLogs || [],
-          events: data.events || [],
-          activityShields: data.activityShields || { available: 0, history: [] },
-          activityRecord: data.activityRecord || { max: 0, achievedAt: '' },
-          meta: data.meta || {}
-        };
+        return _pickDbFields(snap.data());
       }
     } catch (err) {
       console.warn('Erro ao carregar do Firestore:', err);
@@ -118,25 +120,7 @@ const Storage = (() => {
     _setSyncState(navigator.onLine ? 'saving' : 'offline');
     try {
       await docRef.set({
-        tasks: db.tasks || [],
-        areas: db.areas || [],
-        projects: db.projects || [],
-        finance: db.finance || [],
-        finCats: db.finCats || [],
-        contas: db.contas || [],
-        categorias: db.categorias || [],
-        transacoes: db.transacoes || [],
-        orcamentos: db.orcamentos || [],
-        inbox: db.inbox || [],
-        habits: db.habits || [],
-        habitLogs: db.habitLogs || [],
-        hardModeDates: db.hardModeDates || [],
-        weeklyGoals: db.weeklyGoals || [],
-        reviewLogs: db.reviewLogs || [],
-        events: db.events || [],
-        activityShields: db.activityShields || { available: 0, history: [] },
-        activityRecord: db.activityRecord || { max: 0, achievedAt: '' },
-        meta: db.meta || {},
+        ..._pickDbFields(db),
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true }); // não deixa um cliente que omite um campo (ex.: versão
       // antiga sem 'transacoes') apagá-lo; clientes atuais enviam tudo
@@ -195,28 +179,7 @@ const Storage = (() => {
       if (snap.metadata.hasPendingWrites) return;
 
       if (snap.exists) {
-        const data = snap.data();
-        callback({
-          tasks: data.tasks || [],
-          areas: data.areas || [],
-          projects: data.projects || [],
-          finance: data.finance || [],
-          finCats: data.finCats || [],
-          contas: data.contas || [],
-          categorias: data.categorias || [],
-          transacoes: data.transacoes || [],
-          orcamentos: data.orcamentos || [],
-          inbox: data.inbox || [],
-          habits: data.habits || [],
-          habitLogs: data.habitLogs || [],
-          hardModeDates: data.hardModeDates || [],
-          weeklyGoals: data.weeklyGoals || [],
-          reviewLogs: data.reviewLogs || [],
-          events: data.events || [],
-          activityShields: data.activityShields || { available: 0, history: [] },
-          activityRecord: data.activityRecord || { max: 0, achievedAt: '' },
-          meta: data.meta || {}
-        });
+        callback(_pickDbFields(snap.data()));
       }
     });
   }
