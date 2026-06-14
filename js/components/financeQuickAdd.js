@@ -33,6 +33,18 @@ const FinanceQuickAdd = (() => {
     return m ? Math.max(1, parseInt(m[1], 10)) : 1;
   }
 
+  /**
+   * Categorização automática (Fase 7b): se o usuário NÃO definiu categoria
+   * (sem #categoria), preenche parsed.sugestaoCategoriaId com a sugestão por
+   * histórico. Nunca sobrescreve uma categoria explícita.
+   */
+  function _fillSuggestion(parsed) {
+    if (parsed.categoriaId || parsed.tipo === 'transferencia') return parsed;
+    const sug = FinanceService.sugerirCategoria(parsed.descricao, parsed.tipo);
+    if (sug) parsed.sugestaoCategoriaId = sug.categoriaId;
+    return parsed;
+  }
+
   // ===== DOM (montado uma vez) =====
 
   function ensureDom() {
@@ -123,7 +135,7 @@ const FinanceQuickAdd = (() => {
       previewEl.classList.remove('show');
       return;
     }
-    const parsed = QuickParser.parseFinance(raw, ctx());
+    const parsed = _fillSuggestion(QuickParser.parseFinance(raw, ctx()));
     const chips = QuickAddShared.buildFinancePreviewChips(parsed, ctx());
     previewEl.innerHTML = chips.join('');
     previewEl.classList.toggle('show', chips.length > 0);
@@ -141,8 +153,9 @@ const FinanceQuickAdd = (() => {
     const c = ctx();
     let categoriaId = parsed.categoriaId;
     if (!categoriaId && parsed.tipo !== 'transferencia') {
+      // Sugestão por histórico (Fase 7b) tem prioridade sobre o default da 1ª categoria
       const list = FinanceService.listCategorias(parsed.tipo === 'entrada' ? 'receita' : 'despesa');
-      categoriaId = list[0] ? list[0].id : '';
+      categoriaId = parsed.sugestaoCategoriaId || (list[0] ? list[0].id : '');
     }
     const contaVal = parsed.contaId || '';
     const isCard = contaVal.startsWith('card:');
@@ -163,7 +176,7 @@ const FinanceQuickAdd = (() => {
   function save() {
     const raw = inputEl.value.trim();
     if (!raw) return;
-    const parsed = QuickParser.parseFinance(raw, ctx());
+    const parsed = _fillSuggestion(QuickParser.parseFinance(raw, ctx()));
     if (!parsed.valorCentavos) { Feedback.toast('Informe um valor', 'warn'); return; }
     const fields = mergedFields(parsed, raw);
     if (fields.cartaoId) {
@@ -190,8 +203,9 @@ const FinanceQuickAdd = (() => {
   /** Fecha e abre o modal completo pré-preenchido com o que o parser entendeu */
   function moreOptions() {
     const raw = inputEl.value.trim();
-    const parsed = QuickParser.parseFinance(raw, ctx());
+    const parsed = _fillSuggestion(QuickParser.parseFinance(raw, ctx()));
     const fields = mergedFields(parsed, raw);
+    if (!parsed.categoriaId && parsed.sugestaoCategoriaId) fields.categoriaSugerida = true;
     close();
     FinanceModal.openPrefilled(fields);
   }

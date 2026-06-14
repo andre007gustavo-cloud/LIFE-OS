@@ -41,7 +41,13 @@ const QuickAddShared = (() => {
       chips.push(`<span class="ttq-chip">${isEntrada ? '🟢 +' : '🔴 −'}${Utils.formatBRL(parsed.valorCentavos)}</span>`);
     }
     const cat = parsed.categoriaId && categorias.find(c => c.id === parsed.categoriaId);
-    if (cat) chips.push(`<span class="ttq-chip">${escapeHtml(cat.icone)} ${escapeHtml(cat.nome)}</span>`);
+    if (cat) {
+      chips.push(`<span class="ttq-chip">${escapeHtml(cat.icone)} ${escapeHtml(cat.nome)}</span>`);
+    } else if (parsed.sugestaoCategoriaId) {
+      // Fase 7b: categoria sugerida por histórico — marcação discreta "sugerido"
+      const sug = categorias.find(c => c.id === parsed.sugestaoCategoriaId);
+      if (sug) chips.push(`<span class="ttq-chip ttq-chip-sugerido">${escapeHtml(sug.icone)} ${escapeHtml(sug.nome)} · sugerido</span>`);
+    }
     const conta = parsed.contaId && contas.find(c => c.id === parsed.contaId);
     if (conta) chips.push(`<span class="ttq-chip">${escapeHtml(conta.icone)} ${escapeHtml(conta.nome)}</span>`);
     if (parsed.data) {

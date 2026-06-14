@@ -590,8 +590,8 @@
       <input class="form-input" id="f-desc">
     </div>
     <div class="form-group" id="f-cat-group">
-      <label class="form-label">Categoria</label>
-      <select class="form-select" id="f-cat"></select>
+      <label class="form-label">Categoria <span class="fin-cat-sugerido" id="f-cat-sugerido" style="display:none">sugerido</span></label>
+      <select class="form-select" id="f-cat" onchange="FinanceModal.onCatChange()"></select>
     </div>
     <div class="form-group">
       <label class="form-label" id="f-conta-label">Conta ou cartão</label>

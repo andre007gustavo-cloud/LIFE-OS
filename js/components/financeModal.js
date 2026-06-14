@@ -46,7 +46,19 @@ const FinanceModal = (() => {
     }
     _resetRepeat();
     setType(fields.tipo || 'saida', fields.categoriaId);
+    _showSugerido(!!fields.categoriaSugerida);
     Modal.open('fin-modal');
+  }
+
+  /** Mostra/esconde a marcação discreta "sugerido" ao lado da label de categoria. */
+  function _showSugerido(on) {
+    const el = document.getElementById('f-cat-sugerido');
+    if (el) el.style.display = on ? '' : 'none';
+  }
+
+  /** Ao trocar a categoria manualmente, a marcação "sugerido" deixa de valer. */
+  function onCatChange() {
+    _showSugerido(false);
   }
 
   /** "Repetir" só faz sentido ao criar um lançamento novo (não em edição). */
@@ -70,6 +82,7 @@ const FinanceModal = (() => {
   // ===== Tipo + campos dependentes =====
 
   function setType(tipo, selectedCat) {
+    _showSugerido(false); // trocar o tipo invalida a sugestão anterior
     AppState.ui.finType = tipo;
     [['saida', 'saida'], ['entrada', 'entrada'], ['transferencia', 'transf']].forEach(([t, sufixo]) => {
       const el = document.getElementById('fin-type-' + sufixo);
@@ -212,5 +225,5 @@ const FinanceModal = (() => {
     });
   }
 
-  return { open, openPrefilled, openEdit, setType, save, toggleRepeat, onContaChange };
+  return { open, openPrefilled, openEdit, setType, save, toggleRepeat, onContaChange, onCatChange };
 })();

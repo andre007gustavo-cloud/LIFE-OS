@@ -123,6 +123,10 @@
   padding:2px 8px;border-radius:10px;font-size:11px;
   background:var(--bg3);color:var(--text2);border:1px solid var(--border);
 }
+/* Finanças Fase 7b: chip de categoria sugerida por histórico (discreto, tracejado) */
+.ttq-chip.ttq-chip-sugerido{
+  border-style:dashed;color:var(--text3);font-style:italic;
+}
 .tt-quick-meta{
   display:flex;gap:6px;flex-wrap:wrap;align-items:center;
 }

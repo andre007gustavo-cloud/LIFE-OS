@@ -822,6 +822,61 @@ const FinanceService = (() => {
     return entradas === 0 ? 0 : (entradas - saidas) / entradas;
   }
 
+  // ===== Categorização automática por histórico (Fase 7b) =====
+  // Sem dado novo armazenado: lê as transações já categorizadas do MESMO tipo
+  // e vota a categoria mais provável para uma descrição nova. Sem chute.
+
+  const _SUG_MIN_TOKEN = 3;     // ignora tokens curtos ("de", "no", "12")
+  const _SUG_MIN_MATCHES = 2;   // precisa de ao menos 2 transações parecidas
+  const _SUG_MIN_CONFIANCA = 0.5;
+
+  /** Tokens significativos da descrição normalizada (>=3 chars, sem repetição). */
+  function _tokens(descricao) {
+    const norm = Utils.normalizeText(descricao);
+    return [...new Set(norm.split(/[^a-z0-9]+/).filter(t => t.length >= _SUG_MIN_TOKEN))];
+  }
+
+  /**
+   * Sugere uma categoria para 'descricao' com base no histórico de transações do
+   * MESMO 'tipo' ('saida'/'entrada'). Retorna { categoriaId, confianca } ou null.
+   * Vota a categoria mais frequente entre as transações que compartilham >=1 token
+   * (peso pelo nº de tokens em comum + leve bônus de recência). confianca = nº de
+   * correspondências da vencedora / total de correspondências.
+   */
+  function sugerirCategoria(descricao, tipo) {
+    if (tipo !== 'saida' && tipo !== 'entrada') return null;
+    const tokens = _tokens(descricao);
+    if (!tokens.length) return null;
+
+    const candidatas = db().transacoes
+      .filter(t => t.tipo === tipo && t.categoriaId && !t.pagamentoFatura);
+    if (!candidatas.length) return null;
+
+    // Mais recente recebe bônus levemente maior (ordena asc por data → índice cresce)
+    const ordenadas = candidatas.slice().sort((a, b) => (a.data || '').localeCompare(b.data || ''));
+    const n = ordenadas.length;
+
+    const score = new Map();   // categoriaId → peso acumulado (voto)
+    const matches = new Map(); // categoriaId → nº de transações correspondentes
+    let total = 0;
+    ordenadas.forEach((t, i) => {
+      const comuns = _tokens(t.descricao).filter(tk => tokens.includes(tk)).length;
+      if (!comuns) return;
+      const recencia = 1 + (i / n) * 0.2; // bônus leve (até +20%) para as mais recentes
+      score.set(t.categoriaId, (score.get(t.categoriaId) || 0) + comuns * recencia);
+      matches.set(t.categoriaId, (matches.get(t.categoriaId) || 0) + 1);
+      total++;
+    });
+
+    if (total < _SUG_MIN_MATCHES) return null;
+
+    let vencedora = null, melhor = -1;
+    score.forEach((peso, catId) => { if (peso > melhor) { melhor = peso; vencedora = catId; } });
+    const confianca = matches.get(vencedora) / total;
+    if (confianca < _SUG_MIN_CONFIANCA) return null;
+    return { categoriaId: vencedora, confianca };
+  }
+
   // ===== Teste manual (apenas localhost) =====
 
   /** APENAS localhost — semeia lançamentos do mês atual para testar a view. */
@@ -849,6 +904,29 @@ const FinanceService = (() => {
     if (window.CartaoService) CartaoService._seedCartoes(); // Fase 4: cartões
     _seedProjecao(conta, desp, rec, mes);     // Fase 6: curva de projeção
     _seedRelatorios(conta, desp, rec, mes);   // Fase 7a: histórico p/ gráficos
+    _seedCategorizacao(conta, desp, rec, mes); // Fase 7b: descrições repetidas
+  }
+
+  /**
+   * Histórico com descrições repetidas por categoria (Fase 7b) para testar a
+   * sugestão automática: ex. 3x "iFood" em Alimentação, 2x "Posto" em Transporte.
+   */
+  function _seedCategorizacao(conta, desp, rec, mes) {
+    if (db().transacoes.some(t => t.fonte === 'seed-cat')) return;
+    const cat = nome => desp.find(c => c.nome === nome) || desp[0];
+    const dia = (delta, d) => `${_addMonths(mes, delta)}-${String(d).padStart(2, '0')}`;
+    [ // [deltaMes, dia, categoria, descrição, centavos]
+      [-2, 7,  'Alimentação', 'iFood jantar', 4500],
+      [-1, 12, 'Alimentação', 'iFood almoço', 3800],
+      [-1, 25, 'Alimentação', 'iFood lanche', 2900],
+      [-2, 9,  'Transporte',  'Posto Shell', 18000],
+      [-1, 18, 'Transporte',  'Posto Ipiranga', 20000],
+      [-1, 5,  'Mercado/casa','Mercado Extra', 23000],
+      [-2, 15, 'Mercado/casa','Mercado Extra', 19500]
+    ].forEach(([delta, d, c, desc, v]) => addTransaction({
+      tipo: 'saida', valorCentavos: v, descricao: desc,
+      categoriaId: cat(c).id, contaId: conta.id, data: dia(delta, d), fonte: 'seed-cat'
+    }));
   }
 
   /**
@@ -987,6 +1065,7 @@ const FinanceService = (() => {
     getTransacaoById, listTransactions,
     getSaldo, getSaldoAte, getResumoMes, currentMonthPrefix, addMonths: _addMonths, entryDates,
     getGastosPorCategoria, getEvolucaoMensal, getMaioresGastos, getComparativoMes, getTaxaPoupanca,
+    sugerirCategoria,
     getFaturaProjetada, getProjecaoSaldo, getSaldoProjetadoFimMes,
     listOrcamentos, getOrcamentoByCategoria, setOrcamento, removeOrcamento,
     getCarryover, getOrcamentoMes, getResumoOrcamento, diasRestantesMes,

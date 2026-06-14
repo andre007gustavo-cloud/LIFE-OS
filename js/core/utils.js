@@ -219,6 +219,15 @@ const Utils = (() => {
     return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   }
 
+  /** Minúsculas, sem acento, espaços colapsados — base p/ comparar texto livre. */
+  function normalizeText(s) {
+    return String(s || '')
+      .toLowerCase()
+      .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
   // ===== HTML helpers =====
 
   /** Escapa conteúdo do usuário antes de interpolar em innerHTML */
@@ -272,6 +281,7 @@ const Utils = (() => {
     formatPomodoroTime,
     formatBRL,
     brlToCentavos,
+    normalizeText,
     escapeHtml,
     escapeAttr,
     extractHtmlText,

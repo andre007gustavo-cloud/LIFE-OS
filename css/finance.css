@@ -465,3 +465,10 @@
 .fin-rel-badge.sobe{background:rgba(248,113,113,.15);color:var(--red)}
 .fin-rel-badge.desce{background:rgba(52,211,153,.15);color:var(--green)}
 .fin-rel-badge.zero,.fin-rel-badge.novo{background:var(--bg4);color:var(--text3)}
+
+/* ===== Fase 7b: marcação "sugerido" no modal ===== */
+.fin-cat-sugerido{
+  font-size:10px;font-weight:600;color:var(--text3);font-style:italic;
+  margin-left:6px;padding:1px 6px;border:1px dashed var(--border);border-radius:999px;
+  text-transform:none;letter-spacing:0;
+}
