@@ -15,6 +15,18 @@ const Storage = (() => {
   let _isSaving = false;
   const DEBOUNCE_MS = 1500;
 
+  // Versão (updatedAt do servidor, em ms) da última nuvem que já temos localmente.
+  // Guarda por versão: só aplicamos um snapshot ESTRITAMENTE mais novo. Um snapshot
+  // atrasado (ex.: o inicial do alvo do boot, capturado quando a nuvem ainda estava
+  // sem o dado recém-criado) tem updatedAt <= este e é ignorado — antes ele escapava
+  // das guardas por tempo e apagava o que o usuário acabara de salvar.
+  let _lastSyncedAtMs = 0;
+
+  /** Milissegundos de um Timestamp do Firestore; 0 se ausente/pendente. */
+  function _toMs(ts) {
+    return ts && typeof ts.toMillis === 'function' ? ts.toMillis() : 0;
+  }
+
   // ===== Campos sincronizados (fonte única) =====
   // Derivados das chaves do SEED_DATA: criar um campo novo no SEED_DATA passa a
   // sincronizá-lo na nuvem automaticamente (load/save/listener), sem precisar
@@ -103,7 +115,9 @@ const Storage = (() => {
     try {
       const snap = await docRef.get();
       if (snap.exists) {
-        return _pickDbFields(snap.data());
+        const data = snap.data();
+        _lastSyncedAtMs = Math.max(_lastSyncedAtMs, _toMs(data.updatedAt));
+        return _pickDbFields(data);
       }
     } catch (err) {
       console.warn('Erro ao carregar do Firestore:', err);
@@ -177,10 +191,17 @@ const Storage = (() => {
       if (_isSaving || _saveTimer || _pendingDB) return;
       // Ignora escritas locais ainda não confirmadas
       if (snap.metadata.hasPendingWrites) return;
+      if (!snap.exists) return;
 
-      if (snap.exists) {
-        callback(_pickDbFields(snap.data()));
-      }
+      const data = snap.data();
+      // Guarda por versão: ignora snapshot que não é mais novo que o que já temos.
+      // Pega o snapshot inicial atrasado do alvo do boot (mesma versão que o
+      // loadFromCloud já leu) — era ele que apagava orçamentos/lançamentos criados
+      // logo após o boot, depois que as guardas por tempo já tinham expirado.
+      const remoteMs = _toMs(data.updatedAt);
+      if (remoteMs && remoteMs <= _lastSyncedAtMs) return;
+      _lastSyncedAtMs = Math.max(_lastSyncedAtMs, remoteMs);
+      callback(_pickDbFields(data));
     });
   }
 
