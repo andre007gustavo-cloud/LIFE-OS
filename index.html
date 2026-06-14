@@ -593,6 +593,25 @@
       <label class="form-label">Conta de destino</label>
       <select class="form-select" id="f-conta-dest"></select>
     </div>
+    <div class="fin-repeat" id="f-repeat-group">
+      <label class="orc-toggle">
+        <input type="checkbox" id="f-repeat" onchange="FinanceModal.toggleRepeat()">
+        <span>Repetir este lançamento</span>
+      </label>
+      <div class="form-row" id="f-repeat-opts" style="display:none">
+        <div class="form-group">
+          <label class="form-label">Frequência</label>
+          <select class="form-select" id="f-repeat-freq">
+            <option value="mensal">Mensal</option>
+            <option value="anual">Anual</option>
+          </select>
+        </div>
+        <label class="orc-toggle" style="align-self:flex-end;padding-bottom:10px">
+          <input type="checkbox" id="f-repeat-assinatura">
+          <span>Assinatura</span>
+        </label>
+      </div>
+    </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button class="btn btn-ghost" onclick="closeModal('fin-modal')">Cancelar</button>
       <button class="btn btn-primary" onclick="saveFinEntry()">Salvar</button>
@@ -624,6 +643,83 @@
       <div style="display:flex;gap:8px;margin-left:auto">
         <button class="btn btn-ghost" onclick="closeModal('orc-modal')">Cancelar</button>
         <button class="btn btn-primary" onclick="FinanceBudget.save()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL: RECORRÊNCIA (Fase 3) ========== -->
+<div class="overlay" id="rec-modal">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="rec-modal-title">Nova recorrência</span>
+      <button class="modal-close" onclick="closeModal('rec-modal')">×</button>
+    </div>
+    <div class="fin-type-row">
+      <button class="btn btn-ghost fin-type-btn" id="rec-type-saida" onclick="FinanceRecorrencias.setTipo('saida')">
+        <i class="ti ti-trending-down"></i> Saída
+      </button>
+      <button class="btn btn-ghost fin-type-btn" id="rec-type-entrada" onclick="FinanceRecorrencias.setTipo('entrada')">
+        <i class="ti ti-trending-up"></i> Entrada
+      </button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Valor (R$)</label>
+        <input class="form-input" id="rec-value" inputmode="decimal" placeholder="0,00">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Categoria</label>
+        <select class="form-select" id="rec-cat"></select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Descrição</label>
+      <input class="form-input" id="rec-desc">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Conta</label>
+      <select class="form-select" id="rec-conta"></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Frequência</label>
+        <select class="form-select" id="rec-freq" onchange="FinanceRecorrencias.onFreqChange()">
+          <option value="mensal">Mensal</option>
+          <option value="anual">Anual</option>
+        </select>
+      </div>
+      <div class="form-group" id="rec-mes-group" style="display:none">
+        <label class="form-label">Mês</label>
+        <select class="form-select" id="rec-mes"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Dia do mês</label>
+        <input class="form-input" id="rec-dia" type="number" min="1" max="31" value="1">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Início</label>
+        <input class="form-input" type="date" id="rec-inicio">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Fim (opcional)</label>
+        <input class="form-input" type="date" id="rec-fim">
+      </div>
+    </div>
+    <label class="orc-toggle">
+      <input type="checkbox" id="rec-assinatura">
+      <span>É uma assinatura</span>
+    </label>
+    <div style="display:flex;gap:8px;justify-content:space-between;margin-top:14px">
+      <button class="btn btn-ghost" id="rec-remove-btn" style="color:var(--red);display:none"
+              onclick="FinanceRecorrencias.removeCurrent()">
+        <i class="ti ti-trash"></i> Excluir
+      </button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="btn btn-ghost" onclick="closeModal('rec-modal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="FinanceRecorrencias.save()">Salvar</button>
       </div>
     </div>
   </div>
@@ -827,6 +923,7 @@
 <script src="js/components/quickAddPopover.js"></script>
 <script src="js/components/financeQuickAdd.js"></script>
 <script src="js/components/financeBudget.js"></script>
+<script src="js/components/financeRecorrencias.js"></script>
 
 <script src="js/views/dashboardView.js"></script>
 <script src="js/views/tasksView.js"></script>

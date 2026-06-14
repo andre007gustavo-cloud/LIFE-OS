@@ -56,6 +56,10 @@
       // lastActivity=hoje e mascararia a ausência se rodasse antes
       FinanceService._seedDefaults();
 
+      // Gera as transações das recorrências vencidas desde a última geração.
+      // Depois do sync/auth carregar os dados; idempotente (dedup por recorrência+data).
+      FinanceService.processarRecorrencias();
+
       if (comeback) {
         ComebackView.show(comeback.daysAway, renderActiveViews);
       } else {
@@ -306,6 +310,7 @@
     window.FinanceModal     = FinanceModal;
     window.FinanceQuickAdd  = FinanceQuickAdd;
     window.FinanceBudget    = FinanceBudget;
+    window.FinanceRecorrencias = FinanceRecorrencias;
 
     // --- Projects ---
     window.openNewProjectModal = ProjectModal.open;

@@ -32,8 +32,22 @@ const FinanceModal = (() => {
     document.getElementById('f-desc').value = fields.descricao || '';
     document.getElementById('f-date').value = fields.data || Utils.today();
     _fillContas(fields.contaId, fields.contaDestinoId);
+    _resetRepeat();
     setType(fields.tipo || 'saida', fields.categoriaId);
     Modal.open('fin-modal');
+  }
+
+  /** "Repetir" só faz sentido ao criar um lançamento novo (não em edição). */
+  function _resetRepeat() {
+    document.getElementById('f-repeat').checked = false;
+    document.getElementById('f-repeat-assinatura').checked = false;
+    document.getElementById('f-repeat-freq').value = 'mensal';
+    document.getElementById('f-repeat-opts').style.display = 'none';
+  }
+
+  function toggleRepeat() {
+    const on = document.getElementById('f-repeat').checked;
+    document.getElementById('f-repeat-opts').style.display = on ? '' : 'none';
   }
 
   /** Centavos → "85,50" para o input de texto */
@@ -53,6 +67,8 @@ const FinanceModal = (() => {
     document.getElementById('f-cat-group').style.display = isTransf ? 'none' : '';
     document.getElementById('f-conta-dest-group').style.display = isTransf ? '' : 'none';
     document.getElementById('f-conta-label').textContent = isTransf ? 'Conta de origem' : 'Conta';
+    // Repetir: indisponível em transferência e em edição
+    document.getElementById('f-repeat-group').style.display = (isTransf || _editId) ? 'none' : '';
     if (!isTransf) _fillCats(tipo, selectedCat);
   }
 
@@ -107,6 +123,7 @@ const FinanceModal = (() => {
     } else {
       fields.fonte = 'manual';
       FinanceService.addTransaction(fields);
+      _maybeCreateRecorrencia(fields);
     }
 
     Modal.close('fin-modal');
@@ -114,5 +131,24 @@ const FinanceModal = (() => {
     if (window.DashboardView) DashboardView.render();
   }
 
-  return { open, openPrefilled, openEdit, setType, save };
+  /**
+   * Cria a recorrência junto ao lançamento, se "repetir" estiver marcado. A 1ª
+   * ocorrência é o próprio lançamento manual (ultimaGeracao = data), pra não
+   * gerar uma transação duplicada nessa mesma data.
+   */
+  function _maybeCreateRecorrencia(fields) {
+    if (fields.tipo === 'transferencia') return;
+    if (!document.getElementById('f-repeat').checked) return;
+    const d = Utils.parseISO(fields.data);
+    FinanceService.addRecorrencia({
+      tipo: fields.tipo, valorCentavos: fields.valorCentavos, descricao: fields.descricao,
+      categoriaId: fields.categoriaId, contaId: fields.contaId,
+      frequencia: document.getElementById('f-repeat-freq').value,
+      diaDoMes: d.getDate(), mesDoAno: d.getMonth() + 1,
+      dataInicio: fields.data, ultimaGeracao: fields.data,
+      ehAssinatura: document.getElementById('f-repeat-assinatura').checked
+    });
+  }
+
+  return { open, openPrefilled, openEdit, setType, save, toggleRepeat };
 })();

@@ -17,6 +17,7 @@ const FinanceService = (() => {
     if (!d.categorias) d.categorias = [];
     if (!d.transacoes) d.transacoes = [];
     if (!d.orcamentos) d.orcamentos = [];
+    if (!d.recorrencias) d.recorrencias = [];
     return d;
   }
 
@@ -323,6 +324,201 @@ const FinanceService = (() => {
     };
   }
 
+  // ===== Recorrências (Fase 3) =====
+
+  /**
+   * Último dia do mês 1-based 'm' em ISO, com o dia limitado a 'dia' (clamp:
+   * dia 31 num mês curto cai no último dia real). Componentes locais, sem UTC.
+   */
+  function _occurrenceISO(ano, mes, dia) {
+    const ultimoDia = new Date(ano, mes, 0).getDate();
+    const d = Math.min(dia, ultimoDia);
+    return `${ano}-${String(mes).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  }
+
+  /** Ocorrência da recorrência no mês (ano, mes 1-based), ou null se não houver. */
+  function _occurrenceInMonth(rec, ano, mes) {
+    if (rec.frequencia === 'anual') {
+      if (mes !== rec.mesDoAno) return null;
+      return _occurrenceISO(ano, mes, rec.diaDoMes);
+    }
+    return _occurrenceISO(ano, mes, rec.diaDoMes);
+  }
+
+  function _normalizeRecorrencia(f) {
+    const tipo = f.tipo === 'entrada' ? 'entrada' : 'saida';
+    const frequencia = f.frequencia === 'anual' ? 'anual' : 'mensal';
+    return {
+      tipo,
+      valorCentavos: Math.abs(parseInt(f.valorCentavos, 10) || 0),
+      descricao: (f.descricao || '').trim(),
+      categoriaId: f.categoriaId || '',
+      contaId: f.contaId || '',
+      frequencia,
+      diaDoMes: Math.min(31, Math.max(1, parseInt(f.diaDoMes, 10) || 1)),
+      mesDoAno: frequencia === 'anual'
+        ? Math.min(12, Math.max(1, parseInt(f.mesDoAno, 10) || 1)) : null,
+      dataInicio: f.dataInicio || Utils.today(),
+      dataFim: f.dataFim || null,
+      ativa: f.ativa !== false,
+      ehAssinatura: !!f.ehAssinatura
+    };
+  }
+
+  function getRecorrenciaById(id) {
+    return db().recorrencias.find(r => r.id === id);
+  }
+
+  function listRecorrencias({ tipo, ativa } = {}) {
+    return db().recorrencias
+      .filter(r => tipo === undefined || r.tipo === tipo)
+      .filter(r => ativa === undefined || !!r.ativa === ativa)
+      .sort((a, b) => (a.descricao || '').localeCompare(b.descricao || ''));
+  }
+
+  function addRecorrencia(dto) {
+    const now = new Date().toISOString();
+    const r = _normalizeRecorrencia(dto);
+    r.id = Utils.uid();
+    // ultimaGeracao pode vir preenchida (lançamento + repetir: a 1ª ocorrência
+    // já é o próprio lançamento manual, então não deve ser regerada).
+    r.ultimaGeracao = dto.ultimaGeracao || null;
+    r.criadoEm = now;
+    r.atualizadoEm = now;
+    db().recorrencias.push(r);
+    AppState.persist();
+    return r;
+  }
+
+  function updateRecorrencia(id, patch) {
+    const r = getRecorrenciaById(id);
+    if (!r) return null;
+    Object.assign(r, _normalizeRecorrencia({ ...r, ...patch }));
+    r.atualizadoEm = new Date().toISOString();
+    AppState.persist();
+    return r;
+  }
+
+  function removeRecorrencia(id) {
+    db().recorrencias = db().recorrencias.filter(r => r.id !== id);
+    AppState.persist();
+  }
+
+  function toggleAtiva(id) {
+    const r = getRecorrenciaById(id);
+    if (!r) return null;
+    r.ativa = !r.ativa;
+    r.atualizadoEm = new Date().toISOString();
+    AppState.persist();
+    return r;
+  }
+
+  /**
+   * Próxima ocorrência da recorrência em ISO >= 'aPartirDe', respeitando
+   * dataInicio e dataFim. null se não houver nenhuma (ex.: já passou dataFim).
+   */
+  function proximaData(rec, aPartirDe) {
+    const inicio = rec.dataInicio || Utils.today();
+    let cursor = aPartirDe > inicio ? aPartirDe : inicio; // ISO compara lexicalmente
+    const d = Utils.parseISO(cursor);
+    let ano = d.getFullYear(), mes = d.getMonth() + 1;
+    for (let i = 0; i < 400; i++) {
+      if (rec.dataFim && `${ano}-${String(mes).padStart(2, '0')}-01` > rec.dataFim) return null;
+      const occ = _occurrenceInMonth(rec, ano, mes);
+      if (occ && occ >= cursor && (!rec.dataFim || occ <= rec.dataFim)) return occ;
+      mes++; if (mes > 12) { mes = 1; ano++; }
+    }
+    return null;
+  }
+
+  /** Cria a transação de uma ocorrência; pula (idempotente) se já existir. */
+  function _criarOcorrencia(rec, data) {
+    const existe = db().transacoes.some(t => t.recorrenciaId === rec.id && t.data === data);
+    if (existe) return false;
+    const t = _normalize({
+      tipo: rec.tipo, valorCentavos: rec.valorCentavos, descricao: rec.descricao,
+      categoriaId: rec.categoriaId, contaId: rec.contaId, data, fonte: 'recorrencia'
+    });
+    t.id = Utils.uid();
+    t.recorrenciaId = rec.id;
+    const now = new Date().toISOString();
+    t.criadoEm = now;
+    t.atualizadoEm = now;
+    db().transacoes.push(t);
+    return true;
+  }
+
+  /** Gera as ocorrências faltantes de uma recorrência até 'ateData'. */
+  function _gerarFaltantes(rec, ateData) {
+    const from = rec.ultimaGeracao ? Utils.addDays(rec.ultimaGeracao, 1) : rec.dataInicio;
+    if (!from) return false;
+    let changed = false;
+    let occ = proximaData(rec, from);
+    while (occ && occ <= ateData) {
+      _criarOcorrencia(rec, occ);
+      rec.ultimaGeracao = occ; // avança mesmo se a transação já existia (dedup)
+      changed = true;
+      occ = proximaData(rec, Utils.addDays(occ, 1));
+    }
+    return changed;
+  }
+
+  /**
+   * Gera as transações faltantes de todas as recorrências ativas até 'ateData'.
+   * Idempotente e seguro p/ multi-dispositivo: a dedup por recorrenciaId+data
+   * evita duplicar quando vários aparelhos processam após o sync.
+   */
+  function processarRecorrencias(ateData = Utils.today()) {
+    let changed = false;
+    listRecorrencias({ ativa: true }).forEach(rec => {
+      if (_gerarFaltantes(rec, ateData)) changed = true;
+    });
+    if (changed) AppState.persist();
+    return changed;
+  }
+
+  /**
+   * Ocorrências FUTURAS ainda não geradas no mês 'YYYY-MM' (base dos "próximos
+   * lançamentos"; servirá à projeção da Fase 6). Não inclui as já geradas.
+   */
+  function getProximasOcorrencias(mes) {
+    const [ano, m] = mes.split('-').map(Number);
+    const inicioMes = `${mes}-01`;
+    const out = [];
+    listRecorrencias({ ativa: true }).forEach(rec => {
+      const occ = _occurrenceInMonth(rec, ano, m);
+      if (!occ) return;
+      if (occ < (rec.dataInicio || inicioMes)) return;
+      if (rec.dataFim && occ > rec.dataFim) return;
+      if (rec.ultimaGeracao && occ <= rec.ultimaGeracao) return;
+      if (db().transacoes.some(t => t.recorrenciaId === rec.id && t.data === occ)) return;
+      out.push({
+        recorrenciaId: rec.id, tipo: rec.tipo, descricao: rec.descricao,
+        valorCentavos: rec.valorCentavos, categoriaId: rec.categoriaId,
+        contaId: rec.contaId, data: occ
+      });
+    });
+    return out.sort((a, b) => a.data.localeCompare(b.data));
+  }
+
+  /** Custo fixo mensal: anuais normalizados dividindo por 12. Só recorrências ativas. */
+  function getCustoFixo() {
+    let saida = 0, entrada = 0;
+    listRecorrencias({ ativa: true }).forEach(r => {
+      const mensal = r.frequencia === 'anual' ? Math.round(r.valorCentavos / 12) : r.valorCentavos;
+      if (r.tipo === 'saida') saida += mensal; else entrada += mensal;
+    });
+    return {
+      fixoMensalSaidaCentavos: saida,
+      fixoMensalEntradaCentavos: entrada,
+      fixoMensalLiquidoCentavos: entrada - saida
+    };
+  }
+
+  function listAssinaturas() {
+    return listRecorrencias({ ativa: true }).filter(r => r.ehAssinatura);
+  }
+
   // ===== Teste manual (apenas localhost) =====
 
   /** APENAS localhost — semeia lançamentos do mês atual para testar a view. */
@@ -346,6 +542,31 @@ const FinanceService = (() => {
     }));
 
     _seedRolloverBudget(conta, desp[2], mes); // Transporte: orçamento com rollover
+    _seedRecorrencias(conta, desp, rec, mes); // recorrências + histórico gerado
+  }
+
+  /**
+   * Recorrências de exemplo (aluguel mensal dia 5, salário dia 1, 2 assinaturas),
+   * com início há 3 meses, e gera o histórico via processarRecorrencias.
+   */
+  function _seedRecorrencias(conta, desp, rec, mes) {
+    if (db().recorrencias.length) return; // não duplicar em re-seed
+    const inicio = `${_addMonths(mes, -3)}-01`;
+    const moradia = desp.find(c => c.nome === 'Moradia') || desp[3];
+    const diversao = desp.find(c => c.nome === 'Diversão') || desp[5];
+    addRecorrencia({ tipo: 'saida', valorCentavos: 180000, descricao: 'Aluguel',
+      categoriaId: moradia && moradia.id, contaId: conta.id,
+      frequencia: 'mensal', diaDoMes: 5, dataInicio: inicio });
+    addRecorrencia({ tipo: 'entrada', valorCentavos: 600000, descricao: 'Salário',
+      categoriaId: rec[0] && rec[0].id, contaId: conta.id,
+      frequencia: 'mensal', diaDoMes: 1, dataInicio: inicio });
+    addRecorrencia({ tipo: 'saida', valorCentavos: 5590, descricao: 'Netflix',
+      categoriaId: diversao && diversao.id, contaId: conta.id,
+      frequencia: 'mensal', diaDoMes: 15, dataInicio: inicio, ehAssinatura: true });
+    addRecorrencia({ tipo: 'saida', valorCentavos: 2190, descricao: 'Spotify',
+      categoriaId: diversao && diversao.id, contaId: conta.id,
+      frequencia: 'mensal', diaDoMes: 20, dataInicio: inicio, ehAssinatura: true });
+    processarRecorrencias();
   }
 
   /**
@@ -375,6 +596,9 @@ const FinanceService = (() => {
     getTransacaoById, listTransactions,
     getSaldo, getResumoMes, currentMonthPrefix, entryDates,
     listOrcamentos, getOrcamentoByCategoria, setOrcamento, removeOrcamento,
-    getCarryover, getOrcamentoMes, getResumoOrcamento, diasRestantesMes
+    getCarryover, getOrcamentoMes, getResumoOrcamento, diasRestantesMes,
+    getRecorrenciaById, listRecorrencias, addRecorrencia, updateRecorrencia,
+    removeRecorrencia, toggleAtiva, proximaData, processarRecorrencias,
+    getProximasOcorrencias, getCustoFixo, listAssinaturas
   };
 })();

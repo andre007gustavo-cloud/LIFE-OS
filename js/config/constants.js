@@ -180,7 +180,9 @@ const Constants = (() => {
     categorias: [],
     transacoes: [],
     // Finanças Fase 2: orçamentos por categoria
-    orcamentos: []
+    orcamentos: [],
+    // Finanças Fase 3: recorrências (despesas/receitas fixas que geram transações)
+    recorrencias: []
   };
 
   return Object.freeze({
