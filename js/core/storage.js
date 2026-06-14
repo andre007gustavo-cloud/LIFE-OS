@@ -123,6 +123,7 @@ const Storage = (() => {
       if (snap.exists) {
         const data = snap.data();
         _lastSyncedAtMs = Math.max(_lastSyncedAtMs, _toMs(data.updatedAt));
+        console.log('[DBG load] v=' + _toMs(data.updatedAt) + ' orc=' + (data.orcamentos || []).length + ' writer=' + data.lastWriter + ' eu=' + _sessionId); // [DBG]
         return _pickDbFields(data);
       }
     } catch (err) {
@@ -136,6 +137,7 @@ const Storage = (() => {
     if (!docRef) return;
     _isSaving = true;
     _pendingDB = null;
+    console.log('[DBG save] gravando orc=' + (db.orcamentos || []).length); // [DBG]
     // Offline, o set() fica enfileirado pelo Firestore — indica vermelho, não "salvando"
     _setSyncState(navigator.onLine ? 'saving' : 'offline');
     try {
@@ -189,27 +191,32 @@ const Storage = (() => {
     if (!docRef) return;
 
     _unsubscribe = docRef.onSnapshot({ includeMetadataChanges: false }, snap => {
+      const _d = snap.exists ? snap.data() : null; // [DBG]
+      const _t = 'v=' + _toMs(_d && _d.updatedAt) + ' orc=' + (_d && _d.orcamentos || []).length // [DBG]
+        + ' writer=' + (_d && _d.lastWriter) + ' lastSynced=' + _lastSyncedAtMs // [DBG]
+        + ' fromCache=' + snap.metadata.fromCache + ' pending=' + snap.metadata.hasPendingWrites; // [DBG]
       // O cache local do Firestore pode emitir um snapshot com estado ANTIGO que
       // sobrescreveria os dados bons recém-salvos — era o que apagava lançamentos.
-      if (snap.metadata.fromCache) return;
+      if (snap.metadata.fromCache) { console.log('[DBG snap] IGNORA fromCache | ' + _t); return; } // [DBG]
       // Não aplica remoto enquanto há mudança local pendente (debounce): evita
       // descartar a edição que o usuário acabou de fazer e ainda não foi gravada.
-      if (_saveTimer || _pendingDB) return;
+      if (_saveTimer || _pendingDB) { console.log('[DBG snap] IGNORA local-pendente | ' + _t); return; } // [DBG]
       // Ignora escritas locais ainda não confirmadas (updatedAt ainda nulo).
-      if (snap.metadata.hasPendingWrites) return;
-      if (!snap.exists) return;
+      if (snap.metadata.hasPendingWrites) { console.log('[DBG snap] IGNORA hasPendingWrites | ' + _t); return; } // [DBG]
+      if (!snap.exists) { console.log('[DBG snap] IGNORA nao-existe | ' + _t); return; } // [DBG]
 
       const data = snap.data();
       // Guarda por versão: só aplica snapshot ESTRITAMENTE mais novo que o que já
       // temos. Pega o eco atrasado do save do boot (versão <= a já registrada),
       // que era o que zerava orçamentos/lançamentos criados logo após o boot.
       const remoteMs = _toMs(data.updatedAt);
-      if (remoteMs && remoteMs <= _lastSyncedAtMs) return;
+      if (remoteMs && remoteMs <= _lastSyncedAtMs) { console.log('[DBG snap] IGNORA versao-antiga | ' + _t); return; } // [DBG]
       _lastSyncedAtMs = Math.max(_lastSyncedAtMs, remoteMs);
       // Eco da nossa própria escrita: a versão já foi registrada acima; não precisa
       // re-renderizar (já temos o estado) — e é isso que faz o save do boot avançar
       // _lastSyncedAtMs sem aplicar nada, fechando o furo que apagava os dados.
-      if (data.lastWriter === _sessionId) return;
+      if (data.lastWriter === _sessionId) { console.log('[DBG snap] eco-proprio (so registra versao) | ' + _t); return; } // [DBG]
+      console.log('[DBG snap] >>> APLICA (sobrescreve estado!) | ' + _t); // [DBG]
       callback(_pickDbFields(data));
     });
   }

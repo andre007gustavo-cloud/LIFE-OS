@@ -256,6 +256,7 @@ const FinanceService = (() => {
       };
       db().orcamentos.push(o);
     }
+    console.log('[DBG setOrcamento] orc agora=' + db().orcamentos.length); // [DBG]
     AppState.persist();
     return o;
   }
