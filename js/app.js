@@ -311,6 +311,9 @@
     window.FinanceQuickAdd  = FinanceQuickAdd;
     window.FinanceBudget    = FinanceBudget;
     window.FinanceRecorrencias = FinanceRecorrencias;
+    window.CartaoService    = CartaoService;
+    window.FinanceCartoes   = FinanceCartoes;
+    window.FinanceCartaoModal = FinanceCartaoModal;
 
     // --- Projects ---
     window.openNewProjectModal = ProjectModal.open;

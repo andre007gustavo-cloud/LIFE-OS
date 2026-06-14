@@ -2,6 +2,7 @@
  * ===================== FINANCE VIEW =====================
  * Fase 1: saldo total no topo, resumo do mês (entradas/saídas) e a lista de
  * lançamentos do mês agrupada por dia. Criação rápida pelo FAB (FinanceQuickAdd).
+ * Fase 4: seção de cartões de crédito com fatura atual e limite disponível.
  */
 
 const FinanceView = (() => {
@@ -13,8 +14,11 @@ const FinanceView = (() => {
     const txs = FinanceService.listTransactions({ mes });
 
     document.getElementById('fin-content').innerHTML =
-      headerHtml(saldoTotal, resumo) + FinanceBudget.sectionHtml(mes) +
-      FinanceRecorrencias.sectionHtml(mes) + listHtml(txs) + devButtonHtml();
+      headerHtml(saldoTotal, resumo) +
+      FinanceCartoes.sectionHtml() +
+      FinanceBudget.sectionHtml(mes) +
+      FinanceRecorrencias.sectionHtml(mes) +
+      listHtml(txs) + devButtonHtml();
   }
 
   /** Botão de teste — só em localhost, nunca em produção */
@@ -75,6 +79,8 @@ const FinanceView = (() => {
 
   function entryHtml(t) {
     if (t.tipo === 'transferencia') return transferHtml(t);
+    if (t.cartaoId && !t.pagamentoFatura) return cardEntryHtml(t);
+    if (t.pagamentoFatura) return faturaPaymentHtml(t);
     const cat = FinanceService.getCategoriaById(t.categoriaId);
     const conta = FinanceService.getContaById(t.contaId);
     const isEntrada = t.tipo === 'entrada';
@@ -91,6 +97,41 @@ const FinanceView = (() => {
         ${isEntrada ? '+' : '−'}${Utils.formatBRL(t.valorCentavos)}
       </div>
       <button class="icon-btn" title="Excluir"
+              onclick="event.stopPropagation();FinanceView.remove('${t.id}')"><i class="ti ti-x"></i></button>
+    </div>`;
+  }
+
+  function cardEntryHtml(t) {
+    const cartao = CartaoService.getCartaoById(t.cartaoId);
+    const cat = FinanceService.getCategoriaById(t.categoriaId);
+    const parcelas = t.parcelas || 1;
+    const parcelaBadge = parcelas > 1
+      ? `<span class="fin-parcela-badge">${parcelas}x</span>`
+      : '';
+    const sub = [cat?.nome, cartao?.nome].filter(Boolean).join(' · ');
+    const cor = cartao?.cor || 'var(--accent)';
+    return `<div class="fin-entry fin-entry-card" onclick="FinanceCartaoModal.openDetalhe('${t.cartaoId}')">
+      <div class="fin-dot" style="background:${cor}22;color:${cor}">💳</div>
+      <div class="fin-info">
+        <div class="fin-title">${Utils.escapeHtml(t.descricao || 'Compra no cartão')} ${parcelaBadge}</div>
+        <div class="fin-sub">${Utils.escapeHtml(sub)}</div>
+      </div>
+      <div class="fin-amount" style="color:var(--red)">−${Utils.formatBRL(t.valorCentavos)}</div>
+      <button class="icon-btn" title="Excluir"
+              onclick="event.stopPropagation();FinanceView.remove('${t.id}')"><i class="ti ti-x"></i></button>
+    </div>`;
+  }
+
+  function faturaPaymentHtml(t) {
+    const conta = FinanceService.getContaById(t.contaId);
+    return `<div class="fin-entry fin-entry-fatura">
+      <div class="fin-dot" style="background:var(--red)22">💳</div>
+      <div class="fin-info">
+        <div class="fin-title">${Utils.escapeHtml(t.descricao || 'Pagamento fatura')}</div>
+        <div class="fin-sub">${Utils.escapeHtml(conta?.nome || '')}</div>
+      </div>
+      <div class="fin-amount" style="color:var(--red)">−${Utils.formatBRL(t.valorCentavos)}</div>
+      <button class="icon-btn" title="Desfazer pagamento"
               onclick="event.stopPropagation();FinanceView.remove('${t.id}')"><i class="ti ti-x"></i></button>
     </div>`;
   }
@@ -112,8 +153,18 @@ const FinanceView = (() => {
   }
 
   function remove(id) {
-    if (!confirm('Excluir lançamento?')) return;
-    FinanceService.deleteTransaction(id);
+    const t = FinanceService.getTransacaoById(id);
+    if (!t) return;
+    if (t.pagamentoFatura) {
+      if (!confirm('Desfazer pagamento desta fatura?')) return;
+      const d = AppState.getDB();
+      const fp = d.faturaPagamentos && d.faturaPagamentos.find(p => p.transacaoId === id);
+      if (fp) CartaoService.desfazerPagamento(fp.cartaoId, fp.competencia);
+      else FinanceService.deleteTransaction(id);
+    } else {
+      if (!confirm('Excluir lançamento?')) return;
+      FinanceService.deleteTransaction(id);
+    }
     render();
     if (window.DashboardView) DashboardView.render();
   }

@@ -179,6 +179,119 @@
 .fin-repeat{margin:4px 0 12px;padding-top:10px;border-top:1px solid var(--border)}
 .fin-repeat .form-row{margin-top:8px}
 
+/* ===== Fase 4: Cartões de crédito ===== */
+
+.fin-cartoes-title{display:flex;align-items:center;justify-content:space-between}
+
+.fin-card-item{
+  padding:12px;border-radius:var(--radius-sm);
+  background:var(--bg3);margin-bottom:8px;cursor:pointer;
+  border:1px solid transparent;transition:border .15s;
+}
+.fin-card-item:hover{border-color:var(--border)}
+.fin-card-header{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.fin-card-badge{
+  width:36px;height:36px;border-radius:8px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+}
+.fin-card-info{flex:1;min-width:0}
+.fin-card-name{font-size:14px;font-weight:600}
+.fin-card-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.fin-card-fatura{text-align:right;flex-shrink:0}
+.fin-card-fatura-total{font-size:15px;font-weight:700}
+.fin-card-fatura-status{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin-top:1px}
+.fin-card-fatura-status.paga{color:var(--green)}
+.fin-card-fatura-status.aberta{color:var(--amber)}
+.fin-card-footer{display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-top:6px}
+
+/* Badge de parcelas na lista de lançamentos */
+.fin-parcela-badge{
+  font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;
+  padding:1px 6px;border-radius:999px;background:var(--bg4);color:var(--accent2);
+  vertical-align:middle;margin-left:4px;
+}
+.fin-entry-card{border-left:2px solid var(--accent)}
+.fin-entry-fatura{border-left:2px solid var(--red)}
+
+/* Overlay de detalhe de fatura (sheet bottom) */
+.fatura-overlay{
+  position:fixed;inset:0;background:#00000088;z-index:200;
+  display:flex;align-items:flex-end;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.fatura-overlay.open{opacity:1;pointer-events:all}
+.fatura-sheet{
+  width:100%;max-width:600px;margin:0 auto;max-height:88vh;overflow-y:auto;
+  background:var(--bg2);border-radius:16px 16px 0 0;padding:20px;
+  transform:translateY(100%);transition:transform .25s ease;
+}
+.fatura-overlay.open .fatura-sheet{transform:none}
+
+.fatura-nav{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px;
+}
+.fatura-nav-title{font-size:15px;font-weight:700;flex:1;text-align:center}
+.fatura-nav-close{
+  background:none;border:none;cursor:pointer;
+  color:var(--text3);font-size:22px;padding:0 4px;line-height:1;
+}
+.fatura-nav-close:hover{color:var(--text)}
+
+.fatura-card-bar{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;background:var(--bg3);
+  border-radius:var(--radius-sm);margin-bottom:12px;
+}
+.fatura-card-color{width:6px;border-radius:4px;flex-shrink:0;align-self:stretch;min-height:36px}
+.fatura-card-bar-info{flex:1}
+.fatura-card-bar-name{font-size:14px;font-weight:600}
+.fatura-card-bar-dates{font-size:11px;color:var(--text3);margin-top:2px}
+
+.fatura-month-nav{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 0;margin-bottom:10px;
+}
+.fatura-month-label{font-size:14px;font-weight:600}
+.fatura-month-btn{
+  background:none;border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:4px 12px;cursor:pointer;color:var(--text2);font-size:12px;transition:border .15s;
+}
+.fatura-month-btn:hover{border-color:var(--accent);color:var(--accent2)}
+
+.fatura-item{
+  display:flex;align-items:center;gap:8px;
+  padding:9px 0;border-bottom:1px solid var(--border);
+}
+.fatura-item:last-of-type{border-bottom:none}
+.fatura-item-info{flex:1;min-width:0}
+.fatura-item-desc{font-size:13px;font-weight:500}
+.fatura-item-sub{font-size:11px;color:var(--text3)}
+.fatura-item-parcela{
+  font-size:9px;font-weight:700;text-transform:uppercase;
+  padding:1px 6px;border-radius:999px;background:var(--bg4);color:var(--text2);flex-shrink:0;
+}
+.fatura-item-val{font-size:13px;font-weight:600;flex-shrink:0}
+
+.fatura-total{
+  display:flex;justify-content:space-between;align-items:baseline;
+  padding:12px 0 6px;border-top:2px solid var(--border);margin-top:4px;
+}
+.fatura-total-label{font-size:14px;font-weight:600}
+.fatura-total-val{font-size:16px;font-weight:700;color:var(--red)}
+
+.fatura-status{text-align:center;padding:6px 0 10px;font-size:12px;color:var(--text3)}
+.fatura-status.paga{color:var(--green);font-weight:600}
+.fatura-actions{display:flex;gap:8px;justify-content:center;padding:4px 0 8px}
+
+/* Color dot picker (cartão modal) */
+.color-dot{
+  width:28px;height:28px;border-radius:50%;border:2px solid transparent;
+  cursor:pointer;transition:transform .1s,border .1s;
+}
+.color-dot:hover{transform:scale(1.15)}
+.color-dot.selected{border-color:var(--text);transform:scale(1.2)}
+
 /* Area card (legacy) */
 .area-card{
   background:var(--bg2);border:1px solid var(--border);

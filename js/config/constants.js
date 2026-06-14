@@ -182,7 +182,10 @@ const Constants = (() => {
     // Finanças Fase 2: orçamentos por categoria
     orcamentos: [],
     // Finanças Fase 3: recorrências (despesas/receitas fixas que geram transações)
-    recorrencias: []
+    recorrencias: [],
+    // Finanças Fase 4: cartões de crédito e pagamentos de fatura
+    cartoes: [],
+    faturaPagamentos: []
   };
 
   return Object.freeze({

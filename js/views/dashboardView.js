@@ -26,6 +26,7 @@ const DashboardView = (() => {
     renderInbox();
     renderWeek(td);
     renderBudget();
+    renderCartoes();
   }
 
   // ===== Card: orçamento por categoria =====
@@ -37,6 +38,16 @@ const DashboardView = (() => {
     const rows = FinanceBudget.dashRowsHtml(FinanceService.currentMonthPrefix());
     card.style.display = rows ? '' : 'none';
     document.getElementById('dash-budget').innerHTML = rows;
+  }
+
+  // ===== Card: cartões de crédito (Fase 4) =====
+
+  function renderCartoes() {
+    const card = document.getElementById('dash-cartoes-card');
+    if (!card || !window.FinanceCartoes) return;
+    const html = FinanceCartoes.dashHtml();
+    card.style.display = html ? '' : 'none';
+    document.getElementById('dash-cartoes').innerHTML = html;
   }
 
   // ===== Gatilho sutil de revisão semanal =====

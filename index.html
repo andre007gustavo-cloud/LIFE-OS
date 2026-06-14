@@ -166,6 +166,10 @@
           <div class="card-title"><i class="ti ti-target-arrow"></i> Orçamento por categoria</div>
           <div id="dash-budget"></div>
         </div>
+        <div class="card" id="dash-cartoes-card" style="display:none">
+          <div class="card-title"><i class="ti ti-credit-card"></i> Cartões</div>
+          <div id="dash-cartoes"></div>
+        </div>
         <div class="card">
           <div class="card-title"><i class="ti ti-calendar-week"></i> Esta semana</div>
           <div id="dash-week"></div>
@@ -586,8 +590,13 @@
       <select class="form-select" id="f-cat"></select>
     </div>
     <div class="form-group">
-      <label class="form-label" id="f-conta-label">Conta</label>
-      <select class="form-select" id="f-conta"></select>
+      <label class="form-label" id="f-conta-label">Conta ou cartão</label>
+      <select class="form-select" id="f-conta" onchange="FinanceModal.onContaChange()"></select>
+    </div>
+    <div class="form-group" id="f-parcelas-group" style="display:none">
+      <label class="form-label">Parcelas</label>
+      <input class="form-input" type="number" id="f-parcelas" min="1" max="60" value="1"
+             placeholder="1 = à vista">
     </div>
     <div class="form-group" id="f-conta-dest-group" style="display:none">
       <label class="form-label">Conta de destino</label>
@@ -721,6 +730,81 @@
         <button class="btn btn-ghost" onclick="closeModal('rec-modal')">Cancelar</button>
         <button class="btn btn-primary" onclick="FinanceRecorrencias.save()">Salvar</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL: CARTÃO (Fase 4) ========== -->
+<div class="overlay" id="cartao-modal">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="cartao-modal-title">Novo cartão</span>
+      <button class="modal-close" onclick="closeModal('cartao-modal')">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nome do cartão</label>
+      <input class="form-input" id="cc-nome" placeholder="Ex: Nubank, Itaú Visa…">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Cor</label>
+      <div id="cc-color-picker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Limite (R$)</label>
+      <input class="form-input" id="cc-limite" inputmode="decimal" placeholder="5.000,00">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Dia fechamento</label>
+        <input class="form-input" type="number" id="cc-fechamento" min="1" max="31" value="28">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Dia vencimento</label>
+        <input class="form-input" type="number" id="cc-vencimento" min="1" max="31" value="5">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Conta de pagamento padrão (opcional)</label>
+      <select class="form-select" id="cc-conta-pag"></select>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:space-between;margin-top:14px">
+      <button class="btn btn-ghost" id="cc-remove-btn" style="color:var(--red);display:none"
+              onclick="FinanceCartaoModal.archiveCurrent()">
+        <i class="ti ti-archive"></i> Arquivar
+      </button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="btn btn-ghost" onclick="closeModal('cartao-modal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="FinanceCartaoModal.saveCartao()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL: PAGAR FATURA (Fase 4) ========== -->
+<div class="overlay" id="pagar-fatura-modal">
+  <div class="modal">
+    <div class="modal-title">
+      <span>Pagar fatura</span>
+      <button class="modal-close" onclick="closeModal('pagar-fatura-modal')">×</button>
+    </div>
+    <div class="orc-modal-cat" id="pf-mes"></div>
+    <div class="form-group">
+      <label class="form-label">Conta de pagamento</label>
+      <select class="form-select" id="pf-conta"></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Valor (R$)</label>
+        <input class="form-input" id="pf-valor" inputmode="decimal" placeholder="0,00">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Data</label>
+        <input class="form-input" type="date" id="pf-data">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+      <button class="btn btn-ghost" onclick="closeModal('pagar-fatura-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="FinanceCartaoModal.salvarPagamento()">Confirmar pagamento</button>
     </div>
   </div>
 </div>
@@ -894,6 +978,7 @@
 <script src="js/services/inboxService.js"></script>
 <script src="js/services/projectService.js"></script>
 <script src="js/services/financeService.js"></script>
+<script src="js/services/cartaoService.js"></script>
 <script src="js/services/pomodoroService.js"></script>
 <script src="js/services/habitService.js"></script>
 <script src="js/services/reviewService.js"></script>
@@ -924,6 +1009,8 @@
 <script src="js/components/financeQuickAdd.js"></script>
 <script src="js/components/financeBudget.js"></script>
 <script src="js/components/financeRecorrencias.js"></script>
+<script src="js/components/financeCartoes.js"></script>
+<script src="js/components/financeCartaoModal.js"></script>
 
 <script src="js/views/dashboardView.js"></script>
 <script src="js/views/tasksView.js"></script>

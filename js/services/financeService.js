@@ -18,6 +18,8 @@ const FinanceService = (() => {
     if (!d.transacoes) d.transacoes = [];
     if (!d.orcamentos) d.orcamentos = [];
     if (!d.recorrencias) d.recorrencias = [];
+    if (!d.cartoes) d.cartoes = [];
+    if (!d.faturaPagamentos) d.faturaPagamentos = [];
     return d;
   }
 
@@ -202,6 +204,8 @@ const FinanceService = (() => {
     const ids = new Set(contas.map(c => c.id));
     let saldo = contas.reduce((s, c) => s + (c.saldoInicialCentavos || 0), 0);
     db().transacoes.forEach(t => {
+      // Compra no cartão não mexe em conta (caixa zero); só o pagamento da fatura sim
+      if (t.cartaoId && !t.pagamentoFatura) return;
       if (t.tipo === 'entrada' && ids.has(t.contaId)) saldo += t.valorCentavos;
       else if (t.tipo === 'saida' && ids.has(t.contaId)) saldo -= t.valorCentavos;
       else if (t.tipo === 'transferencia') {
@@ -212,9 +216,13 @@ const FinanceService = (() => {
     return saldo;
   }
 
-  /** { entradas, saidas, saldoMes } em centavos para o mês 'YYYY-MM'. */
+  /**
+   * { entradas, saidas, saldoMes } em centavos para o mês 'YYYY-MM'.
+   * Visão de COMPETÊNCIA: compras de cartão contam (valor total na data da compra).
+   * Pagamentos de fatura são excluídos (evita dupla contagem; são movimento de CAIXA).
+   */
   function getResumoMes(mes) {
-    const ts = db().transacoes.filter(t => (t.data || '').startsWith(mes));
+    const ts = db().transacoes.filter(t => (t.data || '').startsWith(mes) && !t.pagamentoFatura);
     const entradas = ts.filter(t => t.tipo === 'entrada').reduce((s, t) => s + t.valorCentavos, 0);
     const saidas = ts.filter(t => t.tipo === 'saida').reduce((s, t) => s + t.valorCentavos, 0);
     return { entradas, saidas, saldoMes: entradas - saidas };
@@ -543,6 +551,7 @@ const FinanceService = (() => {
 
     _seedRolloverBudget(conta, desp[2], mes); // Transporte: orçamento com rollover
     _seedRecorrencias(conta, desp, rec, mes); // recorrências + histórico gerado
+    if (window.CartaoService) CartaoService._seedCartoes(); // Fase 4: cartões
   }
 
   /**

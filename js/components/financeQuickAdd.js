@@ -13,8 +13,24 @@ const FinanceQuickAdd = (() => {
   let recognition = null;
   let usedVoice = false;
 
+  /**
+   * Inclui cartões na lista de "contas" para que o parser reconheça @nubank etc.
+   * Cartões ficam com id='card:xxx' e icone='💳' para distinguir das contas reais.
+   */
   function ctx() {
-    return { categorias: FinanceService.listCategorias(), contas: FinanceService.listContas() };
+    const contas = FinanceService.listContas();
+    const cartoes = (window.CartaoService ? CartaoService.listCartoes() : [])
+      .map(c => ({ ...c, id: 'card:' + c.id, icone: '💳' }));
+    return {
+      categorias: FinanceService.listCategorias(),
+      contas: [...contas, ...cartoes]
+    };
+  }
+
+  /** Extrai parcelas de "12x" no texto bruto. */
+  function _parseParcelas(raw) {
+    const m = (raw || '').match(/\b(\d+)x\b/i);
+    return m ? Math.max(1, parseInt(m[1], 10)) : 1;
   }
 
   // ===== DOM (montado uma vez) =====
@@ -121,19 +137,24 @@ const FinanceQuickAdd = (() => {
   }
 
   /** Completa o que o parser entendeu com defaults (1ª conta, 1ª categoria do tipo) */
-  function mergedFields(parsed) {
+  function mergedFields(parsed, raw) {
     const c = ctx();
     let categoriaId = parsed.categoriaId;
     if (!categoriaId && parsed.tipo !== 'transferencia') {
       const list = FinanceService.listCategorias(parsed.tipo === 'entrada' ? 'receita' : 'despesa');
       categoriaId = list[0] ? list[0].id : '';
     }
+    const contaVal = parsed.contaId || '';
+    const isCard = contaVal.startsWith('card:');
+    const firstRealConta = c.contas.find(ct => !ct.id.startsWith('card:'));
     return {
       tipo: parsed.tipo,
       valorCentavos: parsed.valorCentavos,
       descricao: parsed.descricao,
       categoriaId,
-      contaId: parsed.contaId || (c.contas[0] && c.contas[0].id) || '',
+      contaId: isCard ? '' : (contaVal || (firstRealConta && firstRealConta.id) || ''),
+      cartaoId: isCard ? contaVal.slice(5) : '',
+      parcelas: isCard ? _parseParcelas(raw) : 1,
       data: parsed.data || Utils.today(),
       fonte: usedVoice ? 'voz' : 'parser'
     };
@@ -144,7 +165,22 @@ const FinanceQuickAdd = (() => {
     if (!raw) return;
     const parsed = QuickParser.parseFinance(raw, ctx());
     if (!parsed.valorCentavos) { Feedback.toast('Informe um valor', 'warn'); return; }
-    FinanceService.addTransaction(mergedFields(parsed));
+    const fields = mergedFields(parsed, raw);
+    if (fields.cartaoId) {
+      CartaoService.addCompraCartao({
+        cartaoId: fields.cartaoId,
+        descricao: fields.descricao,
+        categoriaId: fields.categoriaId,
+        valorTotalCentavos: fields.valorCentavos,
+        parcelas: fields.parcelas,
+        dataCompra: fields.data
+      });
+    } else {
+      FinanceService.addTransaction({
+        tipo: fields.tipo, valorCentavos: fields.valorCentavos, descricao: fields.descricao,
+        categoriaId: fields.categoriaId, contaId: fields.contaId, data: fields.data, fonte: fields.fonte
+      });
+    }
     close();
     if (window.FinanceView) FinanceView.render();
     if (window.DashboardView) DashboardView.render();
@@ -153,8 +189,9 @@ const FinanceQuickAdd = (() => {
 
   /** Fecha e abre o modal completo pré-preenchido com o que o parser entendeu */
   function moreOptions() {
-    const parsed = QuickParser.parseFinance(inputEl.value.trim(), ctx());
-    const fields = mergedFields(parsed);
+    const raw = inputEl.value.trim();
+    const parsed = QuickParser.parseFinance(raw, ctx());
+    const fields = mergedFields(parsed, raw);
     close();
     FinanceModal.openPrefilled(fields);
   }
