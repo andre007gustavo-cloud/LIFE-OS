@@ -27,6 +27,17 @@ const DashboardView = (() => {
     renderWeek(td);
     renderBudget();
     renderCartoes();
+    renderProjecao();
+  }
+
+  // ===== Card: saldo projetado (Fase 6) =====
+
+  function renderProjecao() {
+    const card = document.getElementById('dash-projecao-card');
+    if (!card || !window.FinanceProjecao) return;
+    const html = FinanceProjecao.dashHtml();
+    card.style.display = html ? '' : 'none';
+    document.getElementById('dash-projecao').innerHTML = html;
   }
 
   // ===== Card: orçamento por categoria =====

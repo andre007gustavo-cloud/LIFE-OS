@@ -217,6 +217,31 @@ const FinanceService = (() => {
   }
 
   /**
+   * Saldo em centavos considerando SÓ transações com data <= 'data' (caixa
+   * realizado até aquele dia). Base do "saldo de hoje" da projeção (Fase 6):
+   * lançamentos com data futura não inflam o saldo atual — entram como evento.
+   * Sem contaId: agrega as contas NÃO-meta (caixa disponível, exclui metas).
+   */
+  function getSaldoAte(contaId, data) {
+    const contas = contaId
+      ? [getContaById(contaId)].filter(Boolean)
+      : listContas({ incluirArquivadas: true }).filter(c => c.tipo !== 'meta');
+    const ids = new Set(contas.map(c => c.id));
+    let saldo = contas.reduce((s, c) => s + (c.saldoInicialCentavos || 0), 0);
+    db().transacoes.forEach(t => {
+      if (data && (t.data || '') > data) return;       // só até a data
+      if (t.cartaoId && !t.pagamentoFatura) return;     // compra de cartão não é caixa
+      if (t.tipo === 'entrada' && ids.has(t.contaId)) saldo += t.valorCentavos;
+      else if (t.tipo === 'saida' && ids.has(t.contaId)) saldo -= t.valorCentavos;
+      else if (t.tipo === 'transferencia') {
+        if (ids.has(t.contaId)) saldo -= t.valorCentavos;
+        if (ids.has(t.contaDestinoId)) saldo += t.valorCentavos;
+      }
+    });
+    return saldo;
+  }
+
+  /**
    * { entradas, saidas, saldoMes } em centavos para o mês 'YYYY-MM'.
    * Visão de COMPETÊNCIA: compras de cartão contam (valor total na data da compra).
    * Pagamentos de fatura são excluídos (evita dupla contagem; são movimento de CAIXA).
@@ -356,12 +381,16 @@ const FinanceService = (() => {
   function _normalizeRecorrencia(f) {
     const tipo = f.tipo === 'entrada' ? 'entrada' : 'saida';
     const frequencia = f.frequencia === 'anual' ? 'anual' : 'mensal';
+    // Alvo: cartão OU conta (mutuamente exclusivos). Assinatura no cartão entra
+    // no fluxo de caixa só via fatura; recorrência em conta é evento direto.
+    const cartaoId = f.cartaoId || '';
     return {
       tipo,
       valorCentavos: Math.abs(parseInt(f.valorCentavos, 10) || 0),
       descricao: (f.descricao || '').trim(),
       categoriaId: f.categoriaId || '',
-      contaId: f.contaId || '',
+      cartaoId,
+      contaId: cartaoId ? '' : (f.contaId || ''),
       frequencia,
       diaDoMes: Math.min(31, Math.max(1, parseInt(f.diaDoMes, 10) || 1)),
       mesDoAno: frequencia === 'anual'
@@ -443,13 +472,19 @@ const FinanceService = (() => {
   function _criarOcorrencia(rec, data) {
     const existe = db().transacoes.some(t => t.recorrenciaId === rec.id && t.data === data);
     if (existe) return false;
-    const t = _normalize({
-      tipo: rec.tipo, valorCentavos: rec.valorCentavos, descricao: rec.descricao,
-      categoriaId: rec.categoriaId, contaId: rec.contaId, data, fonte: 'recorrencia'
-    });
+    const now = new Date().toISOString();
+    const t = rec.cartaoId
+      ? {  // assinatura no cartão → compra de cartão (caixa só via fatura)
+          tipo: 'saida', valorCentavos: Math.abs(rec.valorCentavos || 0),
+          descricao: rec.descricao, categoriaId: rec.categoriaId || '',
+          cartaoId: rec.cartaoId, contaId: '', parcelas: 1, data, fonte: 'recorrencia'
+        }
+      : _normalize({
+          tipo: rec.tipo, valorCentavos: rec.valorCentavos, descricao: rec.descricao,
+          categoriaId: rec.categoriaId, contaId: rec.contaId, data, fonte: 'recorrencia'
+        });
     t.id = Utils.uid();
     t.recorrenciaId = rec.id;
-    const now = new Date().toISOString();
     t.criadoEm = now;
     t.atualizadoEm = now;
     db().transacoes.push(t);
@@ -486,25 +521,29 @@ const FinanceService = (() => {
   }
 
   /**
-   * Ocorrências FUTURAS ainda não geradas no mês 'YYYY-MM' (base dos "próximos
-   * lançamentos"; servirá à projeção da Fase 6). Não inclui as já geradas.
+   * Ocorrências FUTURAS ainda não geradas no intervalo [de, ate] (base dos
+   * "próximos lançamentos" e da projeção da Fase 6). Não inclui as já geradas.
+   * Cada item carrega o alvo: contaId OU cartaoId (recorrência em cartão).
    */
-  function getProximasOcorrencias(mes) {
-    const [ano, m] = mes.split('-').map(Number);
-    const inicioMes = `${mes}-01`;
+  function getProximasOcorrencias({ de, ate } = {}) {
+    de = de || Utils.today();
+    ate = ate || de;
     const out = [];
     listRecorrencias({ ativa: true }).forEach(rec => {
-      const occ = _occurrenceInMonth(rec, ano, m);
-      if (!occ) return;
-      if (occ < (rec.dataInicio || inicioMes)) return;
-      if (rec.dataFim && occ > rec.dataFim) return;
-      if (rec.ultimaGeracao && occ <= rec.ultimaGeracao) return;
-      if (db().transacoes.some(t => t.recorrenciaId === rec.id && t.data === occ)) return;
-      out.push({
-        recorrenciaId: rec.id, tipo: rec.tipo, descricao: rec.descricao,
-        valorCentavos: rec.valorCentavos, categoriaId: rec.categoriaId,
-        contaId: rec.contaId, data: occ
-      });
+      let occ = proximaData(rec, de);
+      while (occ && occ <= ate) {
+        const jaGerada = (rec.ultimaGeracao && occ <= rec.ultimaGeracao)
+          || db().transacoes.some(t => t.recorrenciaId === rec.id && t.data === occ);
+        if (!jaGerada) {
+          out.push({
+            recorrenciaId: rec.id, data: occ, tipo: rec.tipo,
+            valorCentavos: rec.valorCentavos, descricao: rec.descricao,
+            categoriaId: rec.categoriaId, contaId: rec.contaId || '',
+            cartaoId: rec.cartaoId || ''
+          });
+        }
+        occ = proximaData(rec, Utils.addDays(occ, 1));
+      }
     });
     return out.sort((a, b) => a.data.localeCompare(b.data));
   }
@@ -525,6 +564,147 @@ const FinanceService = (() => {
 
   function listAssinaturas() {
     return listRecorrencias({ ativa: true }).filter(r => r.ehAssinatura);
+  }
+
+  // ===== Projeção de saldo / fluxo de caixa (Fase 6) =====
+
+  /** Último dia do mês de 'iso' em ISO local. */
+  function _fimDoMes(iso) {
+    const d = Utils.parseISO(iso);
+    const ultimo = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(ultimo).padStart(2, '0')}`;
+  }
+
+  /** Resolve o fim do horizonte: 'ate' explícito > 'dias' a partir de hoje > fim do mês. */
+  function _resolverHorizonte(hoje, ate, dias) {
+    if (ate) return ate;
+    if (dias) return Utils.addDays(hoje, parseInt(dias, 10));
+    return _fimDoMes(hoje);
+  }
+
+  /**
+   * Fatura projetada = getFatura (parcelas/compras já lançadas) + as ocorrências
+   * de recorrência de cartão AINDA não geradas cuja competência da compra cai
+   * nesta competência (marcadas previsto:true). totalCentavos inclui os previstos.
+   */
+  function getFaturaProjetada(cartaoId, competencia) {
+    const fatura = CartaoService.getFatura(cartaoId, competencia);
+    if (!fatura) return null;
+    const cartao = CartaoService.getCartaoById(cartaoId);
+    // Compras que caem nesta competência têm data até ~o fechamento do mês seguinte
+    const ate = `${_addMonths(competencia, 1)}-28`;
+    const previstos = getProximasOcorrencias({ de: Utils.today(), ate })
+      .filter(o => o.cartaoId === cartaoId)
+      .filter(o => CartaoService.competenciaDaCompra(cartao, o.data) === competencia)
+      .map(o => ({
+        transacaoId: '', recorrenciaId: o.recorrenciaId,
+        descricao: o.descricao, categoriaId: o.categoriaId,
+        parcelaNum: 1, parcelaTotal: 1,
+        valorParcelaCentavos: o.valorCentavos, previsto: true
+      }));
+    const itens = fatura.itens.concat(previstos);
+    const totalCentavos = itens.reduce((s, i) => s + i.valorParcelaCentavos, 0);
+    const previstoCentavos = previstos.reduce((s, i) => s + i.valorParcelaCentavos, 0);
+    return { ...fatura, itens, totalCentavos, previstoCentavos };
+  }
+
+  function _ev(data, descricao, valorCentavos, tipo, origemId, extra) {
+    return { data, descricao: descricao || 'Lançamento', valorCentavos, tipo, origemId, ...extra };
+  }
+
+  /** Eventos de caixa: transações futuras já lançadas (exclui compras de cartão). */
+  function _eventosTransacoes(hoje, fim, idsNaoMeta) {
+    const out = [];
+    db().transacoes.forEach(t => {
+      const data = t.data || '';
+      if (data <= hoje || data > fim) return;
+      if (t.cartaoId && !t.pagamentoFatura) return; // compra de cartão entra só via fatura
+      if (t.tipo === 'entrada' && idsNaoMeta.has(t.contaId)) {
+        out.push(_ev(data, t.descricao, t.valorCentavos,
+          t.fonte === 'recorrencia' ? 'recorrencia' : 'planejado', t.id));
+      } else if (t.tipo === 'saida' && idsNaoMeta.has(t.contaId)) {
+        const tipo = t.pagamentoFatura ? 'fatura' : t.fonte === 'recorrencia' ? 'recorrencia' : 'planejado';
+        out.push(_ev(data, t.descricao, -t.valorCentavos, tipo, t.id));
+      } else if (t.tipo === 'transferencia') {
+        let delta = 0;
+        if (idsNaoMeta.has(t.contaId)) delta -= t.valorCentavos;
+        if (idsNaoMeta.has(t.contaDestinoId)) delta += t.valorCentavos;
+        if (delta !== 0) out.push(_ev(data, t.descricao || 'Transferência', delta, delta > 0 ? 'entrada' : 'saida', t.id));
+      }
+    });
+    return out;
+  }
+
+  /** Eventos de caixa: recorrências futuras em CONTA (cartão entra só via fatura). */
+  function _eventosRecorrencias(hoje, fim, idsNaoMeta) {
+    return getProximasOcorrencias({ de: hoje, ate: fim })
+      .filter(o => o.contaId && !o.cartaoId && idsNaoMeta.has(o.contaId))
+      .map(o => _ev(o.data, o.descricao,
+        o.tipo === 'entrada' ? o.valorCentavos : -o.valorCentavos,
+        'recorrencia', o.recorrenciaId));
+  }
+
+  /** Eventos de caixa: pagamento (no vencimento) de faturas não pagas no horizonte. */
+  function _eventosFaturas(hoje, fim) {
+    const out = [];
+    const compInicio = _addMonths(currentMonthPrefix(), -1);
+    const compFim = _addMonths(fim.slice(0, 7), 1);
+    CartaoService.listCartoes().forEach(c => {
+      for (let comp = compInicio; comp <= compFim; comp = _addMonths(comp, 1)) {
+        const f = getFaturaProjetada(c.id, comp);
+        if (!f || f.paga || f.totalCentavos <= 0) continue;
+        if (f.dataVencimento <= hoje || f.dataVencimento > fim) continue;
+        out.push(_ev(f.dataVencimento, `Fatura ${c.nome}`, -f.totalCentavos, 'fatura', c.id,
+          { competencia: comp, previstoCentavos: f.previstoCentavos }));
+      }
+    });
+    return out;
+  }
+
+  /**
+   * Projeção de fluxo de caixa: parte do saldo disponível hoje (getSaldoAte) e
+   * caminha dia a dia até o fim do horizonte aplicando os eventos de caixa.
+   * VISÃO DE CAIXA (não competência): compra de cartão entra só via pagamento
+   * de fatura no vencimento. Horizonte default = fim do mês corrente.
+   */
+  function getProjecaoSaldo({ ate, dias } = {}) {
+    const hoje = Utils.today();
+    const fim = _resolverHorizonte(hoje, ate, dias);
+    const saldoInicial = getSaldoAte(null, hoje);
+    const idsNaoMeta = new Set(
+      listContas({ incluirArquivadas: true }).filter(c => c.tipo !== 'meta').map(c => c.id)
+    );
+
+    const eventos = [
+      ..._eventosTransacoes(hoje, fim, idsNaoMeta),
+      ..._eventosRecorrencias(hoje, fim, idsNaoMeta),
+      ..._eventosFaturas(hoje, fim)
+    ].filter(e => e.data > hoje && e.data <= fim)
+     .sort((a, b) => a.data.localeCompare(b.data));
+
+    const pontos = [];
+    let saldo = saldoInicial;
+    let menorSaldo = { data: hoje, valorCentavos: saldoInicial };
+    let i = 0;
+    for (let d = hoje; d <= fim; d = Utils.addDays(d, 1)) {
+      while (i < eventos.length && eventos[i].data === d) { saldo += eventos[i].valorCentavos; i++; }
+      pontos.push({ data: d, saldoCentavos: saldo });
+      if (saldo < menorSaldo.valorCentavos) menorSaldo = { data: d, valorCentavos: saldo };
+    }
+
+    return {
+      saldoInicialCentavos: saldoInicial,
+      pontos,
+      eventos,
+      saldoFinalCentavos: saldo,
+      menorSaldo,
+      ficaNegativo: menorSaldo.valorCentavos < 0
+    };
+  }
+
+  /** Conveniência para o card do Dashboard: saldo projetado no fim do mês corrente. */
+  function getSaldoProjetadoFimMes() {
+    return getProjecaoSaldo({}).saldoFinalCentavos;
   }
 
   // ===== Teste manual (apenas localhost) =====
@@ -552,6 +732,48 @@ const FinanceService = (() => {
     _seedRolloverBudget(conta, desp[2], mes); // Transporte: orçamento com rollover
     _seedRecorrencias(conta, desp, rec, mes); // recorrências + histórico gerado
     if (window.CartaoService) CartaoService._seedCartoes(); // Fase 4: cartões
+    _seedProjecao(conta, desp, rec, mes);     // Fase 6: curva de projeção
+  }
+
+  /**
+   * Cenário da projeção (Fase 6): cartão com fatura grande vencendo no fim do mês
+   * (inclui uma assinatura de cartão prevista + uma parcela), uma saída planejada
+   * dimensionada para o saldo mergulhar abaixo de zero e uma entrada que o recupera.
+   * Gera uma curva com vale negativo e recuperação dentro do horizonte do mês.
+   */
+  function _seedProjecao(conta, desp, rec, mes) {
+    if (window.location.hostname !== 'localhost') return;
+    if (db().cartoes.some(c => c.nome === 'Visa Projeção')) return;
+    if (!window.CartaoService) return;
+    const dia = n => `${mes}-${String(n).padStart(2, '0')}`;
+    const moradia = desp.find(c => c.nome === 'Moradia') || desp[3];
+    const diversao = desp.find(c => c.nome === 'Diversão') || desp[5];
+    const receita = rec[0];
+
+    const cartao = CartaoService.addCartao({
+      nome: 'Visa Projeção', cor: '#f59e0b',
+      limiteCentavos: 800000, diaFechamento: 20, diaVencimento: 28,
+      contaPagamentoId: conta.id
+    });
+    // Compra grande e parcela já lançadas → fatura de junho (vence dia 28)
+    CartaoService.addCompraCartao({ cartaoId: cartao.id, descricao: 'Notebook',
+      categoriaId: diversao && diversao.id, valorTotalCentavos: 280000, parcelas: 1, dataCompra: dia(3) });
+    CartaoService.addCompraCartao({ cartaoId: cartao.id, descricao: 'Móveis',
+      categoriaId: moradia && moradia.id, valorTotalCentavos: 120000, parcelas: 6, dataCompra: dia(5) });
+    // Assinatura no cartão (dia 15): entra na fatura como PREVISTO, não como caixa avulso
+    addRecorrencia({ tipo: 'saida', valorCentavos: 2290, descricao: 'Spotify Cartão',
+      categoriaId: diversao && diversao.id, cartaoId: cartao.id,
+      frequencia: 'mensal', diaDoMes: 15, dataInicio: dia(1), ehAssinatura: true });
+    // Compra de cartão FUTURA (dia 30) → cai na competência seguinte, não mexe na curva do mês
+    CartaoService.addCompraCartao({ cartaoId: cartao.id, descricao: 'Compra futura',
+      categoriaId: diversao && diversao.id, valorTotalCentavos: 50000, parcelas: 1, dataCompra: dia(30) });
+
+    // Saída planejada que joga o saldo abaixo de zero + entrada que o recupera
+    const saldoHoje = getSaldoAte(null, Utils.today());
+    addTransaction({ tipo: 'saida', valorCentavos: saldoHoje + 300000, descricao: 'Sinal do apartamento',
+      categoriaId: moradia && moradia.id, contaId: conta.id, data: dia(24), fonte: 'manual' });
+    addTransaction({ tipo: 'entrada', valorCentavos: 900000, descricao: 'Resgate investimento',
+      categoriaId: receita && receita.id, contaId: conta.id, data: dia(29), fonte: 'manual' });
   }
 
   /**
@@ -603,7 +825,8 @@ const FinanceService = (() => {
     listCategorias, getCategoriaById, addCategoria,
     addTransaction, updateTransaction, deleteTransaction,
     getTransacaoById, listTransactions,
-    getSaldo, getResumoMes, currentMonthPrefix, entryDates,
+    getSaldo, getSaldoAte, getResumoMes, currentMonthPrefix, entryDates,
+    getFaturaProjetada, getProjecaoSaldo, getSaldoProjetadoFimMes,
     listOrcamentos, getOrcamentoByCategoria, setOrcamento, removeOrcamento,
     getCarryover, getOrcamentoMes, getResumoOrcamento, diasRestantesMes,
     getRecorrenciaById, listRecorrencias, addRecorrencia, updateRecorrencia,

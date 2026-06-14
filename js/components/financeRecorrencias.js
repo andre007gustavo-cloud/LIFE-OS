@@ -86,7 +86,11 @@ const FinanceRecorrencias = (() => {
   // ===== Subseção: próximos lançamentos do mês =====
 
   function proximosHtml(mes) {
-    const items = FinanceService.getProximasOcorrencias(mes);
+    const [y, m] = mes.split('-').map(Number);
+    const ultimoDia = new Date(y, m, 0).getDate();
+    const items = FinanceService.getProximasOcorrencias({
+      de: `${mes}-01`, ate: `${mes}-${String(ultimoDia).padStart(2, '0')}`
+    });
     if (!items.length) return '';
     const rows = items.map(o => {
       const isEntrada = o.tipo === 'entrada';

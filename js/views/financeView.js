@@ -16,6 +16,7 @@ const FinanceView = (() => {
     document.getElementById('fin-content').innerHTML =
       headerHtml(saldoTotal, resumo) +
       FinanceCartoes.sectionHtml() +
+      FinanceProjecao.sectionHtml() +
       FinanceBudget.sectionHtml(mes) +
       FinanceRecorrencias.sectionHtml(mes) +
       listHtml(txs) + devButtonHtml();
