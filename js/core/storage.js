@@ -216,7 +216,11 @@ const Storage = (() => {
       // re-renderizar (já temos o estado) — e é isso que faz o save do boot avançar
       // _lastSyncedAtMs sem aplicar nada, fechando o furo que apagava os dados.
       if (data.lastWriter === _sessionId) { console.log('[DBG snap] eco-proprio (so registra versao) | ' + _t); return; } // [DBG]
-      console.log('[DBG snap] >>> APLICA (sobrescreve estado!) | ' + _t); // [DBG]
+      // Escrita SEM lastWriter = cliente rodando versão ANTIGA do app (ex.: PWA com
+      // service worker em cache), cujo estado pode estar defasado. Não deixamos esse
+      // cliente sobrescrever dados mais recentes — era ele que apagava o orçamento.
+      if (!data.lastWriter) { console.log('[DBG snap] IGNORA cliente-antigo (sem writer) | ' + _t); return; } // [DBG]
+      console.log('[DBG snap] >>> APLICA (de outro dispositivo atual) | ' + _t); // [DBG]
       callback(_pickDbFields(data));
     });
   }
