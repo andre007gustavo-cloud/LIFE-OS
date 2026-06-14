@@ -62,10 +62,12 @@
         renderActiveViews();
       }
 
-      // Escuta mudanças de outros dispositivos em tempo real
+      // Escuta mudanças de outros dispositivos em tempo real.
+      // applyRemote suprime persist() durante o render do sync — senão um render
+      // incidental regravaria na nuvem o estado recém-recebido (loop que apagava
+      // lançamentos logo após criados).
       Storage.listenForChanges((data) => {
-        AppState.setDB(data);
-        renderActiveViews();
+        AppState.applyRemote(data, renderActiveViews);
       });
 
     } else {

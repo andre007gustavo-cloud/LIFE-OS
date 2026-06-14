@@ -63,6 +63,9 @@ const AppState = (() => {
 
   function getDB() { return DB; }
 
+  /** True enquanto aplicamos dados vindos da nuvem (sync). */
+  let _applyingRemote = false;
+
   /** Replace DB in memory (from remote sync). Does NOT trigger a save to cloud. */
   function setDB(newDB) {
     DB = newDB;
@@ -71,11 +74,29 @@ const AppState = (() => {
   }
 
   /**
+   * Aplica um estado vindo da nuvem e roda o render, sem que NADA disso seja
+   * regravado na nuvem. Render do sync pode disparar persist() incidental
+   * (ex.: ActivityService.refresh) — isso gravaria o estado recém-recebido de
+   * volta e, se ele estivesse atrasado, apagaria mudanças locais (loop que
+   * fazia lançamentos sumirem). Por isso persist() é suprimido aqui.
+   */
+  function applyRemote(newDB, afterFn) {
+    _applyingRemote = true;
+    try {
+      setDB(newDB);
+      if (afterFn) afterFn();
+    } finally {
+      _applyingRemote = false;
+    }
+  }
+
+  /**
    * Save current state to localStorage + cloud (debounced).
    * Carimba a data da última atividade — toda mutação passa por aqui, então é
    * o único ponto de onde o "recomeço sem culpa" mede a ausência do usuário.
    */
   function persist() {
+    if (_applyingRemote) return; // não regrava na nuvem o que acabou de chegar dela
     if (!DB.meta) DB.meta = {};
     DB.meta.lastActivity = Utils.today();
     Storage.save(DB);
@@ -84,5 +105,5 @@ const AppState = (() => {
   /** Reload from local storage */
   function reload() { DB = Storage.load(); }
 
-  return { DB: () => DB, getDB, setDB, persist, reload, ui };
+  return { DB: () => DB, getDB, setDB, applyRemote, persist, reload, ui };
 })();
