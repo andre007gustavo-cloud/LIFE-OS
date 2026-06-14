@@ -22,6 +22,12 @@ const Storage = (() => {
   // das guardas por tempo e apagava o que o usuário acabara de salvar.
   let _lastSyncedAtMs = 0;
 
+  // Id desta sessão/aba. Toda escrita carimba 'lastWriter' com ele; assim o listener
+  // reconhece o eco da PRÓPRIA escrita: registra a versão (avança _lastSyncedAtMs) sem
+  // re-renderizar. É isso que conserta o eco do save do boot apagar dados depois — a
+  // versão da nossa escrita passa a ser registrada mesmo sem aplicar o snapshot.
+  const _sessionId = Utils.uid();
+
   /** Milissegundos de um Timestamp do Firestore; 0 se ausente/pendente. */
   function _toMs(ts) {
     return ts && typeof ts.toMillis === 'function' ? ts.toMillis() : 0;
@@ -117,7 +123,6 @@ const Storage = (() => {
       if (snap.exists) {
         const data = snap.data();
         _lastSyncedAtMs = Math.max(_lastSyncedAtMs, _toMs(data.updatedAt));
-        console.log('[DEBUG load] updatedAt=', _toMs(data.updatedAt), 'orc=', (data.orcamentos || []).length, '-> lastSynced=', _lastSyncedAtMs); // [DEBUG]
         return _pickDbFields(data);
       }
     } catch (err) {
@@ -131,12 +136,12 @@ const Storage = (() => {
     if (!docRef) return;
     _isSaving = true;
     _pendingDB = null;
-    console.log('[DEBUG save] gravando orc=', (db.orcamentos || []).length); // [DEBUG]
     // Offline, o set() fica enfileirado pelo Firestore — indica vermelho, não "salvando"
     _setSyncState(navigator.onLine ? 'saving' : 'offline');
     try {
       await docRef.set({
         ..._pickDbFields(db),
+        lastWriter: _sessionId, // marca a escrita como nossa (ver listener)
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true }); // não deixa um cliente que omite um campo (ex.: versão
       // antiga sem 'transacoes') apagá-lo; clientes atuais enviam tudo
@@ -184,30 +189,27 @@ const Storage = (() => {
     if (!docRef) return;
 
     _unsubscribe = docRef.onSnapshot({ includeMetadataChanges: false }, snap => {
-      const _d = snap.exists ? snap.data() : null; // [DEBUG]
-      const _info = { fromCache: snap.metadata.fromCache, pending: snap.metadata.hasPendingWrites, // [DEBUG]
-        updatedAt: _toMs(_d && _d.updatedAt), orc: (_d && _d.orcamentos || []).length, lastSynced: _lastSyncedAtMs, // [DEBUG]
-        saving: _isSaving, saveTimer: !!_saveTimer, pendingDB: !!_pendingDB }; // [DEBUG]
-      // Só reage a mudanças CONFIRMADAS pelo servidor (outros dispositivos).
-      // O cache local do Firestore pode emitir um snapshot com estado ANTIGO
-      // (ex.: transacoes=0 guardado de antes), que sobrescreveria os dados bons
-      // recém-salvos — era o que apagava lançamentos logo após criá-los.
-      if (snap.metadata.fromCache) { console.log('[DEBUG snap] IGNORA fromCache', _info); return; } // [DEBUG]
-      // Ignora enquanto há escrita local em andamento OU pendente (debounce)
-      if (_isSaving || _saveTimer || _pendingDB) { console.log('[DEBUG snap] IGNORA save-em-andamento', _info); return; } // [DEBUG]
-      // Ignora escritas locais ainda não confirmadas
-      if (snap.metadata.hasPendingWrites) { console.log('[DEBUG snap] IGNORA hasPendingWrites', _info); return; } // [DEBUG]
-      if (!snap.exists) { console.log('[DEBUG snap] IGNORA nao-existe', _info); return; } // [DEBUG]
+      // O cache local do Firestore pode emitir um snapshot com estado ANTIGO que
+      // sobrescreveria os dados bons recém-salvos — era o que apagava lançamentos.
+      if (snap.metadata.fromCache) return;
+      // Não aplica remoto enquanto há mudança local pendente (debounce): evita
+      // descartar a edição que o usuário acabou de fazer e ainda não foi gravada.
+      if (_saveTimer || _pendingDB) return;
+      // Ignora escritas locais ainda não confirmadas (updatedAt ainda nulo).
+      if (snap.metadata.hasPendingWrites) return;
+      if (!snap.exists) return;
 
       const data = snap.data();
-      // Guarda por versão: ignora snapshot que não é mais novo que o que já temos.
-      // Pega o snapshot inicial atrasado do alvo do boot (mesma versão que o
-      // loadFromCloud já leu) — era ele que apagava orçamentos/lançamentos criados
-      // logo após o boot, depois que as guardas por tempo já tinham expirado.
+      // Guarda por versão: só aplica snapshot ESTRITAMENTE mais novo que o que já
+      // temos. Pega o eco atrasado do save do boot (versão <= a já registrada),
+      // que era o que zerava orçamentos/lançamentos criados logo após o boot.
       const remoteMs = _toMs(data.updatedAt);
-      if (remoteMs && remoteMs <= _lastSyncedAtMs) { console.log('[DEBUG snap] IGNORA versao-antiga', _info); return; } // [DEBUG]
+      if (remoteMs && remoteMs <= _lastSyncedAtMs) return;
       _lastSyncedAtMs = Math.max(_lastSyncedAtMs, remoteMs);
-      console.log('[DEBUG snap] >>> APLICA orc=' + _info.orc, _info); // [DEBUG]
+      // Eco da nossa própria escrita: a versão já foi registrada acima; não precisa
+      // re-renderizar (já temos o estado) — e é isso que faz o save do boot avançar
+      // _lastSyncedAtMs sem aplicar nada, fechando o furo que apagava os dados.
+      if (data.lastWriter === _sessionId) return;
       callback(_pickDbFields(data));
     });
   }
