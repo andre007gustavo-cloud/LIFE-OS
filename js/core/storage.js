@@ -117,6 +117,7 @@ const Storage = (() => {
       if (snap.exists) {
         const data = snap.data();
         _lastSyncedAtMs = Math.max(_lastSyncedAtMs, _toMs(data.updatedAt));
+        console.log('[DEBUG load] updatedAt=', _toMs(data.updatedAt), 'orc=', (data.orcamentos || []).length, '-> lastSynced=', _lastSyncedAtMs); // [DEBUG]
         return _pickDbFields(data);
       }
     } catch (err) {
@@ -130,6 +131,7 @@ const Storage = (() => {
     if (!docRef) return;
     _isSaving = true;
     _pendingDB = null;
+    console.log('[DEBUG save] gravando orc=', (db.orcamentos || []).length); // [DEBUG]
     // Offline, o set() fica enfileirado pelo Firestore — indica vermelho, não "salvando"
     _setSyncState(navigator.onLine ? 'saving' : 'offline');
     try {
@@ -182,16 +184,20 @@ const Storage = (() => {
     if (!docRef) return;
 
     _unsubscribe = docRef.onSnapshot({ includeMetadataChanges: false }, snap => {
+      const _d = snap.exists ? snap.data() : null; // [DEBUG]
+      const _info = { fromCache: snap.metadata.fromCache, pending: snap.metadata.hasPendingWrites, // [DEBUG]
+        updatedAt: _toMs(_d && _d.updatedAt), orc: (_d && _d.orcamentos || []).length, lastSynced: _lastSyncedAtMs, // [DEBUG]
+        saving: _isSaving, saveTimer: !!_saveTimer, pendingDB: !!_pendingDB }; // [DEBUG]
       // Só reage a mudanças CONFIRMADAS pelo servidor (outros dispositivos).
       // O cache local do Firestore pode emitir um snapshot com estado ANTIGO
       // (ex.: transacoes=0 guardado de antes), que sobrescreveria os dados bons
       // recém-salvos — era o que apagava lançamentos logo após criá-los.
-      if (snap.metadata.fromCache) return;
+      if (snap.metadata.fromCache) { console.log('[DEBUG snap] IGNORA fromCache', _info); return; } // [DEBUG]
       // Ignora enquanto há escrita local em andamento OU pendente (debounce)
-      if (_isSaving || _saveTimer || _pendingDB) return;
+      if (_isSaving || _saveTimer || _pendingDB) { console.log('[DEBUG snap] IGNORA save-em-andamento', _info); return; } // [DEBUG]
       // Ignora escritas locais ainda não confirmadas
-      if (snap.metadata.hasPendingWrites) return;
-      if (!snap.exists) return;
+      if (snap.metadata.hasPendingWrites) { console.log('[DEBUG snap] IGNORA hasPendingWrites', _info); return; } // [DEBUG]
+      if (!snap.exists) { console.log('[DEBUG snap] IGNORA nao-existe', _info); return; } // [DEBUG]
 
       const data = snap.data();
       // Guarda por versão: ignora snapshot que não é mais novo que o que já temos.
@@ -199,8 +205,9 @@ const Storage = (() => {
       // loadFromCloud já leu) — era ele que apagava orçamentos/lançamentos criados
       // logo após o boot, depois que as guardas por tempo já tinham expirado.
       const remoteMs = _toMs(data.updatedAt);
-      if (remoteMs && remoteMs <= _lastSyncedAtMs) return;
+      if (remoteMs && remoteMs <= _lastSyncedAtMs) { console.log('[DEBUG snap] IGNORA versao-antiga', _info); return; } // [DEBUG]
       _lastSyncedAtMs = Math.max(_lastSyncedAtMs, remoteMs);
+      console.log('[DEBUG snap] >>> APLICA orc=' + _info.orc, _info); // [DEBUG]
       callback(_pickDbFields(data));
     });
   }
