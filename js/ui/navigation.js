@@ -21,6 +21,9 @@ const Navigation = (() => {
     // Modo Agora esconde a nav e a faixa de próximo compromisso (silêncio visual)
     document.body.classList.toggle('now-mode', viewName === 'now');
 
+    // Na view de Finanças o FAB principal (nova tarefa) fica oculto — só o fin-fab aparece
+    document.body.classList.toggle('fin-view', viewName === 'finance');
+
     // FABs voltam ao sair da revisão guiada (o fluxo continua aberto em memória)
     document.body.classList.toggle('rv-flow',
       viewName === 'review' && typeof ReviewView !== 'undefined' && ReviewView.isFlowActive());
