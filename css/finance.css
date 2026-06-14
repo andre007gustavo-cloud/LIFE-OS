@@ -23,6 +23,9 @@
   text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px;
 }
 
+/* Na view de Finanças, esconde o FAB principal de tarefa */
+body.fin-view #fab{display:none}
+
 /* FAB de novo lançamento */
 .fin-fab{
   position:fixed;right:24px;bottom:90px;z-index:80;
