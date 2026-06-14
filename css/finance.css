@@ -23,8 +23,12 @@
   text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px;
 }
 
-/* Na view de Finanças, esconde o FAB principal de tarefa */
-body.fin-view #fab{display:none}
+/* Na view de Finanças, esconde o FAB principal de tarefa (nova tarefa).
+   Regra só-CSS via estado .active da view: não depende do JS aplicar
+   nenhuma classe no body, então funciona mesmo se o navigation.js estiver
+   em cache antigo. O #fab é irmão posterior de #view-finance dentro de #app. */
+#view-finance.active ~ #fab{display:none}
+body.fin-view #fab{display:none} /* fallback (redundante, mas inofensivo) */
 
 /* FAB de novo lançamento */
 .fin-fab{
