@@ -68,7 +68,6 @@ const AppState = (() => {
 
   /** Replace DB in memory (from remote sync). Does NOT trigger a save to cloud. */
   function setDB(newDB) {
-    console.log('[DBG setDB] orc=' + ((newDB && newDB.orcamentos) || []).length + ' applyingRemote=' + _applyingRemote); console.trace(); // [DBG]
     DB = newDB;
     // Atualiza cache local (sem enviar pro cloud)
     localStorage.setItem(Constants.STORAGE_KEY, JSON.stringify(DB));
