@@ -707,6 +707,121 @@ const FinanceService = (() => {
     return getProjecaoSaldo({}).saldoFinalCentavos;
   }
 
+  // ===== Relatórios & Insights (Fase 7a) =====
+  // Visão de COMPETÊNCIA: despesa conta na DATA do lançamento (compra de cartão
+  // entra no mês da compra). Exclui pagamento de fatura (movimento de CAIXA);
+  // transferências e aportes a metas são tipo 'transferencia', logo já ficam de
+  // fora de qualquer filtro por tipo 'saida'.
+
+  /** Saídas do mês (competência): exclui pagamentos de fatura. */
+  function _despesasMes(mes) {
+    return db().transacoes.filter(t =>
+      t.tipo === 'saida' && !t.pagamentoFatura && (t.data || '').startsWith(mes));
+  }
+
+  /** Variação % de 'anterior' para 'atual'. null se anterior=0 (sem base p/ %). */
+  function _variacaoPct(atualCentavos, anteriorCentavos) {
+    if (anteriorCentavos === 0) return null;
+    return (atualCentavos - anteriorCentavos) / anteriorCentavos * 100;
+  }
+
+  /** Gasto por categoria no mês, ordenado desc. percentual sobre o total de saídas. */
+  function getGastosPorCategoria(mes) {
+    const despesas = _despesasMes(mes);
+    const total = despesas.reduce((s, t) => s + t.valorCentavos, 0);
+    const porCat = new Map();
+    despesas.forEach(t => {
+      porCat.set(t.categoriaId, (porCat.get(t.categoriaId) || 0) + t.valorCentavos);
+    });
+    return [...porCat.entries()]
+      .map(([categoriaId, totalCentavos]) => {
+        const cat = getCategoriaById(categoriaId);
+        return {
+          categoriaId,
+          nome: cat ? cat.nome : 'Sem categoria',
+          cor: cat ? cat.cor : '#94a3b8',
+          totalCentavos,
+          percentual: total > 0 ? totalCentavos / total * 100 : 0
+        };
+      })
+      .sort((a, b) => b.totalCentavos - a.totalCentavos);
+  }
+
+  /** Últimos nMeses (terminando no mês corrente): entradas/saídas/saldo em competência. */
+  function getEvolucaoMensal(nMeses = 6) {
+    const atual = currentMonthPrefix();
+    const out = [];
+    for (let i = nMeses - 1; i >= 0; i--) {
+      const mes = _addMonths(atual, -i);
+      const r = getResumoMes(mes);
+      out.push({
+        mes,
+        entradasCentavos: r.entradas,
+        saidasCentavos: r.saidas,
+        saldoMesCentavos: r.saldoMes
+      });
+    }
+    return out;
+  }
+
+  /** As 'limite' maiores despesas do mês, ordenadas por valor desc. */
+  function getMaioresGastos(mes, limite = 5) {
+    return _despesasMes(mes)
+      .sort((a, b) =>
+        b.valorCentavos - a.valorCentavos ||
+        (b.data || '').localeCompare(a.data || ''))
+      .slice(0, limite)
+      .map(t => {
+        const cat = getCategoriaById(t.categoriaId);
+        return {
+          transacaoId: t.id,
+          descricao: t.descricao || (cat ? cat.nome : 'Lançamento'),
+          categoriaNome: cat ? cat.nome : 'Sem categoria',
+          valorCentavos: t.valorCentavos,
+          data: t.data
+        };
+      });
+  }
+
+  /** Total de saídas vs mês anterior + variação por categoria (ordenada por delta desc). */
+  function getComparativoMes(mes) {
+    const atual = getGastosPorCategoria(mes);
+    const anterior = getGastosPorCategoria(_addMonths(mes, -1));
+    const totalSaidasCentavos = atual.reduce((s, c) => s + c.totalCentavos, 0);
+    const totalSaidasAnteriorCentavos = anterior.reduce((s, c) => s + c.totalCentavos, 0);
+
+    const atMap = new Map(atual.map(c => [c.categoriaId, c.totalCentavos]));
+    const antMap = new Map(anterior.map(c => [c.categoriaId, c.totalCentavos]));
+    const porCategoria = [...new Set([...atMap.keys(), ...antMap.keys()])]
+      .map(id => {
+        const cat = getCategoriaById(id);
+        const atualCentavos = atMap.get(id) || 0;
+        const anteriorCentavos = antMap.get(id) || 0;
+        return {
+          categoriaId: id,
+          nome: cat ? cat.nome : 'Sem categoria',
+          atualCentavos,
+          anteriorCentavos,
+          variacaoPct: _variacaoPct(atualCentavos, anteriorCentavos)
+        };
+      })
+      .sort((a, b) =>
+        (b.atualCentavos - b.anteriorCentavos) - (a.atualCentavos - a.anteriorCentavos));
+
+    return {
+      totalSaidasCentavos,
+      totalSaidasAnteriorCentavos,
+      variacaoPct: _variacaoPct(totalSaidasCentavos, totalSaidasAnteriorCentavos),
+      porCategoria
+    };
+  }
+
+  /** (entradas − saídas) / entradas no mês; 0 se não houver entradas. */
+  function getTaxaPoupanca(mes) {
+    const { entradas, saidas } = getResumoMes(mes);
+    return entradas === 0 ? 0 : (entradas - saidas) / entradas;
+  }
+
   // ===== Teste manual (apenas localhost) =====
 
   /** APENAS localhost — semeia lançamentos do mês atual para testar a view. */
@@ -733,6 +848,51 @@ const FinanceService = (() => {
     _seedRecorrencias(conta, desp, rec, mes); // recorrências + histórico gerado
     if (window.CartaoService) CartaoService._seedCartoes(); // Fase 4: cartões
     _seedProjecao(conta, desp, rec, mes);     // Fase 6: curva de projeção
+    _seedRelatorios(conta, desp, rec, mes);   // Fase 7a: histórico p/ gráficos
+  }
+
+  /**
+   * Histórico variado dos últimos meses (Fase 7a) para os gráficos terem forma:
+   * entradas nos meses sem recorrência de salário, despesas espalhadas por
+   * categoria e uma compra de cartão num mês passado (prova a competência:
+   * entra no mês da compra, não no do pagamento).
+   */
+  function _seedRelatorios(conta, desp, rec, mes) {
+    if (db().transacoes.some(t => t.fonte === 'seed-rel')) return;
+    const cat = nome => desp.find(c => c.nome === nome) || desp[0];
+    const receita = rec[0];
+    const dia = (delta, d) => `${_addMonths(mes, delta)}-${String(d).padStart(2, '0')}`;
+
+    // Entradas nos meses sem recorrência de salário (-5, -4): evolução/taxa poupança
+    [-5, -4].forEach(delta => addTransaction({
+      tipo: 'entrada', valorCentavos: 580000, descricao: 'Salário',
+      categoriaId: receita && receita.id, contaId: conta.id, data: dia(delta, 5), fonte: 'seed-rel'
+    }));
+
+    [ // [deltaMes, categoria, descrição, centavos, dia]
+      [-5, 'Alimentação', 'Padaria', 7800, 9], [-5, 'Transporte', 'Combustível', 22000, 12],
+      [-5, 'Moradia', 'Conta de luz', 18900, 18],
+      [-4, 'Alimentação', 'Restaurante', 9400, 7], [-4, 'Diversão', 'Show', 12000, 14],
+      [-4, 'Saúde', 'Dentista', 30000, 20],
+      [-3, 'Mercado/casa', 'Mercado', 24300, 6], [-3, 'Transporte', 'Uber', 4500, 11],
+      [-3, 'Diversão', 'Streaming extra', 2990, 16],
+      [-2, 'Alimentação', 'Delivery', 6800, 10], [-2, 'Moradia', 'Internet', 11900, 15],
+      [-2, 'Saúde', 'Farmácia', 5400, 22],
+      [-1, 'Mercado/casa', 'Mercado', 26700, 4], [-1, 'Diversão', 'Cinema', 5200, 13],
+      [-1, 'Transporte', 'Combustível', 21000, 19]
+    ].forEach(([delta, c, d, v, day]) => addTransaction({
+      tipo: 'saida', valorCentavos: v, descricao: d,
+      categoriaId: cat(c).id, contaId: conta.id, data: dia(delta, day), fonte: 'seed-rel'
+    }));
+
+    // Compra de cartão num mês passado: aparece no relatório pela competência (mês da compra)
+    if (window.CartaoService) {
+      const cartao = CartaoService.listCartoes()[0];
+      if (cartao) CartaoService.addCompraCartao({
+        cartaoId: cartao.id, descricao: 'Fone bluetooth',
+        categoriaId: cat('Diversão').id, valorTotalCentavos: 19900, parcelas: 1, dataCompra: dia(-2, 8)
+      });
+    }
   }
 
   /**
@@ -825,7 +985,8 @@ const FinanceService = (() => {
     listCategorias, getCategoriaById, addCategoria,
     addTransaction, updateTransaction, deleteTransaction,
     getTransacaoById, listTransactions,
-    getSaldo, getSaldoAte, getResumoMes, currentMonthPrefix, entryDates,
+    getSaldo, getSaldoAte, getResumoMes, currentMonthPrefix, addMonths: _addMonths, entryDates,
+    getGastosPorCategoria, getEvolucaoMensal, getMaioresGastos, getComparativoMes, getTaxaPoupanca,
     getFaturaProjetada, getProjecaoSaldo, getSaldoProjetadoFimMes,
     listOrcamentos, getOrcamentoByCategoria, setOrcamento, removeOrcamento,
     getCarryover, getOrcamentoMes, getResumoOrcamento, diasRestantesMes,

@@ -17,6 +17,7 @@ const FinanceView = (() => {
       headerHtml(saldoTotal, resumo) +
       FinanceCartoes.sectionHtml() +
       FinanceProjecao.sectionHtml() +
+      FinanceRelatorios.sectionHtml() +
       FinanceBudget.sectionHtml(mes) +
       FinanceRecorrencias.sectionHtml(mes) +
       listHtml(txs) + devButtonHtml();
