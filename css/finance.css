@@ -23,12 +23,13 @@
   text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px;
 }
 
-/* Na view de Finanças, esconde o FAB principal de tarefa (nova tarefa).
-   Regra só-CSS via estado .active da view: não depende do JS aplicar
-   nenhuma classe no body, então funciona mesmo se o navigation.js estiver
-   em cache antigo. O #fab é irmão posterior de #view-finance dentro de #app. */
-#view-finance.active ~ #fab{display:none}
-body.fin-view #fab{display:none} /* fallback (redundante, mas inofensivo) */
+/* Na view de Finanças, esconde o FAB principal de tarefa (nova tarefa) — só o
+   fin-fab (novo lançamento) deve aparecer. Regra só-CSS via estado .active da
+   view (o #fab é irmão posterior de #view-finance dentro de #app).
+   PRECISA de !important: o loginScreen.js seta display:flex inline no #fab ao
+   logar, e estilo inline vence regra de folha de estilo sem !important.
+   Mesmo padrão usado em now.css e review.css para ocultar os FABs. */
+#view-finance.active ~ #fab{display:none !important}
 
 /* FAB de novo lançamento */
 .fin-fab{
