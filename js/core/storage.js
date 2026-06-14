@@ -182,8 +182,11 @@ const Storage = (() => {
     if (!docRef) return;
 
     _unsubscribe = docRef.onSnapshot(snap => {
-      // Ignora se estamos salvando (evita loop)
-      if (_isSaving) return;
+      // Ignora enquanto há escrita local em andamento OU pendente (debounce):
+      // sem o _saveTimer/_pendingDB, um snapshot remoto chegando na janela do
+      // debounce traz o estado ANTERIOR e sobrescreve a mudança recém-feita
+      // (era o que apagava um lançamento financeiro logo após criá-lo).
+      if (_isSaving || _saveTimer || _pendingDB) return;
       // Ignora escritas locais pendentes
       if (snap.metadata.hasPendingWrites) return;
 
