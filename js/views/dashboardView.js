@@ -28,6 +28,17 @@ const DashboardView = (() => {
     renderBudget();
     renderCartoes();
     renderProjecao();
+    renderPossoGastar();
+  }
+
+  // ===== Card: "Posso gastar?" (Fase 7c) =====
+
+  function renderPossoGastar() {
+    const card = document.getElementById('dash-posso-card');
+    if (!card || !window.FinancePossoGastar) return;
+    const html = FinancePossoGastar.dashHtml();
+    card.style.display = html ? '' : 'none';
+    document.getElementById('dash-posso').innerHTML = html;
   }
 
   // ===== Card: saldo projetado (Fase 6) =====

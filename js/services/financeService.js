@@ -583,11 +583,34 @@ const FinanceService = (() => {
   }
 
   /**
+   * Expande uma compra hipotética em parcelas por competência (mesma regra da
+   * fatura real: 1ª competência = competenciaDaCompra; última absorve o resto).
+   * Usada na simulação (Fase 7c) — nunca persistida.
+   */
+  function _parcelasHipoteticas(cartao, compra) {
+    const total = Math.abs(parseInt(compra.valorCentavos, 10) || 0);
+    const parcelas = Math.max(1, parseInt(compra.parcelas, 10) || 1);
+    const compBase = CartaoService.competenciaDaCompra(cartao, compra.data || Utils.today());
+    const baseVal = Math.floor(total / parcelas);
+    const out = [];
+    for (let k = 1; k <= parcelas; k++) {
+      out.push({
+        competencia: _addMonths(compBase, k - 1),
+        parcelaNum: k, parcelaTotal: parcelas,
+        valorParcelaCentavos: k === parcelas ? total - baseVal * (parcelas - 1) : baseVal
+      });
+    }
+    return out;
+  }
+
+  /**
    * Fatura projetada = getFatura (parcelas/compras já lançadas) + as ocorrências
    * de recorrência de cartão AINDA não geradas cuja competência da compra cai
    * nesta competência (marcadas previsto:true). totalCentavos inclui os previstos.
+   * comprasHipoteticas (Fase 7c): compras simuladas no cartão, somadas à fatura
+   * da competência correspondente sem nunca serem persistidas.
    */
-  function getFaturaProjetada(cartaoId, competencia) {
+  function getFaturaProjetada(cartaoId, competencia, comprasHipoteticas = []) {
     const fatura = CartaoService.getFatura(cartaoId, competencia);
     if (!fatura) return null;
     const cartao = CartaoService.getCartaoById(cartaoId);
@@ -602,7 +625,19 @@ const FinanceService = (() => {
         parcelaNum: 1, parcelaTotal: 1,
         valorParcelaCentavos: o.valorCentavos, previsto: true
       }));
-    const itens = fatura.itens.concat(previstos);
+    const hipoteticos = [];
+    comprasHipoteticas.forEach(compra => {
+      _parcelasHipoteticas(cartao, compra).forEach(p => {
+        if (p.competencia !== competencia) return;
+        hipoteticos.push({
+          transacaoId: '', recorrenciaId: '',
+          descricao: compra.descricao || 'Simulação', categoriaId: compra.categoriaId || '',
+          parcelaNum: p.parcelaNum, parcelaTotal: p.parcelaTotal,
+          valorParcelaCentavos: p.valorParcelaCentavos, hipotetico: true
+        });
+      });
+    });
+    const itens = fatura.itens.concat(previstos, hipoteticos);
     const totalCentavos = itens.reduce((s, i) => s + i.valorParcelaCentavos, 0);
     const previstoCentavos = previstos.reduce((s, i) => s + i.valorParcelaCentavos, 0);
     return { ...fatura, itens, totalCentavos, previstoCentavos };
@@ -645,13 +680,14 @@ const FinanceService = (() => {
   }
 
   /** Eventos de caixa: pagamento (no vencimento) de faturas não pagas no horizonte. */
-  function _eventosFaturas(hoje, fim) {
+  function _eventosFaturas(hoje, fim, hipCartao = []) {
     const out = [];
     const compInicio = _addMonths(currentMonthPrefix(), -1);
     const compFim = _addMonths(fim.slice(0, 7), 1);
     CartaoService.listCartoes().forEach(c => {
+      const hipDoCartao = hipCartao.filter(h => h.cartaoId === c.id);
       for (let comp = compInicio; comp <= compFim; comp = _addMonths(comp, 1)) {
-        const f = getFaturaProjetada(c.id, comp);
+        const f = getFaturaProjetada(c.id, comp, hipDoCartao);
         if (!f || f.paga || f.totalCentavos <= 0) continue;
         if (f.dataVencimento <= hoje || f.dataVencimento > fim) continue;
         out.push(_ev(f.dataVencimento, `Fatura ${c.nome}`, -f.totalCentavos, 'fatura', c.id,
@@ -661,24 +697,47 @@ const FinanceService = (() => {
     return out;
   }
 
+  /** Sinal/valor de caixa de uma transação hipotética: entrada +, saída −. */
+  function _hipSinal(h) {
+    const v = Math.abs(parseInt(h.valorCentavos, 10) || 0);
+    return h.tipo === 'entrada' ? v : -v;
+  }
+
+  /** Eventos de caixa das hipotéticas em CONTA (Fase 7c). data<=hoje vira saldo inicial. */
+  function _eventosHipoteticasConta(hoje, fim, idsNaoMeta, hipConta) {
+    return hipConta
+      .filter(h => idsNaoMeta.has(h.contaId))
+      .map(h => _ev(h.data || hoje, h.descricao || 'Simulação', _hipSinal(h), 'planejado', 'hipotetico', { hipotetico: true }));
+  }
+
   /**
    * Projeção de fluxo de caixa: parte do saldo disponível hoje (getSaldoAte) e
    * caminha dia a dia até o fim do horizonte aplicando os eventos de caixa.
    * VISÃO DE CAIXA (não competência): compra de cartão entra só via pagamento
    * de fatura no vencimento. Horizonte default = fim do mês corrente.
+   * transacoesHipoteticas (Fase 7c): saídas em conta ou compras de cartão
+   * simuladas, injetadas no MESMO pipeline e NUNCA persistidas.
    */
-  function getProjecaoSaldo({ ate, dias } = {}) {
+  function getProjecaoSaldo({ ate, dias, transacoesHipoteticas = [] } = {}) {
     const hoje = Utils.today();
     const fim = _resolverHorizonte(hoje, ate, dias);
-    const saldoInicial = getSaldoAte(null, hoje);
     const idsNaoMeta = new Set(
       listContas({ incluirArquivadas: true }).filter(c => c.tipo !== 'meta').map(c => c.id)
     );
+    const hipConta = transacoesHipoteticas.filter(h => h.contaId && !h.cartaoId);
+    const hipCartao = transacoesHipoteticas.filter(h => h.cartaoId);
+
+    let saldoInicial = getSaldoAte(null, hoje);
+    // Hipotética em conta com data passada/hoje afeta o saldo de partida (como o caixa real)
+    hipConta.forEach(h => {
+      if ((h.data || hoje) <= hoje && idsNaoMeta.has(h.contaId)) saldoInicial += _hipSinal(h);
+    });
 
     const eventos = [
       ..._eventosTransacoes(hoje, fim, idsNaoMeta),
       ..._eventosRecorrencias(hoje, fim, idsNaoMeta),
-      ..._eventosFaturas(hoje, fim)
+      ..._eventosFaturas(hoje, fim, hipCartao),
+      ..._eventosHipoteticasConta(hoje, fim, idsNaoMeta, hipConta)
     ].filter(e => e.data > hoje && e.data <= fim)
      .sort((a, b) => a.data.localeCompare(b.data));
 
@@ -877,6 +936,80 @@ const FinanceService = (() => {
     return { categoriaId: vencedora, confianca };
   }
 
+  // ===== "Posso gastar isso?" — simulação (Fase 7c) =====
+  // Tudo computado: a compra entra como transação hipotética no mesmo pipeline da
+  // projeção (Fase 6) e como soma ao gasto da categoria (competência). NADA é salvo.
+
+  /** Impacto da compra no orçamento da categoria (competência). null sem categoria. */
+  function _simularOrcamento(categoriaId, valorTotalCentavos, mes) {
+    if (!categoriaId) return null;
+    const cat = getCategoriaById(categoriaId);
+    const categoriaNome = cat ? cat.nome : 'Sem categoria';
+    const gastoAtualCentavos = _gastoCategoriaMes(categoriaId, mes);
+    const gastoDepoisCentavos = gastoAtualCentavos + valorTotalCentavos;
+    const o = getOrcamentoByCategoria(categoriaId);
+    if (!o) {
+      return {
+        temOrcamento: false, categoriaNome, gastoAtualCentavos, gastoDepoisCentavos,
+        limiteCentavos: 0, restanteDepoisCentavos: 0, percentualDepois: 0, estadoDepois: 'ok'
+      };
+    }
+    const baseCentavos = o.limiteCentavos + getCarryover(categoriaId, mes);
+    const restanteDepoisCentavos = baseCentavos - gastoDepoisCentavos;
+    const percentualDepois = baseCentavos > 0
+      ? Math.round(gastoDepoisCentavos / baseCentavos * 100)
+      : (gastoDepoisCentavos > 0 ? 100 : 0);
+    return {
+      temOrcamento: true, categoriaNome, gastoAtualCentavos, gastoDepoisCentavos,
+      limiteCentavos: o.limiteCentavos, restanteDepoisCentavos, percentualDepois,
+      estadoDepois: _estado(gastoDepoisCentavos, baseCentavos)
+    };
+  }
+
+  /** Veredito a partir do orçamento e da projeção pós-compra. */
+  function _veredito(orcamento, projecao) {
+    if (projecao.ficaNegativoDepois) {
+      return { nivel: 'cuidado', mensagem: `Te deixa no vermelho em ${Utils.fmtDate(projecao.menorSaldoDepois.data)}` };
+    }
+    if (orcamento && orcamento.temOrcamento) {
+      if (orcamento.estadoDepois === 'estourado') {
+        return { nivel: 'atencao', mensagem: `Estoura ${orcamento.categoriaNome} em ${Utils.formatBRL(-orcamento.restanteDepoisCentavos)}` };
+      }
+      if (orcamento.estadoDepois === 'alerta') {
+        return { nivel: 'atencao', mensagem: `Aperta ${orcamento.categoriaNome} (${orcamento.percentualDepois}%)` };
+      }
+    }
+    return { nivel: 'ok', mensagem: 'Pode gastar tranquilo' };
+  }
+
+  /**
+   * Simula uma compra sem salvar nada. Retorna o impacto no orçamento da categoria,
+   * na projeção de fim de mês (saldo antes/depois e menor saldo) e um veredito.
+   */
+  function simularGasto({ valorCentavos, categoriaId, contaId, cartaoId, parcelas = 1, data } = {}) {
+    const valor = Math.abs(parseInt(valorCentavos, 10) || 0);
+    const dataCompra = data || Utils.today();
+    const mes = dataCompra.slice(0, 7);
+
+    const hipotetica = cartaoId
+      ? { tipo: 'saida', valorCentavos: valor, categoriaId: categoriaId || '', cartaoId, contaId: '', parcelas: Math.max(1, parseInt(parcelas, 10) || 1), data: dataCompra }
+      : { tipo: 'saida', valorCentavos: valor, categoriaId: categoriaId || '', contaId: contaId || '', cartaoId: '', parcelas: 1, data: dataCompra };
+
+    const orcamento = _simularOrcamento(categoriaId, valor, mes);
+
+    const antes = getProjecaoSaldo({});
+    const depois = getProjecaoSaldo({ transacoesHipoteticas: [hipotetica] });
+    const projecao = {
+      saldoFimMesAntesCentavos: antes.saldoFinalCentavos,
+      saldoFimMesDepoisCentavos: depois.saldoFinalCentavos,
+      menorSaldoAntes: antes.menorSaldo,
+      menorSaldoDepois: depois.menorSaldo,
+      ficaNegativoDepois: depois.ficaNegativo || depois.menorSaldo.valorCentavos < 0
+    };
+
+    return { orcamento, projecao, veredito: _veredito(orcamento, projecao) };
+  }
+
   // ===== Teste manual (apenas localhost) =====
 
   /** APENAS localhost — semeia lançamentos do mês atual para testar a view. */
@@ -905,6 +1038,23 @@ const FinanceService = (() => {
     _seedProjecao(conta, desp, rec, mes);     // Fase 6: curva de projeção
     _seedRelatorios(conta, desp, rec, mes);   // Fase 7a: histórico p/ gráficos
     _seedCategorizacao(conta, desp, rec, mes); // Fase 7b: descrições repetidas
+    _seedPossoGastar(conta, desp, mes);        // Fase 7c: categoria perto do teto
+  }
+
+  /**
+   * Cenário do "Posso gastar?" (Fase 7c): orçamento de Alimentação perto do teto
+   * (~90%), pra simular uma compra dar veredito significativo (aperta/estoura).
+   * A projeção já tem um ponto apertado via _seedProjecao.
+   */
+  function _seedPossoGastar(conta, desp, mes) {
+    const alim = desp.find(c => c.nome === 'Alimentação') || desp[0];
+    if (!alim) return;
+    setOrcamento({ categoriaId: alim.id, limiteCentavos: 50000, rollover: false });
+    if (db().transacoes.some(t => t.fonte === 'seed-pg')) return;
+    addTransaction({
+      tipo: 'saida', valorCentavos: 42000, descricao: 'Compras alimentação',
+      categoriaId: alim.id, contaId: conta.id, data: `${mes}-02`, fonte: 'seed-pg'
+    });
   }
 
   /**
@@ -1065,7 +1215,7 @@ const FinanceService = (() => {
     getTransacaoById, listTransactions,
     getSaldo, getSaldoAte, getResumoMes, currentMonthPrefix, addMonths: _addMonths, entryDates,
     getGastosPorCategoria, getEvolucaoMensal, getMaioresGastos, getComparativoMes, getTaxaPoupanca,
-    sugerirCategoria,
+    sugerirCategoria, simularGasto,
     getFaturaProjetada, getProjecaoSaldo, getSaldoProjetadoFimMes,
     listOrcamentos, getOrcamentoByCategoria, setOrcamento, removeOrcamento,
     getCarryover, getOrcamentoMes, getResumoOrcamento, diasRestantesMes,

@@ -174,6 +174,10 @@
           <div class="card-title"><i class="ti ti-chart-line"></i> Saldo projetado</div>
           <div id="dash-projecao"></div>
         </div>
+        <div class="card" id="dash-posso-card" style="display:none">
+          <div class="card-title"><i class="ti ti-wallet"></i> Posso gastar?</div>
+          <div id="dash-posso"></div>
+        </div>
         <div class="card">
           <div class="card-title"><i class="ti ti-calendar-week"></i> Esta semana</div>
           <div id="dash-week"></div>
@@ -813,6 +817,49 @@
   </div>
 </div>
 
+<!-- ========== MODAL: POSSO GASTAR? (Fase 7c) ========== -->
+<div class="overlay" id="posso-gastar-modal">
+  <div class="modal">
+    <div class="modal-title">
+      <span><i class="ti ti-wallet"></i> Posso gastar isso?</span>
+      <button class="modal-close" onclick="closeModal('posso-gastar-modal')">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Valor (R$)</label>
+      <input class="form-input" id="pg-valor" inputmode="decimal" placeholder="0,00">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Categoria (opcional)</label>
+      <select class="form-select" id="pg-cat"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Pagar com</label>
+      <div class="pg-modo">
+        <button type="button" class="pg-modo-btn active" id="pg-modo-conta" onclick="FinancePossoGastar.setModo('conta')">Conta</button>
+        <button type="button" class="pg-modo-btn" id="pg-modo-cartao" onclick="FinancePossoGastar.setModo('cartao')">Cartão</button>
+      </div>
+    </div>
+    <div class="form-group" id="pg-conta-group">
+      <select class="form-select" id="pg-conta"></select>
+    </div>
+    <div class="form-group" id="pg-cartao-group" style="display:none">
+      <select class="form-select" id="pg-cartao"></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group" id="pg-parcelas-group" style="display:none">
+        <label class="form-label">Parcelas</label>
+        <input class="form-input" type="number" id="pg-parcelas" min="1" max="60" value="1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Data</label>
+        <input class="form-input" type="date" id="pg-data">
+      </div>
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="FinancePossoGastar.simular()">Simular</button>
+    <div id="pg-resultado"></div>
+  </div>
+</div>
+
 <!-- ========== MODAL: NEW/EDIT PROJECT ========== -->
 <div class="overlay" id="new-proj-modal">
   <div class="modal">
@@ -1017,6 +1064,7 @@
 <script src="js/components/financeCartaoModal.js"></script>
 <script src="js/components/financeProjecao.js"></script>
 <script src="js/components/financeRelatorios.js"></script>
+<script src="js/components/financePossoGastar.js"></script>
 
 <script src="js/views/dashboardView.js"></script>
 <script src="js/views/tasksView.js"></script>

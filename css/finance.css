@@ -472,3 +472,43 @@
   margin-left:6px;padding:1px 6px;border:1px dashed var(--border);border-radius:999px;
   text-transform:none;letter-spacing:0;
 }
+
+/* ===== Fase 7c: "Posso gastar?" ===== */
+.fin-pg-btn{width:100%;justify-content:center;margin-bottom:14px}
+.fin-pg-dash-btn{width:100%;justify-content:center}
+
+/* Toggle conta/cartão no modal */
+.pg-modo{display:flex;gap:6px}
+.pg-modo-btn{
+  flex:1;padding:8px;border:1px solid var(--border);background:transparent;
+  color:var(--text2);border-radius:var(--radius-sm);cursor:pointer;font-size:13px;transition:.15s;
+}
+.pg-modo-btn:hover{border-color:var(--accent);color:var(--text)}
+.pg-modo-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* Resultado da simulação */
+.pg-result{margin-top:16px;display:flex;flex-direction:column;gap:12px}
+.pg-veredito{
+  display:flex;align-items:center;gap:10px;padding:12px 14px;
+  border-radius:var(--radius-sm);font-size:15px;font-weight:600;
+  color:var(--pg-cor);background:color-mix(in srgb, var(--pg-cor) 12%, transparent);
+  border-left:3px solid var(--pg-cor);
+}
+.pg-veredito i{font-size:20px;flex:none}
+.pg-bloco{padding:12px;border-radius:var(--radius-sm);background:var(--bg3)}
+.pg-bloco-head{
+  font-size:11px;font-weight:600;color:var(--text3);
+  text-transform:uppercase;letter-spacing:.03em;margin-bottom:8px;
+}
+.pg-linha{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font-size:13px;color:var(--text);margin:3px 0;
+}
+.pg-muted{color:var(--text3)}
+.pg-bar{height:7px;border-radius:4px;background:var(--bg4);overflow:hidden;margin:6px 0}
+.pg-bar-fill{height:100%;border-radius:4px;transition:width .3s}
+.pg-neg{
+  display:flex;align-items:center;gap:6px;margin-top:6px;
+  font-size:12px;color:var(--red);font-weight:600;
+}
+.pg-lancar{width:100%;justify-content:center}
