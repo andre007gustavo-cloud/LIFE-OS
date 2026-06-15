@@ -25,17 +25,22 @@
     if (user) {
       showLoading(true);
 
-      // Carrega dados da nuvem
-      const cloudData = await Storage.loadFromCloud();
+      // Carrega dados da nuvem distinguindo existe / vazio-confirmado / erro
+      const cloud = await Storage.loadFromCloud();
 
-      if (cloudData) {
+      if (cloud.status === 'ok') {
         // Tem dados na nuvem → usa eles
-        AppState.setDB(cloudData);
-      } else {
-        // Primeiro login → migra dados locais para a nuvem
+        AppState.setDB(cloud.data);
+      } else if (cloud.status === 'empty') {
+        // Documento confirmadamente ausente = primeiro login → publica o local
         const localData = Storage.load();
         AppState.setDB(localData);
         await Storage.saveToCloud(localData);
+      } else {
+        // status 'error': leitura da nuvem FALHOU; estado dela é desconhecido.
+        // NÃO sobrescrever a nuvem com o local (era isso que zerava o documento).
+        // Exibe o cache local; o listener aplica o snapshot real quando a conexão voltar.
+        AppState.setDB(Storage.load());
       }
 
       LoginScreen.hide();

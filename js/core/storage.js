@@ -22,6 +22,18 @@ const Storage = (() => {
   // das guardas por tempo e apagava o que o usuário acabara de salvar.
   let _lastSyncedAtMs = 0;
 
+  // Só vira true quando a leitura da nuvem CONFIRMA que o documento não existe
+  // (primeiro login real). Enquanto false, o disjuntor de segurança recusa publicar
+  // um DB totalmente vazio — assim uma falha de leitura ou um estado corrompido em
+  // memória nunca zera um documento que pode ter dados.
+  let _cloudConfirmedEmpty = false;
+
+  // Gate de hidratação: só vira true depois que a nuvem foi lida com sucesso nesta
+  // sessão (get inicial OU primeiro snapshot real do listener). Enquanto false, NÃO
+  // publicamos nada — editar offline sobre um cache vazio/stale não pode sobrescrever
+  // a nuvem. O estado fica salvo no localStorage e a verdade chega ao hidratar.
+  let _cloudHydrated = false;
+
   // Id desta sessão/aba. Toda escrita carimba 'lastWriter' com ele; assim o listener
   // reconhece o eco da PRÓPRIA escrita: registra a versão (avança _lastSyncedAtMs) sem
   // re-renderizar. É isso que conserta o eco do save do boot apagar dados depois — a
@@ -115,25 +127,65 @@ const Storage = (() => {
 
   // ===== CLOUD (Firestore) =====
 
+  /**
+   * Lê o documento da nuvem distinguindo TRÊS situações — crucial para o boot não
+   * apagar dados: { status: 'ok', data } (doc existe), { status: 'empty' } (doc
+   * confirmadamente ausente: primeiro login real) e { status: 'error' } (leitura
+   * falhou: estado da nuvem DESCONHECIDO). Antes, 'empty' e 'error' viravam o
+   * mesmo null e o chamador sobrescrevia a nuvem com o local vazio numa falha de
+   * leitura — foi a causa da exclusão dos dados.
+   */
   async function loadFromCloud() {
     const docRef = FirebaseApp.getUserDoc();
-    if (!docRef) return null;
+    if (!docRef) return { status: 'error' };
     try {
       const snap = await docRef.get();
       if (snap.exists) {
         const data = snap.data();
         _lastSyncedAtMs = Math.max(_lastSyncedAtMs, _toMs(data.updatedAt));
-        return _pickDbFields(data);
+        _cloudConfirmedEmpty = false; // a nuvem tem dados
+        _cloudHydrated = true;
+        return { status: 'ok', data: _pickDbFields(data) };
       }
+      _cloudConfirmedEmpty = true; // doc ausente de verdade → pode publicar o local
+      _cloudHydrated = true;
+      return { status: 'empty' };
     } catch (err) {
       console.warn('Erro ao carregar do Firestore:', err);
+      return { status: 'error' };
     }
-    return null;
+  }
+
+  /** DB sem nenhum dado do usuário em qualquer array sincronizado (corrupção/estado zerado). */
+  function _isEmptyDB(db) {
+    return DB_KEYS.every(key => {
+      const v = db ? db[key] : null;
+      return !Array.isArray(Constants.SEED_DATA[key]) || !v || v.length === 0;
+    });
+  }
+
+  /** Cancela qualquer escrita pendente (libera o listener para hidratar). */
+  function _dropPendingWrite() {
+    _pendingDB = null;
+    if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null; }
   }
 
   async function saveToCloud(db) {
     const docRef = FirebaseApp.getUserDoc();
     if (!docRef) return;
+    // Duas travas de segurança contra zerar/sobrescrever a nuvem:
+    //  1) Gate de hidratação: nada é publicado antes de termos lido a nuvem com
+    //     sucesso nesta sessão (senão um cache vazio/stale sobrescreveria a verdade).
+    //  2) Disjuntor anti-vazio: nunca publica um DB totalmente vazio sem a nuvem ter
+    //     sido confirmada vazia (corrupção em memória não zera um doc com dados).
+    // Em ambos, descartamos a escrita pendente para o listener poder hidratar.
+    if (!_cloudHydrated || (_isEmptyDB(db) && !_cloudConfirmedEmpty)) {
+      console.warn('[Storage] Escrita na nuvem adiada:',
+        !_cloudHydrated ? 'nuvem ainda não hidratada' : 'DB vazio sem confirmação');
+      _dropPendingWrite();
+      _setSyncState('offline');
+      return;
+    }
     _isSaving = true;
     _pendingDB = null;
     // Offline, o set() fica enfileirado pelo Firestore — indica vermelho, não "salvando"
@@ -198,6 +250,10 @@ const Storage = (() => {
       // Ignora escritas locais ainda não confirmadas (updatedAt ainda nulo).
       if (snap.metadata.hasPendingWrites) return;
       if (!snap.exists) return;
+
+      // Snapshot real do servidor: a nuvem está acessível e lida → libera escritas.
+      // Cobre o boot que falhou a leitura inicial (status 'error') e voltou online.
+      _cloudHydrated = true;
 
       const data = snap.data();
       // Guarda por versão: só aplica snapshot ESTRITAMENTE mais novo que o que já
