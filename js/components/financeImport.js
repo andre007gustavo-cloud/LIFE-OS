@@ -88,7 +88,7 @@ const FinanceImport = (() => {
   function _prepararLinha(tipoArquivo, l) {
     const isCredit = l.tipoMov === 'CREDIT';
     const tipoMov = isCredit ? 'entrada' : 'saida';
-    const jaImportado = ImportService.fitidExiste(l.fitid);
+    const jaImportado = ImportService.jaImportada(l);
     const pagamentoFatura = tipoArquivo === 'conta' && _ehPagamentoFatura(l.descricaoBase);
 
     let categoriaId = '';
@@ -313,7 +313,7 @@ const FinanceImport = (() => {
     const linhas = [
       `<strong>${r.criados || 0}</strong> lançamento${r.criados !== 1 ? 's' : ''} criado${r.criados !== 1 ? 's' : ''}`,
       r.futurasCriadas ? `<strong>${r.futurasCriadas}</strong> parcela${r.futurasCriadas !== 1 ? 's' : ''} futura${r.futurasCriadas !== 1 ? 's' : ''} prevista${r.futurasCriadas !== 1 ? 's' : ''}` : '',
-      r.duplicadosPulados ? `<strong>${r.duplicadosPulados}</strong> já existia${r.duplicadosPulados !== 1 ? 'm' : ''} (pulado${r.duplicadosPulados !== 1 ? 's' : ''})` : '',
+      r.duplicadosPulados ? `<strong>${r.duplicadosPulados}</strong> já importado${r.duplicadosPulados !== 1 ? 's' : ''} antes (pulado${r.duplicadosPulados !== 1 ? 's' : ''})` : '',
       r.ignorados ? `<strong>${r.ignorados}</strong> ignorado${r.ignorados !== 1 ? 's' : ''}` : ''
     ].filter(Boolean);
     return `

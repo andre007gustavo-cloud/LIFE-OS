@@ -23,11 +23,34 @@ const ImportService = (() => {
     return d;
   }
 
-  // ===== Helpers comuns =====
+  // ===== Dedup por chave composta =====
+  // O Nubank reusa o mesmo FITID em transações diferentes, então só o FITID não
+  // identifica a transação. A chave junta FITID + data + valor + descrição. A
+  // dedup compara só contra lançamentos de importações ANTERIORES (não contra as
+  // linhas do próprio arquivo): reimportar período sobreposto não duplica, mas
+  // duas compras distintas no mesmo arquivo (mesmo FITID) entram as duas.
 
-  function fitidExiste(fitid) {
-    if (!fitid) return false;
-    return db().transacoes.some(t => t.fitid === fitid);
+  function _chave(fitid, data, valorCentavos, descricao) {
+    return [
+      fitid || '', data || '',
+      Math.abs(parseInt(valorCentavos, 10) || 0),
+      Utils.normalizeText(descricao)
+    ].join('|');
+  }
+
+  function _chaveLinha(l) { return _chave(l.fitid, l.data, l.valorCentavos, l.descricaoBase); }
+  function _chaveTransacao(t) { return _chave(t.fitid, t.data, t.valorCentavos, t.descricao); }
+
+  /** Conjunto de chaves já importadas em rodadas anteriores. */
+  function _chavesImportadas() {
+    const s = new Set();
+    db().transacoes.forEach(t => { if (t.importLote) s.add(_chaveTransacao(t)); });
+    return s;
+  }
+
+  /** Esta linha já foi importada antes? (usado pela revisão para marcar "já importado") */
+  function jaImportada(linha) {
+    return _chavesImportadas().has(_chaveLinha(linha));
   }
 
   /** Chave de grupo de um parcelamento: mesmo cartão, total de parcelas e descrição base. */
@@ -74,13 +97,14 @@ const ImportService = (() => {
    */
   function importarExtrato({ contaId, linhas, arquivo } = {}) {
     const importLote = Utils.uid();
+    const existentes = _chavesImportadas();
     const incluidas = (linhas || []).filter(l => l.incluir);
     const ignorados = (linhas || []).length - incluidas.length;
     let criados = 0, duplicadosPulados = 0;
     const now = new Date().toISOString();
 
     incluidas.forEach(l => {
-      if (fitidExiste(l.fitid)) { duplicadosPulados++; return; }
+      if (existentes.has(_chaveLinha(l))) { duplicadosPulados++; return; }
       const t = {
         id: Utils.uid(),
         tipo: l.tipoMov === 'CREDIT' ? 'entrada' : 'saida',
@@ -166,12 +190,13 @@ const ImportService = (() => {
    */
   function importarFaturaOFX({ cartaoId, competencia, linhas, arquivo } = {}) {
     const importLote = Utils.uid();
+    const existentes = _chavesImportadas();
     const incluidas = (linhas || []).filter(l => l.incluir);
     const ignorados = (linhas || []).length - incluidas.length;
     let criados = 0, futurasCriadas = 0, duplicadosPulados = 0;
 
     incluidas.forEach(l => {
-      if (fitidExiste(l.fitid)) { duplicadosPulados++; return; }
+      if (existentes.has(_chaveLinha(l))) { duplicadosPulados++; return; }
       if (l.tipoMov === 'DEBIT' && l.parcela) {
         const r = _importarParcela({ cartaoId, competencia, l, importLote });
         futurasCriadas += r.futurasCriadas;
@@ -205,7 +230,7 @@ const ImportService = (() => {
   }
 
   return {
-    fitidExiste,
+    jaImportada,
     importarExtrato, importarFaturaOFX,
     listImportacoes, desfazerImportacao
   };
