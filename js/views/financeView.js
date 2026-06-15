@@ -28,6 +28,7 @@ const FinanceView = (() => {
       FinancePossoGastar.buttonHtml() +
       FinanceProjecao.sectionHtml() +
       FinanceRelatorios.sectionHtml() +
+      FinanceRegua.sectionHtml() +
       FinanceBudget.sectionHtml(mes) +
       FinanceRecorrencias.sectionHtml(mes) +
       listHtml(txs) + devButtonHtml();

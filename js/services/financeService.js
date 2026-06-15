@@ -71,6 +71,7 @@ const FinanceService = (() => {
     if (d.categorias.length === 0) {
       d.categorias = Constants.FINANCE.SEED_CATEGORIAS.map(c => ({
         id: Utils.uid(), nome: c.nome, tipo: c.tipo, icone: c.icone, cor: c.cor,
+        ...(c.tipo === 'despesa' ? { grupo503020: c.grupo503020 || 'desejo' } : {}),
         arquivada: false, criadoEm: Utils.today()
       }));
       changed = true;
@@ -85,6 +86,39 @@ const FinanceService = (() => {
       changed = true;
     }
     if (changed) AppState.persist();
+    _migrarGrupos503020();
+  }
+
+  // ===== Régua 50/30/20: grupo das categorias de despesa (Fase 7f) =====
+
+  // Classificação-semente: tudo o que não for "necessidade" cai em "desejo".
+  const _GRUPO_NECESSIDADE_SEED = ['Moradia', 'Mercado/casa', 'Transporte', 'Saúde', 'Alimentação'];
+
+  function _grupoSeedPorNome(nome) {
+    return _GRUPO_NECESSIDADE_SEED.includes(nome) ? 'necessidade' : 'desejo';
+  }
+
+  /**
+   * Backfill idempotente das categorias de despesa anteriores à Fase 7f.
+   * Atribui o grupo pelo nome (seeds) APENAS em memória — sem persist(): um
+   * write no boot poderia regravar a nuvem com um estado atrasado (ver avisos de
+   * sync em state.js/app.js). O valor é salvo no próximo persist real (ação do
+   * usuário) e, enquanto isso, get503020 trata despesa sem grupo como 'desejo'.
+   */
+  function _migrarGrupos503020() {
+    db().categorias.forEach(c => {
+      if (c.tipo === 'despesa' && !c.grupo503020) c.grupo503020 = _grupoSeedPorNome(c.nome);
+    });
+  }
+
+  /** Define necessidade/desejo de uma categoria de despesa. */
+  function setGrupoCategoria(categoriaId, grupo) {
+    if (grupo !== 'necessidade' && grupo !== 'desejo') return null;
+    const cat = getCategoriaById(categoriaId);
+    if (!cat || cat.tipo !== 'despesa') return null;
+    cat.grupo503020 = grupo;
+    AppState.persist();
+    return cat;
   }
 
   // ===== Contas =====
@@ -130,11 +164,15 @@ const FinanceService = (() => {
     return db().categorias.find(c => c.id === id);
   }
 
-  function addCategoria({ nome, tipo = 'despesa', icone = '📦', cor }) {
+  function addCategoria({ nome, tipo = 'despesa', icone = '📦', cor, grupo503020 }) {
     const cat = {
       id: Utils.uid(), nome: (nome || '').trim(), tipo, icone,
       cor: cor || Constants.COLORS[0], arquivada: false, criadoEm: Utils.today()
     };
+    // Régua 50/30/20 (Fase 7f): despesa nova entra como 'desejo' por padrão
+    if (tipo === 'despesa') {
+      cat.grupo503020 = grupo503020 === 'necessidade' ? 'necessidade' : 'desejo';
+    }
     db().categorias.push(cat);
     AppState.persist();
     return cat;
@@ -900,6 +938,55 @@ const FinanceService = (() => {
     return entradas === 0 ? 0 : (entradas - saidas) / entradas;
   }
 
+  // ===== Régua 50/30/20 (Fase 7f) =====
+  // Tudo em centavos; formatação só na view. Renda = entradas (competência).
+  // Poupança NÃO é categoria de gasto: vem dos aportes líquidos às metas no mês.
+
+  /**
+   * Aportes líquidos às contas-meta no mês 'YYYY-MM', em centavos: transferências
+   * recebidas pelas metas menos as resgatadas delas. Pode ser negativo (resgate
+   * líquido). Considera metas arquivadas (o aporte continua sendo poupança).
+   */
+  function _poupancaLiquidaMes(mes) {
+    const metaIds = new Set(db().contas.filter(c => c.tipo === 'meta').map(c => c.id));
+    let liquido = 0;
+    db().transacoes.forEach(t => {
+      if (t.tipo !== 'transferencia' || !(t.data || '').startsWith(mes)) return;
+      if (metaIds.has(t.contaDestinoId)) liquido += t.valorCentavos; // aporte
+      if (metaIds.has(t.contaId)) liquido -= t.valorCentavos;        // resgate
+    });
+    return liquido;
+  }
+
+  /**
+   * Régua 50/30/20 do mês. Saídas (competência, exclui transferências, aportes e
+   * pagamento de fatura; inclui compras de cartão) somam em necessidades/desejos
+   * pelo grupo503020 da categoria. Poupança = aportes líquidos às metas.
+   * pct sempre relativo à renda; renda 0 → pct 0 (estado neutro, sem /0).
+   */
+  function get503020(mes) {
+    const alvo = Constants.FINANCE.R503020;
+    const rendaCentavos = getResumoMes(mes).entradas;
+    let necCentavos = 0, desCentavos = 0;
+    db().transacoes.forEach(t => {
+      if (t.tipo !== 'saida' || t.pagamentoFatura || !(t.data || '').startsWith(mes)) return;
+      const cat = getCategoriaById(t.categoriaId);
+      if (!cat || cat.tipo !== 'despesa') return; // sem categoria de despesa → fora dos grupos
+      // grupo ausente (categoria pré-7f ainda não migrada) conta como 'desejo' (padrão da spec)
+      if (cat.grupo503020 === 'necessidade') necCentavos += t.valorCentavos;
+      else desCentavos += t.valorCentavos;
+    });
+    const poupCentavos = _poupancaLiquidaMes(mes);
+    const pct = v => rendaCentavos > 0 ? v / rendaCentavos * 100 : 0;
+    return {
+      rendaCentavos,
+      necessidades: { gastoCentavos: necCentavos, pct: pct(necCentavos), alvoPct: alvo.NECESSIDADE },
+      desejos:      { gastoCentavos: desCentavos, pct: pct(desCentavos), alvoPct: alvo.DESEJO },
+      poupanca:     { valorCentavos: poupCentavos, pct: pct(poupCentavos), alvoPct: alvo.POUPANCA },
+      naoAlocadoCentavos: rendaCentavos - necCentavos - desCentavos - poupCentavos
+    };
+  }
+
   // ===== Categorização automática por histórico (Fase 7b) =====
   // Sem dado novo armazenado: lê as transações já categorizadas do MESMO tipo
   // e vota a categoria mais provável para uma descrição nova. Sem chute.
@@ -1282,6 +1369,22 @@ const FinanceService = (() => {
     _seedPossoGastar(conta, desp, mes);        // Fase 7c: categoria perto do teto
     _seedAlertas(conta, desp, mes);            // Fase 7d: vários alertas de uma vez
     _seedRevisaoFinanceira(mes);               // Fase 7e: gate no mês retrasado
+    _seedRegua(conta, mes);                     // Fase 7f: aporte do mês p/ a régua
+  }
+
+  /**
+   * Fase 7f: garante poupança no mês corrente (aporte líquido a uma meta), pra
+   * régua mostrar os 4 fatias. Gastos nos dois grupos e a renda já vêm dos
+   * outros seeds (salário + despesas de necessidade e de desejo).
+   */
+  function _seedRegua(conta, mes) {
+    if (db().transacoes.some(t => t.fonte === 'seed-regua')) return;
+    const meta = listMetas()[0];
+    if (!meta) return;
+    addTransaction({
+      tipo: 'transferencia', valorCentavos: 80000, descricao: 'Aporte do mês',
+      contaId: conta.id, contaDestinoId: meta.id, data: `${mes}-08`, fonte: 'seed-regua'
+    });
   }
 
   /** Fase 7e: marca a última revisão no mês retrasado, forçando a oferta da revisão. */
@@ -1497,7 +1600,8 @@ const FinanceService = (() => {
   return {
     _seedDefaults, _seedTestData,
     listContas, getContaById, addConta, arquivarConta,
-    listCategorias, getCategoriaById, addCategoria,
+    listCategorias, getCategoriaById, addCategoria, setGrupoCategoria,
+    get503020,
     addTransaction, updateTransaction, deleteTransaction,
     getTransacaoById, listTransactions,
     getSaldo, getSaldoAte, getResumoMes, currentMonthPrefix, addMonths: _addMonths, entryDates,

@@ -127,18 +127,20 @@ const Constants = (() => {
       ASSINATURA_DIAS: 90,     // assinatura não confirmada há >= N dias
       META_SEM_APORTE_MESES: 2 // meta sem aporte há >= N meses
     },
+    // Régua 50/30/20 (Fase 7f): proporções-alvo sobre a renda do mês
+    R503020: { NECESSIDADE: 50, DESEJO: 30, POUPANCA: 20 },
     SEED_CONTA: {
       nome: 'Carteira', tipo: 'dinheiro',
       saldoInicialCentavos: 0, cor: '#34d399', icone: '💵'
     },
     SEED_CATEGORIAS: [
-      { nome: 'Alimentação', tipo: 'despesa', icone: '🍔', cor: '#f87171' },
-      { nome: 'Mercado/casa', tipo: 'despesa', icone: '🛒', cor: '#fb923c' },
-      { nome: 'Transporte', tipo: 'despesa', icone: '🚌', cor: '#fbbf24' },
-      { nome: 'Moradia', tipo: 'despesa', icone: '🏠', cor: '#60a5fa' },
-      { nome: 'Saúde', tipo: 'despesa', icone: '❤️', cor: '#4ade80' },
-      { nome: 'Diversão', tipo: 'despesa', icone: '🎮', cor: '#7c6fff' },
-      { nome: 'Outros', tipo: 'despesa', icone: '📦', cor: '#a78bfa' },
+      { nome: 'Alimentação', tipo: 'despesa', icone: '🍔', cor: '#f87171', grupo503020: 'necessidade' },
+      { nome: 'Mercado/casa', tipo: 'despesa', icone: '🛒', cor: '#fb923c', grupo503020: 'necessidade' },
+      { nome: 'Transporte', tipo: 'despesa', icone: '🚌', cor: '#fbbf24', grupo503020: 'necessidade' },
+      { nome: 'Moradia', tipo: 'despesa', icone: '🏠', cor: '#60a5fa', grupo503020: 'necessidade' },
+      { nome: 'Saúde', tipo: 'despesa', icone: '❤️', cor: '#4ade80', grupo503020: 'necessidade' },
+      { nome: 'Diversão', tipo: 'despesa', icone: '🎮', cor: '#7c6fff', grupo503020: 'desejo' },
+      { nome: 'Outros', tipo: 'despesa', icone: '📦', cor: '#a78bfa', grupo503020: 'desejo' },
       { nome: 'Salário', tipo: 'receita', icone: '💰', cor: '#34d399' },
       { nome: 'Vendas', tipo: 'receita', icone: '🏷️', cor: '#4ade80' },
       { nome: 'Outros', tipo: 'receita', icone: '➕', cor: '#60a5fa' }

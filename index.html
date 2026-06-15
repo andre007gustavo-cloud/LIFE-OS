@@ -668,6 +668,21 @@
   </div>
 </div>
 
+<!-- ========== MODAL: CLASSIFICAÇÃO 50/30/20 (Fase 7f) ========== -->
+<div class="overlay" id="regua-class-modal">
+  <div class="modal">
+    <div class="modal-title">
+      <span>Classificar categorias</span>
+      <button class="modal-close" onclick="closeModal('regua-class-modal')">×</button>
+    </div>
+    <div class="r503-class-hint">Necessidades são gastos essenciais (50%); desejos são o resto (30%).</div>
+    <div id="regua-class-body"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px">
+      <button class="btn btn-primary" onclick="closeModal('regua-class-modal')">Concluído</button>
+    </div>
+  </div>
+</div>
+
 <!-- ========== MODAL: RECORRÊNCIA (Fase 3) ========== -->
 <div class="overlay" id="rec-modal">
   <div class="modal">
@@ -1070,6 +1085,7 @@
 <script src="js/components/financePossoGastar.js"></script>
 <script src="js/components/financeAlertas.js"></script>
 <script src="js/components/financeReview.js"></script>
+<script src="js/components/financeRegua.js"></script>
 
 <script src="js/views/dashboardView.js"></script>
 <script src="js/views/tasksView.js"></script>
