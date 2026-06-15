@@ -47,7 +47,7 @@ const FinanceAlertas = (() => {
   function _cardHtml(a) {
     const s = SEV[a.severidade] || SEV.info;
     const acao = a.acao
-      ? `<button class="fin-alerta-acao" onclick="FinanceAlertas.acao('${a.tipo}','${Utils.escapeAttr(a.acao.alvoId)}')">${Utils.escapeHtml(a.acao.label)}</button>`
+      ? `<button class="fin-alerta-acao" onclick="FinanceAlertas.acao('${a.acao.tipo}','${Utils.escapeAttr(a.acao.alvoId)}')">${Utils.escapeHtml(a.acao.label)}</button>`
       : '';
     return `<div class="fin-alerta" style="--sev:${s.cor}">
       <i class="ti ${s.icone} fin-alerta-icon"></i>
