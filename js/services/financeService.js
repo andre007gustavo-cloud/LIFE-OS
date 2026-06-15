@@ -20,6 +20,7 @@ const FinanceService = (() => {
     if (!d.recorrencias) d.recorrencias = [];
     if (!d.cartoes) d.cartoes = [];
     if (!d.faturaPagamentos) d.faturaPagamentos = [];
+    if (!d.revisoesFinanceiras) d.revisoesFinanceiras = []; // Fase 7e
     return d;
   }
 
@@ -1176,6 +1177,80 @@ const FinanceService = (() => {
     return out.sort((a, b) => _SEV_RANK[a.severidade] - _SEV_RANK[b.severidade]);
   }
 
+  // ===== Revisão Financeira Mensal (Fase 7e) =====
+  // Persistência mínima: ultimaRevisaoFinanceira (gate) + revisoesFinanceiras
+  // (histórico). Tudo o mais é computado dos dados existentes (Fases 2/5/7a).
+
+  /** Há um mês fechado ainda não revisado (mês atual > última revisão). */
+  function precisaRevisaoMensal() {
+    return currentMonthPrefix() > (db().ultimaRevisaoFinanceira || '');
+  }
+
+  /** Aportes (transferências) recebidos por uma meta no mês 'YYYY-MM', em centavos. */
+  function _aportesMetaMes(contaId, mes) {
+    return db().transacoes
+      .filter(t => t.tipo === 'transferencia' && t.contaDestinoId === contaId && (t.data || '').startsWith(mes))
+      .reduce((s, t) => s + t.valorCentavos, 0);
+  }
+
+  /**
+   * Agrega tudo o que os 5 passos da revisão precisam para o mês 'mes' (o mês
+   * fechado que está sendo revisado). Comparações usam o mês retrasado (mes−1).
+   */
+  function getDadosRevisao(mes) {
+    const mesRetrasado = _addMonths(mes, -1);
+    const resumo = getResumoMes(mes);
+    const fechamento = {
+      entradasCentavos: resumo.entradas,
+      saidasCentavos: resumo.saidas,
+      saldoMesCentavos: resumo.saldoMes,
+      taxaPoupanca: getTaxaPoupanca(mes),
+      taxaPoupancaAnterior: getTaxaPoupanca(mesRetrasado),
+      comparativo: getComparativoMes(mes)
+    };
+
+    const gastosPorCategoria = getGastosPorCategoria(mes);
+
+    const estouros = getOrcamentoMes(mes)
+      .filter(o => o.estado === 'estourado')
+      .map(o => {
+        const cat = getCategoriaById(o.categoriaId);
+        return {
+          categoriaId: o.categoriaId, nome: cat ? cat.nome : 'Categoria',
+          gastoCentavos: o.gastoCentavos, limiteCentavos: o.limiteCentavos,
+          excedenteCentavos: -o.restanteCentavos
+        };
+      });
+
+    const metas = listMetas().map(c => ({
+      ...getMetaResumo(c.id),
+      aportesMesCentavos: _aportesMetaMes(c.id, mes)
+    }));
+
+    // Sugestão de teto para o novo mês = gasto real da categoria no mês fechado
+    const sugestoesOrcamento = gastosPorCategoria.map(g => {
+      const orc = getOrcamentoByCategoria(g.categoriaId);
+      return {
+        categoriaId: g.categoriaId, nome: g.nome, cor: g.cor,
+        gastoRealCentavos: g.totalCentavos,
+        limiteAtualCentavos: orc ? orc.limiteCentavos : 0,
+        sugestaoCentavos: g.totalCentavos
+      };
+    });
+
+    return { mes, mesRetrasado, fechamento, gastosPorCategoria, estouros, metas, sugestoesOrcamento };
+  }
+
+  /** Salva a decisão no histórico e marca o mês atual como revisado. */
+  function registrarRevisao({ mes, decisao }) {
+    const d = db();
+    d.revisoesFinanceiras.push({
+      mes, decisao: (decisao || '').trim(), criadoEm: new Date().toISOString()
+    });
+    d.ultimaRevisaoFinanceira = currentMonthPrefix();
+    AppState.persist();
+  }
+
   // ===== Teste manual (apenas localhost) =====
 
   /** APENAS localhost — semeia lançamentos do mês atual para testar a view. */
@@ -1206,6 +1281,14 @@ const FinanceService = (() => {
     _seedCategorizacao(conta, desp, rec, mes); // Fase 7b: descrições repetidas
     _seedPossoGastar(conta, desp, mes);        // Fase 7c: categoria perto do teto
     _seedAlertas(conta, desp, mes);            // Fase 7d: vários alertas de uma vez
+    _seedRevisaoFinanceira(mes);               // Fase 7e: gate no mês retrasado
+  }
+
+  /** Fase 7e: marca a última revisão no mês retrasado, forçando a oferta da revisão. */
+  function _seedRevisaoFinanceira(mes) {
+    const d = db();
+    if (!d.ultimaRevisaoFinanceira) d.ultimaRevisaoFinanceira = _addMonths(mes, -2);
+    AppState.persist();
   }
 
   /**
@@ -1426,6 +1509,7 @@ const FinanceService = (() => {
     getRecorrenciaById, listRecorrencias, addRecorrencia, updateRecorrencia,
     removeRecorrencia, toggleAtiva, confirmarAssinatura, proximaData, processarRecorrencias,
     getProximasOcorrencias, getCustoFixo, listAssinaturas,
-    listMetas, getMetaResumo, getAlertas
+    listMetas, getMetaResumo, getAlertas,
+    precisaRevisaoMensal, getDadosRevisao, registrarRevisao
   };
 })();

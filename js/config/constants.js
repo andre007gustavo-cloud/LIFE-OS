@@ -191,7 +191,9 @@ const Constants = (() => {
     recorrencias: [],
     // Finanças Fase 4: cartões de crédito e pagamentos de fatura
     cartoes: [],
-    faturaPagamentos: []
+    faturaPagamentos: [],
+    // Finanças Fase 7e: histórico das revisões financeiras mensais
+    revisoesFinanceiras: []
   };
 
   return Object.freeze({

@@ -8,6 +8,13 @@
 const FinanceView = (() => {
 
   function render() {
+    // Revisão financeira em andamento (Fase 7e): toma a tela inteira
+    if (window.FinanceReview && FinanceReview.isActive()) {
+      document.getElementById('fin-content').innerHTML = FinanceReview.flowHtml();
+      return;
+    }
+    document.body.classList.remove('rv-flow');
+
     const mes = FinanceService.currentMonthPrefix();
     const saldoTotal = FinanceService.getSaldo();
     const resumo = FinanceService.getResumoMes(mes);
@@ -15,6 +22,7 @@ const FinanceView = (() => {
 
     document.getElementById('fin-content').innerHTML =
       headerHtml(saldoTotal, resumo) +
+      (window.FinanceReview ? FinanceReview.offerHtml() : '') +
       FinanceAlertas.sectionHtml() +
       FinanceCartoes.sectionHtml() +
       FinancePossoGastar.buttonHtml() +

@@ -547,6 +547,90 @@
 }
 .fin-alertas-vazio i{font-size:18px}
 
+/* ===== Fase 7e: Revisão Financeira Mensal ===== */
+/* O fluxo toma a tela; esconde o FAB de Finanças (review.css só esconde #fab) */
+body.rv-flow .fin-fab{display:none !important}
+
+.fin-rev-offer{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  border-left:3px solid var(--accent);
+}
+.fin-rev-offer-txt{display:flex;align-items:center;gap:10px;min-width:0}
+.fin-rev-offer-txt > i{font-size:22px;color:var(--accent);flex:none}
+.fin-rev-offer-title{font-size:14px;font-weight:700;color:var(--text);text-transform:capitalize}
+.fin-rev-offer-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.fin-rev-offer-btns{display:flex;gap:8px;flex:none}
+
+.fin-rev-flow .rv-progress{position:relative}
+.fin-rev-sair{
+  border:none;background:transparent;color:var(--text3);cursor:pointer;
+  font-size:18px;padding:2px 4px;display:flex;align-items:center;
+}
+.fin-rev-sair:hover{color:var(--text)}
+
+.fin-rev-cmp{
+  margin-top:10px;padding-top:10px;border-top:1px solid var(--border);
+  font-size:12px;color:var(--text2);text-align:center;
+}
+
+/* Passo 2: categorias + estouros */
+.fin-rev-cats{display:flex;flex-direction:column;gap:2px}
+.fin-rev-cat{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)}
+.fin-rev-cat:last-child{border-bottom:none}
+.fin-rev-cat-dot{width:10px;height:10px;border-radius:3px;flex:none}
+.fin-rev-cat-nome{flex:1;min-width:0;color:var(--text);font-size:14px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fin-rev-cat-pct{color:var(--text3);font-size:12px;width:38px;text-align:right;flex:none}
+.fin-rev-cat-val{color:var(--text);font-weight:600;font-size:14px;flex:none}
+.fin-rev-sub-head{
+  font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;
+  letter-spacing:.03em;margin:16px 0 6px;
+}
+.fin-rev-estouro{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:8px 10px;margin-top:6px;border-radius:var(--radius-sm);
+  background:color-mix(in srgb, var(--red) 10%, transparent);
+  color:var(--text);font-size:13px;
+}
+.fin-rev-estouro strong{color:var(--red)}
+
+/* Passo 3: metas */
+.fin-rev-metas{display:flex;flex-direction:column;gap:12px}
+.fin-rev-meta{padding:12px;border-radius:var(--radius-sm);background:var(--bg3)}
+.fin-rev-meta-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.fin-rev-meta-nome{font-weight:600;color:var(--text)}
+.fin-rev-meta-val{font-size:13px;color:var(--text2)}
+.fin-rev-meta-bar{height:7px;border-radius:4px;background:var(--bg4);overflow:hidden}
+.fin-rev-meta-fill{height:100%;border-radius:4px;background:var(--accent);transition:width .3s}
+.fin-rev-meta-sub{font-size:12px;color:var(--text3);margin-top:6px}
+
+/* Passo 4: edição inline de orçamentos */
+.fin-rev-orcs{display:flex;flex-direction:column;gap:2px}
+.fin-rev-orc{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 0;border-bottom:1px solid var(--border);
+}
+.fin-rev-orc:last-child{border-bottom:none}
+.fin-rev-orc-info{display:flex;align-items:center;gap:8px;min-width:0}
+.fin-rev-orc-nome{font-size:14px;color:var(--text)}
+.fin-rev-orc-hint{font-size:12px;color:var(--text3)}
+.fin-rev-orc-edit{display:flex;align-items:center;gap:4px;flex:none}
+.fin-rev-orc-prefix{font-size:12px;color:var(--text3)}
+.fin-rev-orc-input{
+  width:96px;padding:7px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--bg2);color:var(--text);font-size:14px;text-align:right;
+}
+.fin-rev-orc-input:focus{outline:none;border-color:var(--accent)}
+
+/* Passo 5: decisão */
+.fin-rev-decisao-input{
+  width:100%;min-height:96px;padding:12px;border:1px solid var(--border);
+  border-radius:var(--radius-sm);background:var(--bg2);color:var(--text);
+  font-size:15px;font-family:inherit;resize:vertical;
+}
+.fin-rev-decisao-input:focus{outline:none;border-color:var(--accent)}
+.fin-rev-decisao-hint{font-size:12px;color:var(--text3);margin-top:8px}
+
 /* Dashboard: contagem de críticos */
 .fin-alertas-dash{
   display:flex;align-items:center;gap:10px;width:100%;
