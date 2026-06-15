@@ -117,7 +117,7 @@
       TasksView.filterAndRender();
     });
     Navigation.register('calendar', CalendarView.render);
-    Navigation.register('finance', FinanceView.render);
+    Navigation.register('finance', FinanceView.enter);
     Navigation.register('areas', AreasView.render);
     Navigation.register('habits', HabitsView.render);
     Navigation.register('review', ReviewView.render);
@@ -322,6 +322,8 @@
     window.FinanceCarteiras = FinanceCarteiras;
     window.FinanceCategorias = FinanceCategorias;
     window.FinanceMetas     = FinanceMetas;
+    // Atalho: vai para a aba Finanças (abre no hub) e então a sub-tela pedida
+    window.finGoto = (sub) => { Navigation.showView('finance'); FinanceView.openSub(sub); };
 
     // --- Projects ---
     window.openNewProjectModal = ProjectModal.open;

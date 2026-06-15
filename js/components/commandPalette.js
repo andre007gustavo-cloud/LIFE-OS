@@ -32,6 +32,17 @@ const CommandPalette = (() => {
     { id: 'nav-areas',     section: 'Navegar', icon: 'ti-briefcase',        label: 'Ir para Projetos',    run: () => Navigation.showView('areas') },
     { id: 'nav-habits',    section: 'Navegar', icon: 'ti-repeat',           label: 'Ir para Hábitos',     run: () => Navigation.showView('habits') },
 
+    // --- Finanças: sub-telas (Fase 9) ---
+    { id: 'fin-orcamento',    section: 'Finanças', icon: 'ti-target-arrow',     label: 'Finanças: Orçamento',     run: () => finGoto('orcamento') },
+    { id: 'fin-projecao',     section: 'Finanças', icon: 'ti-chart-line',       label: 'Finanças: Projeção',      run: () => finGoto('projecao') },
+    { id: 'fin-relatorios',   section: 'Finanças', icon: 'ti-report-analytics', label: 'Finanças: Relatórios',    run: () => finGoto('relatorios') },
+    { id: 'fin-regua',        section: 'Finanças', icon: 'ti-scale',            label: 'Finanças: Régua 50/30/20', run: () => finGoto('regua') },
+    { id: 'fin-cartoes',      section: 'Finanças', icon: 'ti-credit-card',      label: 'Finanças: Cartões',       run: () => finGoto('cartoes') },
+    { id: 'fin-carteiras',    section: 'Finanças', icon: 'ti-wallet',           label: 'Finanças: Carteiras',     run: () => finGoto('carteiras') },
+    { id: 'fin-categorias',   section: 'Finanças', icon: 'ti-tag',              label: 'Finanças: Categorias',    run: () => finGoto('categorias') },
+    { id: 'fin-metas',        section: 'Finanças', icon: 'ti-target',           label: 'Finanças: Metas',         run: () => finGoto('metas') },
+    { id: 'fin-recorrencias', section: 'Finanças', icon: 'ti-repeat',           label: 'Finanças: Recorrências',  run: () => finGoto('recorrencias') },
+
     // --- Criar ---
     { id: 'new-task',    section: 'Criar', icon: 'ti-plus',      label: 'Nova tarefa',                 run: () => QuickAddPopover.open() },
     { id: 'new-fin',     section: 'Criar', icon: 'ti-cash',      label: 'Novo lançamento financeiro',  run: () => FinanceModal.open() },

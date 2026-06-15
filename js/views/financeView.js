@@ -1,11 +1,76 @@
 /**
  * ===================== FINANCE VIEW =====================
- * Fase 1: saldo total no topo, resumo do mês (entradas/saídas) e a lista de
- * lançamentos do mês agrupada por dia. Criação rápida pelo FAB (FinanceQuickAdd).
- * Fase 4: seção de cartões de crédito com fatura atual e limite disponível.
+ * Fase 9: a aba Finanças é um HUB enxuto + SUB-TELAS. A home mostra só o dia a
+ * dia (resumo compacto, lançamento rápido + recentes, alertas e a grade de
+ * navegação). Cada sub-tela reusa, em tela cheia, o componente da sua fase
+ * (orçamento/projeção/relatórios/cartões/…) sob um cabeçalho com "Voltar".
+ * View NUNCA acessa Storage direto — só FinanceService e os componentes.
  */
 
 const FinanceView = (() => {
+
+  // Sub-tela atual: 'home' (hub) ou a chave de SUBVIEWS. Sempre volta a 'home'
+  // ao (re)entrar na aba — ver enter().
+  let subView = 'home';
+
+  /**
+   * Mapa das sub-telas: título + ícone do cabeçalho + função que devolve o HTML
+   * do componente JÁ EXISTENTE. Nada de lógica nova aqui, só roteamento.
+   */
+  const SUBVIEWS = {
+    orcamento:    { title: 'Orçamento',       icon: 'ti-target-arrow',     render: () => FinanceBudget.sectionHtml(FinanceService.currentMonthPrefix()) },
+    projecao:     { title: 'Projeção',        icon: 'ti-chart-line',       render: () => FinanceProjecao.sectionHtml() },
+    relatorios:   { title: 'Relatórios',      icon: 'ti-report-analytics', render: () => FinanceRelatorios.sectionHtml() },
+    regua:        { title: 'Régua 50/30/20',  icon: 'ti-scale',            render: () => FinanceRegua.sectionHtml() },
+    cartoes:      { title: 'Cartões',         icon: 'ti-credit-card',      render: () => FinanceCartoes.sectionHtml() },
+    carteiras:    { title: 'Carteiras',       icon: 'ti-wallet',           render: () => FinanceCarteiras.sectionHtml() },
+    categorias:   { title: 'Categorias',      icon: 'ti-tag',              render: () => FinanceCategorias.sectionHtml() },
+    metas:        { title: 'Metas',           icon: 'ti-target',           render: () => FinanceMetas.sectionHtml() },
+    recorrencias: { title: 'Recorrências',    icon: 'ti-repeat',           render: () => FinanceRecorrencias.sectionHtml(FinanceService.currentMonthPrefix()) },
+    lancamentos:  { title: 'Lançamentos',     icon: 'ti-list',             render: () => listHtml(FinanceService.listTransactions({ mes: FinanceService.currentMonthPrefix() })) }
+  };
+
+  /**
+   * Grade de navegação do hub. Sub-telas usam openSub; Importar e "Posso gastar?"
+   * já são fluxos de modal (Fases 7c/8) — o botão só dispara o modal existente.
+   */
+  const NAV_ITEMS = [
+    { icon: 'ti-target-arrow',     label: 'Orçamento',      onclick: "FinanceView.openSub('orcamento')" },
+    { icon: 'ti-chart-line',       label: 'Projeção',       onclick: "FinanceView.openSub('projecao')" },
+    { icon: 'ti-report-analytics', label: 'Relatórios',     onclick: "FinanceView.openSub('relatorios')" },
+    { icon: 'ti-scale',            label: 'Régua 50/30/20', onclick: "FinanceView.openSub('regua')" },
+    { icon: 'ti-credit-card',      label: 'Cartões',        onclick: "FinanceView.openSub('cartoes')" },
+    { icon: 'ti-wallet',           label: 'Carteiras',      onclick: "FinanceView.openSub('carteiras')" },
+    { icon: 'ti-tag',              label: 'Categorias',     onclick: "FinanceView.openSub('categorias')" },
+    { icon: 'ti-target',           label: 'Metas',          onclick: "FinanceView.openSub('metas')" },
+    { icon: 'ti-repeat',           label: 'Recorrências',   onclick: "FinanceView.openSub('recorrencias')" },
+    { icon: 'ti-wallet',           label: 'Posso gastar?',  onclick: "FinancePossoGastar.open()" },
+    { icon: 'ti-file-import',      label: 'Importar OFX',   onclick: "FinanceImport.openCentral()" }
+  ];
+
+  // ===== Roteamento =====
+
+  /** Ponto de entrada da aba (registrado na Navigation): sempre abre no hub. */
+  function enter() {
+    subView = 'home';
+    render();
+  }
+
+  /** Abre uma sub-tela em tela cheia do módulo. */
+  function openSub(name) {
+    if (!SUBVIEWS[name]) return;
+    subView = name;
+    render();
+    const el = document.getElementById('fin-content');
+    if (el) el.scrollTop = 0;
+    window.scrollTo(0, 0);
+  }
+
+  function goHome() {
+    subView = 'home';
+    render();
+    window.scrollTo(0, 0);
+  }
 
   function render() {
     // Revisão financeira em andamento (Fase 7e): toma a tela inteira
@@ -14,28 +79,80 @@ const FinanceView = (() => {
       return;
     }
     document.body.classList.remove('rv-flow');
-
-    const mes = FinanceService.currentMonthPrefix();
-    const saldoTotal = FinanceService.getSaldo();
-    const resumo = FinanceService.getResumoMes(mes);
-    const txs = FinanceService.listTransactions({ mes });
-
     document.getElementById('fin-content').innerHTML =
-      headerHtml(saldoTotal, resumo) +
-      toolbarHtml() +
+      (subView === 'home' || !SUBVIEWS[subView]) ? homeHtml() : subviewHtml(subView);
+  }
+
+  // ===== HUB (home) =====
+
+  function homeHtml() {
+    const mes = FinanceService.currentMonthPrefix();
+    const recentes = FinanceService.listTransactions({ mes }).slice(0, 5);
+    return resumoHtml() +
       FinanceReview.offerHtml() +
       FinanceAlertas.sectionHtml() +
-      FinanceCartoes.sectionHtml() +
-      FinanceCarteiras.sectionHtml() +
-      FinanceCategorias.sectionHtml() +
-      FinanceMetas.sectionHtml() +
-      FinancePossoGastar.buttonHtml() +
-      FinanceProjecao.sectionHtml() +
-      FinanceRelatorios.sectionHtml() +
-      FinanceRegua.sectionHtml() +
-      FinanceBudget.sectionHtml(mes) +
-      FinanceRecorrencias.sectionHtml(mes) +
-      listHtml(txs) + devButtonHtml();
+      recentesHtml(recentes) +
+      navGridHtml() +
+      devButtonHtml();
+  }
+
+  /** Resumo compacto: caixa disponível, guardado em metas e projeção do mês. */
+  function resumoHtml() {
+    const disponivel = FinanceService.getSaldoAte(null, Utils.today());
+    const guardado = FinanceService.listMetas()
+      .reduce((s, m) => s + FinanceService.getSaldo(m.id), 0);
+    const projetado = FinanceService.getSaldoProjetadoFimMes();
+    return `<div class="fin-resumo fin-resumo-3">
+      ${statHtml('Disponível', disponivel, disponivel >= 0 ? 'green' : 'red')}
+      ${statHtml('Guardado', guardado, 'accent')}
+      ${statHtml('Projetado fim do mês', projetado, projetado >= 0 ? 'green' : 'red')}
+    </div>`;
+  }
+
+  function statHtml(label, centavos, cls) {
+    return `<div class="stat ${cls}">
+      <div class="stat-val">${Utils.formatBRL(centavos)}</div>
+      <div class="stat-label">${label}</div>
+    </div>`;
+  }
+
+  function recentesHtml(txs) {
+    const corpo = txs.length
+      ? txs.map(entryHtml).join('') +
+        `<button class="fin-ver-todos" onclick="FinanceView.openSub('lancamentos')">Ver todos →</button>`
+      : `<div class="text-muted" style="margin:4px 0 8px">Nenhum lançamento este mês</div>`;
+    return `<div class="card">
+      <div class="card-title fin-cartoes-title">
+        <span><i class="ti ti-receipt"></i> Lançamentos recentes</span>
+        <button class="btn btn-ghost btn-sm" onclick="FinanceQuickAdd.open()">
+          <i class="ti ti-plus"></i> Lançar
+        </button>
+      </div>
+      ${corpo}
+    </div>`;
+  }
+
+  function navGridHtml() {
+    return `<div class="card">
+      <div class="card-title"><i class="ti ti-layout-grid"></i> Mais</div>
+      <div class="fin-nav-grid">
+        ${NAV_ITEMS.map(it => `
+          <button class="fin-nav-btn" onclick="${it.onclick}">
+            <i class="ti ${it.icon}"></i><span>${it.label}</span>
+          </button>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  // ===== SUB-TELA (cabeçalho + componente da fase) =====
+
+  function subviewHtml(name) {
+    const sv = SUBVIEWS[name];
+    return `<div class="fin-subhead">
+      <button class="fin-back-btn" onclick="FinanceView.goHome()"><i class="ti ti-arrow-left"></i> Voltar</button>
+      <div class="fin-subhead-title"><i class="ti ${sv.icon}"></i> ${sv.title}</div>
+    </div>
+    ${sv.render()}`;
   }
 
   /** Botões de teste — só em localhost, nunca em produção */
@@ -59,36 +176,6 @@ const FinanceView = (() => {
     FinanceService._resetFinanceData();
     render();
     if (window.DashboardView) DashboardView.render();
-  }
-
-  /** Barra de ações da central de Finanças (ponto de entrada único de importação). */
-  function toolbarHtml() {
-    return `<div class="fin-toolbar">
-      <button class="btn btn-ghost btn-sm" onclick="FinanceImport.openCentral()">
-        <i class="ti ti-file-import"></i> Importar OFX
-      </button>
-    </div>`;
-  }
-
-  // ===== Topo: saldo + resumo do mês =====
-
-  function headerHtml(saldoTotal, resumo) {
-    const saldoColor = saldoTotal >= 0 ? 'var(--green)' : 'var(--red)';
-    return `
-      <div class="card fin-balance-card">
-        <div class="fin-balance-label">Saldo total</div>
-        <div class="fin-balance-value" style="color:${saldoColor}">${Utils.formatBRL(saldoTotal)}</div>
-      </div>
-      <div class="fin-resumo">
-        <div class="stat green">
-          <div class="stat-val">${Utils.formatBRL(resumo.entradas)}</div>
-          <div class="stat-label">Entradas do mês</div>
-        </div>
-        <div class="stat red">
-          <div class="stat-val">${Utils.formatBRL(resumo.saidas)}</div>
-          <div class="stat-label">Saídas do mês</div>
-        </div>
-      </div>`;
   }
 
   // ===== Lista agrupada por dia =====
@@ -205,5 +292,5 @@ const FinanceView = (() => {
     if (window.DashboardView) DashboardView.render();
   }
 
-  return { render, remove, seedTest, resetData };
+  return { enter, openSub, goHome, render, remove, seedTest, resetData };
 })();
