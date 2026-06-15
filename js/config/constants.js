@@ -121,6 +121,12 @@ const Constants = (() => {
     ACCOUNT_TYPES: ['corrente', 'poupanca', 'dinheiro'],
     // Orçamento (Fase 2): limiar de % (sobre a base) a partir do qual entra em "alerta"
     ORCAMENTO: { ALERTA_PCT: 80 },
+    // Alertas proativos (Fase 7d): limiares dos disparos
+    ALERTAS: {
+      FATURA_DIAS: 7,          // fatura não paga vencendo em <= N dias
+      ASSINATURA_DIAS: 90,     // assinatura não confirmada há >= N dias
+      META_SEM_APORTE_MESES: 2 // meta sem aporte há >= N meses
+    },
     SEED_CONTA: {
       nome: 'Carteira', tipo: 'dinheiro',
       saldoInicialCentavos: 0, cor: '#34d399', icone: '💵'

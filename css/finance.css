@@ -512,3 +512,49 @@
   font-size:12px;color:var(--red);font-weight:600;
 }
 .pg-lancar{width:100%;justify-content:center}
+
+/* ===== Fase 7d: Alertas proativos ===== */
+.fin-alertas .card-title{display:flex;align-items:center;gap:6px}
+.fin-alertas-badge{
+  font-size:11px;font-weight:700;color:#fff;background:var(--red);
+  padding:1px 7px;border-radius:999px;margin-left:2px;
+}
+.fin-alerta{
+  display:flex;align-items:flex-start;gap:10px;padding:11px 12px;margin-top:8px;
+  border-radius:var(--radius-sm);background:var(--bg3);
+  border-left:3px solid var(--sev);
+}
+.fin-alerta-icon{color:var(--sev);font-size:18px;flex:none;margin-top:1px}
+.fin-alerta-corpo{flex:1;min-width:0}
+.fin-alerta-titulo{font-size:14px;font-weight:600;color:var(--text)}
+.fin-alerta-desc{font-size:12px;color:var(--text2);margin-top:2px}
+.fin-alerta-botoes{display:flex;flex-direction:column;gap:5px;flex:none;align-items:flex-end}
+.fin-alerta-acao{
+  border:1px solid var(--sev);background:transparent;color:var(--sev);
+  font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;cursor:pointer;
+  white-space:nowrap;transition:.15s;
+}
+.fin-alerta-acao:hover{background:var(--sev);color:#fff}
+.fin-alerta-dispensar{
+  border:none;background:transparent;color:var(--text3);
+  font-size:11px;padding:2px 4px;cursor:pointer;
+}
+.fin-alerta-dispensar:hover{color:var(--text)}
+
+.fin-alertas-vazio{
+  display:flex;align-items:center;gap:8px;justify-content:center;
+  color:var(--green);font-size:13px;padding:14px;
+}
+.fin-alertas-vazio i{font-size:18px}
+
+/* Dashboard: contagem de críticos */
+.fin-alertas-dash{
+  display:flex;align-items:center;gap:10px;width:100%;
+  padding:12px 14px;border-radius:var(--radius);cursor:pointer;
+  background:color-mix(in srgb, var(--red) 12%, transparent);
+  border:1px solid color-mix(in srgb, var(--red) 35%, transparent);
+  color:var(--red);font-size:14px;
+}
+.fin-alertas-dash strong{font-weight:700}
+.fin-alertas-dash > span{flex:1;text-align:left}
+.fin-alertas-dash i{font-size:18px;flex:none}

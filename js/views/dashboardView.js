@@ -29,6 +29,17 @@ const DashboardView = (() => {
     renderCartoes();
     renderProjecao();
     renderPossoGastar();
+    renderAlertas();
+  }
+
+  // ===== Card: alertas críticos (Fase 7d) =====
+
+  function renderAlertas() {
+    const card = document.getElementById('dash-alertas-card');
+    if (!card || !window.FinanceAlertas) return;
+    const html = FinanceAlertas.dashHtml();
+    card.style.display = html ? '' : 'none';
+    document.getElementById('dash-alertas').innerHTML = html;
   }
 
   // ===== Card: "Posso gastar?" (Fase 7c) =====

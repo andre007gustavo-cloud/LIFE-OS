@@ -96,13 +96,19 @@ const FinanceService = (() => {
     return db().contas.find(c => c.id === id);
   }
 
-  function addConta({ nome, tipo = 'dinheiro', saldoInicialCentavos = 0, cor, icone = '💵' }) {
+  function addConta({ nome, tipo = 'dinheiro', saldoInicialCentavos = 0, cor, icone = '💵',
+                      valorObjetivoCentavos = 0, dataObjetivo = '' }) {
     const conta = {
       id: Utils.uid(), nome: (nome || '').trim(), tipo,
       saldoInicialCentavos: parseInt(saldoInicialCentavos, 10) || 0,
       cor: cor || Constants.COLORS[0], icone,
       arquivada: false, criadoEm: Utils.today()
     };
+    // Fase 7d: metas guardam objetivo + prazo (opcionais) para os alertas
+    if (tipo === 'meta') {
+      conta.valorObjetivoCentavos = Math.abs(parseInt(valorObjetivoCentavos, 10) || 0);
+      conta.dataObjetivo = dataObjetivo || '';
+    }
     db().contas.push(conta);
     AppState.persist();
     return conta;
@@ -398,7 +404,9 @@ const FinanceService = (() => {
       dataInicio: f.dataInicio || Utils.today(),
       dataFim: f.dataFim || null,
       ativa: f.ativa !== false,
-      ehAssinatura: !!f.ehAssinatura
+      ehAssinatura: !!f.ehAssinatura,
+      // Fase 7d: última vez que o usuário confirmou que ainda usa a assinatura
+      ultimaConfirmacao: f.ultimaConfirmacao || null
     };
   }
 
@@ -445,6 +453,16 @@ const FinanceService = (() => {
     const r = getRecorrenciaById(id);
     if (!r) return null;
     r.ativa = !r.ativa;
+    r.atualizadoEm = new Date().toISOString();
+    AppState.persist();
+    return r;
+  }
+
+  /** Fase 7d: marca a assinatura como confirmada hoje (zera o alerta dela). */
+  function confirmarAssinatura(id) {
+    const r = getRecorrenciaById(id);
+    if (!r) return null;
+    r.ultimaConfirmacao = Utils.today();
     r.atualizadoEm = new Date().toISOString();
     AppState.persist();
     return r;
@@ -1010,6 +1028,154 @@ const FinanceService = (() => {
     return { orcamento, projecao, veredito: _veredito(orcamento, projecao) };
   }
 
+  // ===== Metas (modelo mínimo) + Alertas proativos (Fase 7d) =====
+
+  /** Diferença em meses (mesAte − mesDe), ambos 'YYYY-MM'. */
+  function _mesesEntre(mesDe, mesAte) {
+    const [ya, ma] = mesDe.split('-').map(Number);
+    const [yb, mb] = mesAte.split('-').map(Number);
+    return (yb - ya) * 12 + (mb - ma);
+  }
+
+  function listMetas() {
+    return db().contas.filter(c => c.tipo === 'meta' && !c.arquivada);
+  }
+
+  /**
+   * Resumo de uma conta-meta: saldo atual, quanto falta, prazo, aporte mensal
+   * necessário e último aporte. null se não for meta. Saldo = aportes acumulados
+   * (transferências para a conta), computado por getSaldo.
+   */
+  function getMetaResumo(contaId) {
+    const c = getContaById(contaId);
+    if (!c || c.tipo !== 'meta') return null;
+    const objetivoCentavos = c.valorObjetivoCentavos || 0;
+    const saldoAtualCentavos = getSaldo(contaId);
+    const faltaCentavos = Math.max(0, objetivoCentavos - saldoAtualCentavos);
+    const dataObjetivo = c.dataObjetivo || '';
+
+    const aportes = db().transacoes
+      .filter(t => t.tipo === 'transferencia' && t.contaDestinoId === contaId && t.data)
+      .map(t => t.data).sort();
+    const ultimoAporte = aportes.length ? aportes[aportes.length - 1] : null;
+
+    let mesesRestantes = null, aporteMensalNecessarioCentavos = null;
+    if (dataObjetivo) {
+      mesesRestantes = _mesesEntre(currentMonthPrefix(), dataObjetivo.slice(0, 7));
+      if (faltaCentavos > 0) {
+        aporteMensalNecessarioCentavos = mesesRestantes > 0
+          ? Math.ceil(faltaCentavos / mesesRestantes)
+          : faltaCentavos; // prazo vencido: precisa de tudo agora
+      }
+    }
+    return {
+      contaId, nome: c.nome, objetivoCentavos, saldoAtualCentavos, faltaCentavos,
+      dataObjetivo, mesesRestantes, aporteMensalNecessarioCentavos, ultimoAporte,
+      concluida: objetivoCentavos > 0 && faltaCentavos === 0
+    };
+  }
+
+  const _SEV_RANK = { critico: 0, atencao: 1, info: 2 };
+
+  function _alertasOrcamento(mes, out) {
+    const diasRestantes = diasRestantesMes(mes);
+    getOrcamentoMes(mes).forEach(o => {
+      const cat = getCategoriaById(o.categoriaId);
+      const nome = cat ? cat.nome : 'Categoria';
+      if (o.estado === 'estourado') {
+        out.push({
+          id: 'orc-' + o.categoriaId, tipo: 'orcamento', severidade: 'critico',
+          titulo: `${nome} estourou`,
+          descricao: `${nome} estourou ${Utils.formatBRL(-o.restanteCentavos)} do orçamento`
+        });
+      } else if (o.estado === 'alerta') {
+        const sufixo = diasRestantes ? `, faltam ${diasRestantes} dia${diasRestantes > 1 ? 's' : ''}` : '';
+        out.push({
+          id: 'orc-' + o.categoriaId, tipo: 'orcamento', severidade: 'atencao',
+          titulo: `${nome} em ${o.percentual}%`,
+          descricao: `Já usou ${o.percentual}% de ${nome}${sufixo}`
+        });
+      }
+    });
+  }
+
+  function _alertasProjecao(out) {
+    const proj = getProjecaoSaldo({});
+    if (!proj.ficaNegativo) return;
+    out.push({
+      id: 'proj-neg', tipo: 'projecao', severidade: 'critico',
+      titulo: 'Saldo fica negativo',
+      descricao: `Saldo chega a ${Utils.formatBRL(proj.menorSaldo.valorCentavos)} em ${Utils.fmtDate(proj.menorSaldo.data)}`
+    });
+  }
+
+  function _alertasFaturas(out) {
+    const hoje = Utils.today();
+    const mes = currentMonthPrefix();
+    CartaoService.listCartoes().forEach(c => {
+      [_addMonths(mes, -1), mes].forEach(comp => {
+        const f = CartaoService.getFatura(c.id, comp);
+        if (!f || f.paga || f.totalCentavos <= 0) return;
+        const dias = Utils.diffDays(hoje, f.dataVencimento);
+        if (dias < 0 || dias > Constants.FINANCE.ALERTAS.FATURA_DIAS) return;
+        out.push({
+          id: 'fat-' + c.id + '-' + comp, tipo: 'fatura', severidade: 'atencao',
+          titulo: `Fatura ${c.nome} vence em ${Utils.fmtDate(f.dataVencimento)}`,
+          descricao: `Fatura de ${Utils.formatBRL(f.totalCentavos)} vence em ${Utils.fmtDate(f.dataVencimento)}`,
+          acao: { label: 'Pagar fatura', tipo: 'pagar', alvoId: c.id }
+        });
+      });
+    });
+  }
+
+  function _alertasAssinaturas(out) {
+    const hoje = Utils.today();
+    const limite = Constants.FINANCE.ALERTAS.ASSINATURA_DIAS;
+    listAssinaturas().forEach(r => {
+      const base = r.ultimaConfirmacao || r.dataInicio || (r.criadoEm || '').slice(0, 10);
+      if (!base) return;
+      const dias = Utils.diffDays(base, hoje);
+      if (dias < limite) return;
+      const meses = Math.max(1, Math.floor(dias / 30));
+      out.push({
+        id: 'assin-' + r.id, tipo: 'assinatura', severidade: 'info',
+        titulo: `Ainda usa ${r.descricao}?`,
+        descricao: `Não confirmada há ${meses} ${meses > 1 ? 'meses' : 'mês'}`,
+        acao: { label: 'Confirmar', tipo: 'confirmar', alvoId: r.id }
+      });
+    });
+  }
+
+  function _alertasMetas(out) {
+    const semAporteMeses = Constants.FINANCE.ALERTAS.META_SEM_APORTE_MESES;
+    const mesAtual = currentMonthPrefix();
+    listMetas().forEach(c => {
+      const m = getMetaResumo(c.id);
+      if (!m || m.concluida || m.faltaCentavos <= 0 || !m.dataObjetivo) return;
+      const semAporte = !m.ultimoAporte
+        || _mesesEntre(m.ultimoAporte.slice(0, 7), mesAtual) >= semAporteMeses;
+      const prazoVencido = m.mesesRestantes !== null && m.mesesRestantes <= 0;
+      if (!semAporte && !prazoVencido) return;
+      out.push({
+        id: 'meta-' + c.id, tipo: 'meta', severidade: 'atencao',
+        titulo: `Meta ${m.nome} atrasada`,
+        descricao: `Precisa de ${Utils.formatBRL(m.aporteMensalNecessarioCentavos)}/mês pra bater o prazo`
+      });
+    });
+  }
+
+  /** Lista de alertas proativos do estado atual, ordenada por severidade. */
+  function getAlertas() {
+    const out = [];
+    const mes = currentMonthPrefix();
+    _alertasOrcamento(mes, out);
+    _alertasProjecao(out);
+    _alertasFaturas(out);
+    _alertasAssinaturas(out);
+    _alertasMetas(out);
+    return out.sort((a, b) => _SEV_RANK[a.severidade] - _SEV_RANK[b.severidade]);
+  }
+
   // ===== Teste manual (apenas localhost) =====
 
   /** APENAS localhost — semeia lançamentos do mês atual para testar a view. */
@@ -1039,6 +1205,44 @@ const FinanceService = (() => {
     _seedRelatorios(conta, desp, rec, mes);   // Fase 7a: histórico p/ gráficos
     _seedCategorizacao(conta, desp, rec, mes); // Fase 7b: descrições repetidas
     _seedPossoGastar(conta, desp, mes);        // Fase 7c: categoria perto do teto
+    _seedAlertas(conta, desp, mes);            // Fase 7d: vários alertas de uma vez
+  }
+
+  /**
+   * Cenário de alertas (Fase 7d): orçamento estourado, fatura vencendo em ~3 dias,
+   * meta atrasada sem aporte recente. Projeção negativa e assinaturas não
+   * confirmadas já vêm de _seedProjecao / _seedRecorrencias.
+   */
+  function _seedAlertas(conta, desp, mes) {
+    // Orçamento estourado: limite bem abaixo do já gasto em Mercado/casa neste mês
+    const merc = desp.find(c => c.nome === 'Mercado/casa') || desp[1];
+    if (merc) setOrcamento({ categoriaId: merc.id, limiteCentavos: 20000, rollover: false });
+
+    // Cartão com fatura aberta vencendo em ~3 dias (datas relativas a hoje)
+    if (window.CartaoService && !db().cartoes.some(c => c.nome === 'Cartão Alerta')) {
+      const hoje = Utils.today();
+      const vencDia = Utils.parseISO(Utils.addDays(hoje, 3)).getDate();
+      const cartao = CartaoService.addCartao({
+        nome: 'Cartão Alerta', cor: '#ef4444', limiteCentavos: 300000,
+        diaFechamento: vencDia, diaVencimento: vencDia, contaPagamentoId: conta.id
+      });
+      CartaoService.addCompraCartao({
+        cartaoId: cartao.id, descricao: 'Compra recente',
+        categoriaId: (desp[5] && desp[5].id), valorTotalCentavos: 45000, parcelas: 1, dataCompra: hoje
+      });
+    }
+
+    // Meta atrasada: objetivo grande, prazo em 2 meses, único aporte há 3 meses
+    if (!db().contas.some(c => c.tipo === 'meta')) {
+      const meta = addConta({
+        nome: 'Viagem', tipo: 'meta', icone: '✈️', cor: '#06b6d4',
+        valorObjetivoCentavos: 500000, dataObjetivo: `${_addMonths(mes, 2)}-01`
+      });
+      addTransaction({
+        tipo: 'transferencia', valorCentavos: 50000, descricao: 'Aporte inicial',
+        contaId: conta.id, contaDestinoId: meta.id, data: `${_addMonths(mes, -3)}-10`, fonte: 'manual'
+      });
+    }
   }
 
   /**
@@ -1220,7 +1424,8 @@ const FinanceService = (() => {
     listOrcamentos, getOrcamentoByCategoria, setOrcamento, removeOrcamento,
     getCarryover, getOrcamentoMes, getResumoOrcamento, diasRestantesMes,
     getRecorrenciaById, listRecorrencias, addRecorrencia, updateRecorrencia,
-    removeRecorrencia, toggleAtiva, proximaData, processarRecorrencias,
-    getProximasOcorrencias, getCustoFixo, listAssinaturas
+    removeRecorrencia, toggleAtiva, confirmarAssinatura, proximaData, processarRecorrencias,
+    getProximasOcorrencias, getCustoFixo, listAssinaturas,
+    listMetas, getMetaResumo, getAlertas
   };
 })();
