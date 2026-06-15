@@ -319,6 +319,9 @@
     window.CartaoService    = CartaoService;
     window.FinanceCartoes   = FinanceCartoes;
     window.FinanceCartaoModal = FinanceCartaoModal;
+    window.FinanceCarteiras = FinanceCarteiras;
+    window.FinanceCategorias = FinanceCategorias;
+    window.FinanceMetas     = FinanceMetas;
 
     // --- Projects ---
     window.openNewProjectModal = ProjectModal.open;

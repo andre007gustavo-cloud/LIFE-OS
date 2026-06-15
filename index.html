@@ -835,6 +835,176 @@
   </div>
 </div>
 
+<!-- ========== MODAL: CARTEIRA (conta) ========== -->
+<div class="overlay" id="carteira-modal">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="carteira-modal-title">Nova carteira</span>
+      <button class="modal-close" onclick="closeModal('carteira-modal')">×</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="flex:0 0 72px">
+        <label class="form-label">Ícone</label>
+        <input class="form-input" id="cart-icone" maxlength="2" placeholder="💵">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nome</label>
+        <input class="form-input" id="cart-nome" placeholder="Ex: Carteira, Nubank, Poupança…">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tipo</label>
+      <select class="form-select" id="cart-tipo">
+        <option value="dinheiro">Dinheiro</option>
+        <option value="corrente">Conta corrente</option>
+        <option value="poupanca">Poupança</option>
+      </select>
+    </div>
+    <div class="form-group" id="cart-saldo-group">
+      <label class="form-label">Saldo inicial (R$)</label>
+      <input class="form-input" id="cart-saldo" inputmode="decimal" placeholder="0,00">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Cor</label>
+      <div id="cart-color-picker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:space-between;margin-top:14px">
+      <button class="btn btn-ghost" id="cart-archive-btn" style="color:var(--red);display:none"
+              onclick="FinanceCarteiras.archiveCurrent()">
+        <i class="ti ti-archive"></i> Arquivar
+      </button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="btn btn-ghost" onclick="closeModal('carteira-modal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="FinanceCarteiras.save()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL: CATEGORIA ========== -->
+<div class="overlay" id="categoria-modal">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="categoria-modal-title">Nova categoria</span>
+      <button class="modal-close" onclick="closeModal('categoria-modal')">×</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="flex:0 0 72px">
+        <label class="form-label">Ícone</label>
+        <input class="form-input" id="cat-icone" maxlength="2" placeholder="📦">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nome</label>
+        <input class="form-input" id="cat-nome" placeholder="Ex: Mercado, Salário…">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tipo</label>
+      <select class="form-select" id="cat-tipo" onchange="FinanceCategorias.onTipoChange()">
+        <option value="despesa">Despesa</option>
+        <option value="receita">Receita</option>
+      </select>
+    </div>
+    <div class="form-group" id="cat-grupo-group">
+      <label class="form-label">Classificação 50/30/20</label>
+      <select class="form-select" id="cat-grupo">
+        <option value="necessidade">Necessidade (50%)</option>
+        <option value="desejo">Desejo (30%)</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Cor</label>
+      <div id="cat-color-picker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:space-between;margin-top:14px">
+      <button class="btn btn-ghost" id="cat-archive-btn" style="color:var(--red);display:none"
+              onclick="FinanceCategorias.archiveCurrent()">
+        <i class="ti ti-archive"></i> Arquivar
+      </button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="btn btn-ghost" onclick="closeModal('categoria-modal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="FinanceCategorias.save()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL: META ========== -->
+<div class="overlay" id="meta-modal">
+  <div class="modal">
+    <div class="modal-title">
+      <span id="meta-modal-title">Nova meta</span>
+      <button class="modal-close" onclick="closeModal('meta-modal')">×</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="flex:0 0 72px">
+        <label class="form-label">Ícone</label>
+        <input class="form-input" id="meta-icone" maxlength="2" placeholder="🎯">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nome</label>
+        <input class="form-input" id="meta-nome" placeholder="Ex: Viagem, Reserva…">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Objetivo (R$)</label>
+        <input class="form-input" id="meta-objetivo" inputmode="decimal" placeholder="0,00">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Prazo (opcional)</label>
+        <input class="form-input" type="date" id="meta-prazo">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Cor</label>
+      <div id="meta-color-picker" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:space-between;margin-top:14px">
+      <button class="btn btn-ghost" id="meta-archive-btn" style="color:var(--red);display:none"
+              onclick="FinanceMetas.archiveCurrent()">
+        <i class="ti ti-archive"></i> Arquivar
+      </button>
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button class="btn btn-ghost" onclick="closeModal('meta-modal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="FinanceMetas.save()">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MODAL: APORTE / RESGATE DE META ========== -->
+<div class="overlay" id="meta-aporte-modal">
+  <div class="modal">
+    <div class="modal-title">
+      <span>Aportar — <span id="meta-aporte-nome"></span></span>
+      <button class="modal-close" onclick="closeModal('meta-aporte-modal')">×</button>
+    </div>
+    <div class="pg-modo">
+      <button type="button" class="pg-modo-btn active" id="ma-modo-aporte" onclick="FinanceMetas.setModo('aporte')">Aportar</button>
+      <button type="button" class="pg-modo-btn" id="ma-modo-resgate" onclick="FinanceMetas.setModo('resgate')">Resgatar</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label" id="ma-conta-label">De qual carteira sai?</label>
+      <select class="form-select" id="ma-conta"></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Valor (R$)</label>
+        <input class="form-input" id="ma-valor" inputmode="decimal" placeholder="0,00">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Data</label>
+        <input class="form-input" type="date" id="ma-data">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+      <button class="btn btn-ghost" onclick="closeModal('meta-aporte-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="FinanceMetas.saveAporte()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ========== MODAL: IMPORTAR OFX (Fase 8) ========== -->
 <div class="overlay" id="import-modal">
   <div class="modal modal-import">
@@ -1100,6 +1270,9 @@
 <script src="js/components/financeReview.js"></script>
 <script src="js/components/financeRegua.js"></script>
 <script src="js/components/financeImport.js"></script>
+<script src="js/components/financeCarteiras.js"></script>
+<script src="js/components/financeCategorias.js"></script>
+<script src="js/components/financeMetas.js"></script>
 
 <script src="js/views/dashboardView.js"></script>
 <script src="js/views/tasksView.js"></script>

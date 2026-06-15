@@ -26,6 +26,9 @@ const FinanceView = (() => {
       FinanceReview.offerHtml() +
       FinanceAlertas.sectionHtml() +
       FinanceCartoes.sectionHtml() +
+      FinanceCarteiras.sectionHtml() +
+      FinanceCategorias.sectionHtml() +
+      FinanceMetas.sectionHtml() +
       FinancePossoGastar.buttonHtml() +
       FinanceProjecao.sectionHtml() +
       FinanceRelatorios.sectionHtml() +

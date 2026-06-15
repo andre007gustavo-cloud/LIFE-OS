@@ -149,6 +149,31 @@ const FinanceService = (() => {
     return conta;
   }
 
+  /**
+   * Edita uma conta existente. Só altera os campos presentes em 'fields'. O tipo
+   * é preservado se não vier (não se "promove" carteira a meta nem vice-versa por
+   * aqui); campos de meta (objetivo/prazo) só são aplicados se a conta for meta.
+   */
+  function updateConta(id, fields) {
+    const c = getContaById(id);
+    if (!c) return null;
+    if (fields.nome !== undefined) c.nome = (fields.nome || '').trim();
+    if (fields.tipo !== undefined) c.tipo = fields.tipo;
+    if (fields.cor !== undefined) c.cor = fields.cor;
+    if (fields.icone !== undefined) c.icone = fields.icone;
+    if (fields.saldoInicialCentavos !== undefined) {
+      c.saldoInicialCentavos = parseInt(fields.saldoInicialCentavos, 10) || 0;
+    }
+    if (c.tipo === 'meta') {
+      if (fields.valorObjetivoCentavos !== undefined) {
+        c.valorObjetivoCentavos = Math.abs(parseInt(fields.valorObjetivoCentavos, 10) || 0);
+      }
+      if (fields.dataObjetivo !== undefined) c.dataObjetivo = fields.dataObjetivo || '';
+    }
+    AppState.persist();
+    return c;
+  }
+
   function arquivarConta(id) {
     const c = getContaById(id);
     if (c) { c.arquivada = true; AppState.persist(); }
@@ -176,6 +201,29 @@ const FinanceService = (() => {
     db().categorias.push(cat);
     AppState.persist();
     return cat;
+  }
+
+  /**
+   * Edita uma categoria. O tipo (receita/despesa) NÃO é editável: trocá-lo
+   * deixaria lançamentos e orçamentos antigos inconsistentes. grupo503020 só
+   * vale para despesa.
+   */
+  function updateCategoria(id, fields) {
+    const c = getCategoriaById(id);
+    if (!c) return null;
+    if (fields.nome !== undefined) c.nome = (fields.nome || '').trim();
+    if (fields.icone !== undefined) c.icone = fields.icone;
+    if (fields.cor !== undefined) c.cor = fields.cor;
+    if (c.tipo === 'despesa' && fields.grupo503020 !== undefined) {
+      c.grupo503020 = fields.grupo503020 === 'necessidade' ? 'necessidade' : 'desejo';
+    }
+    AppState.persist();
+    return c;
+  }
+
+  function arquivarCategoria(id) {
+    const c = getCategoriaById(id);
+    if (c) { c.arquivada = true; AppState.persist(); }
   }
 
   // ===== Transações =====
@@ -1629,8 +1677,8 @@ const FinanceService = (() => {
 
   return {
     _seedDefaults, _seedTestData, _resetFinanceData,
-    listContas, getContaById, addConta, arquivarConta,
-    listCategorias, getCategoriaById, addCategoria, setGrupoCategoria,
+    listContas, getContaById, addConta, updateConta, arquivarConta,
+    listCategorias, getCategoriaById, addCategoria, updateCategoria, arquivarCategoria, setGrupoCategoria,
     get503020,
     addTransaction, updateTransaction, deleteTransaction,
     getTransacaoById, listTransactions,
