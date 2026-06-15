@@ -95,7 +95,14 @@ const ActivityService = (() => {
     const streak = currentStreak();
     const record = _record();
     let recordBeaten = false;
-    if (streak > record.max) {
+    if (_consumeRecordResetFlag()) {
+      // Correção pontual: recordes antigos foram inflados pela contagem por data
+      // da transação (lançar/importar finanças antigas). Reancora no streak real,
+      // sem comemorar — não é uma conquista nova.
+      record.max = streak;
+      record.achievedAt = streak ? Utils.today() : '';
+      changed = true;
+    } else if (streak > record.max) {
       record.max = streak;
       record.achievedAt = Utils.today();
       recordBeaten = true;
@@ -103,6 +110,14 @@ const ActivityService = (() => {
     }
     if (changed) AppState.persist();
     return { streak, recordBeaten };
+  }
+
+  /** Dispara o reset do recorde uma única vez (flag sincroniza entre aparelhos). */
+  function _consumeRecordResetFlag() {
+    const db = AppState.getDB();
+    if (db.activityRecordResetV1) return false;
+    db.activityRecordResetV1 = true;
+    return true;
   }
 
   /**

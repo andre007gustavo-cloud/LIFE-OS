@@ -303,9 +303,16 @@ const FinanceService = (() => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   }
 
-  /** Datas com lançamento — sinal de atividade para a sequência global. */
+  /**
+   * Dias em que o usuário registrou um lançamento — sinal de atividade para a
+   * sequência global. Usa criadoEm (quando foi lançado no app), não a data da
+   * transação: lançar/importar finanças antigas não deve inventar dias ativos
+   * no passado. criadoEm pode ser ISO completo ou 'YYYY-MM-DD' — slice cobre os dois.
+   */
   function entryDates() {
-    return db().transacoes.filter(t => t.data).map(t => t.data);
+    return db().transacoes
+      .map(t => (t.criadoEm || '').slice(0, 10))
+      .filter(Boolean);
   }
 
   // ===== Orçamentos (Fase 2) =====
