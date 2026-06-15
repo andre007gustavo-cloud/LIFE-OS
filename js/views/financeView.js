@@ -9,7 +9,7 @@ const FinanceView = (() => {
 
   function render() {
     // Revisão financeira em andamento (Fase 7e): toma a tela inteira
-    if (window.FinanceReview && FinanceReview.isActive()) {
+    if (FinanceReview.isActive()) {
       document.getElementById('fin-content').innerHTML = FinanceReview.flowHtml();
       return;
     }
@@ -22,7 +22,7 @@ const FinanceView = (() => {
 
     document.getElementById('fin-content').innerHTML =
       headerHtml(saldoTotal, resumo) +
-      (window.FinanceReview ? FinanceReview.offerHtml() : '') +
+      FinanceReview.offerHtml() +
       FinanceAlertas.sectionHtml() +
       FinanceCartoes.sectionHtml() +
       FinancePossoGastar.buttonHtml() +
