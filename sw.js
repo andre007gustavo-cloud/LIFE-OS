@@ -8,7 +8,7 @@
  * Para publicar nova versão: incremente CACHE_VERSION.
  */
 
-const CACHE_VERSION = 'v20260615-130000';
+const CACHE_VERSION = 'v20260615-140000';
 const CACHE_NAME = `lifeos-${CACHE_VERSION}`;
 
 // Domínios do Firebase/Google — deixa passar, Firebase cuida do offline via IndexedDB
@@ -53,6 +53,8 @@ const PRECACHE = [
   '/js/services/projectService.js',
   '/js/services/financeService.js',
   '/js/services/cartaoService.js',
+  '/js/services/ofxService.js',
+  '/js/services/importService.js',
   '/js/services/pomodoroService.js',
   '/js/services/habitService.js',
   '/js/services/reviewService.js',
@@ -89,6 +91,7 @@ const PRECACHE = [
   '/js/components/financeAlertas.js',
   '/js/components/financeReview.js',
   '/js/components/financeRegua.js',
+  '/js/components/financeImport.js',
   '/js/views/dashboardView.js',
   '/js/views/tasksView.js',
   '/js/views/taskDetail.js',

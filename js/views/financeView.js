@@ -22,6 +22,7 @@ const FinanceView = (() => {
 
     document.getElementById('fin-content').innerHTML =
       headerHtml(saldoTotal, resumo) +
+      toolbarHtml() +
       FinanceReview.offerHtml() +
       FinanceAlertas.sectionHtml() +
       FinanceCartoes.sectionHtml() +
@@ -34,17 +35,36 @@ const FinanceView = (() => {
       listHtml(txs) + devButtonHtml();
   }
 
-  /** Botão de teste — só em localhost, nunca em produção */
+  /** Botões de teste — só em localhost, nunca em produção */
   function devButtonHtml() {
     if (window.location.hostname !== 'localhost') return '';
-    return `<button class="btn btn-ghost btn-sm" style="margin-top:16px"
-              onclick="FinanceView.seedTest()">🧪 Semear lançamentos de teste</button>`;
+    return `<div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="FinanceView.seedTest()">🧪 Semear lançamentos de teste</button>
+      <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="FinanceView.resetData()">🗑️ Limpar dados de finanças</button>
+    </div>`;
   }
 
   function seedTest() {
     FinanceService._seedTestData();
     render();
     if (window.DashboardView) DashboardView.render();
+  }
+
+  /** Apaga todos os dados de finanças (mantém só categorias e a conta padrão). Só em localhost. */
+  function resetData() {
+    if (!confirm('Apagar TODOS os dados de finanças (lançamentos, cartões, orçamentos, importações…)? Categorias e a conta padrão são recriadas. Isso sincroniza para a nuvem.')) return;
+    FinanceService._resetFinanceData();
+    render();
+    if (window.DashboardView) DashboardView.render();
+  }
+
+  /** Barra de ações da central de Finanças (ponto de entrada único de importação). */
+  function toolbarHtml() {
+    return `<div class="fin-toolbar">
+      <button class="btn btn-ghost btn-sm" onclick="FinanceImport.openCentral()">
+        <i class="ti ti-file-import"></i> Importar OFX
+      </button>
+    </div>`;
   }
 
   // ===== Topo: saldo + resumo do mês =====
@@ -182,5 +202,5 @@ const FinanceView = (() => {
     if (window.DashboardView) DashboardView.render();
   }
 
-  return { render, remove, seedTest };
+  return { render, remove, seedTest, resetData };
 })();

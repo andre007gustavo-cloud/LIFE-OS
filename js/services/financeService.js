@@ -1340,6 +1340,29 @@ const FinanceService = (() => {
 
   // ===== Teste manual (apenas localhost) =====
 
+  /**
+   * APENAS localhost — apaga TODOS os dados de finanças e recria os defaults
+   * (categorias + conta "Carteira"). Útil para limpar os seeds e testar com
+   * arquivos OFX reais. Persiste (sincroniza para a nuvem).
+   */
+  function _resetFinanceData() {
+    if (window.location.hostname !== 'localhost') return;
+    const d = AppState.getDB();
+    d.contas = [];
+    d.categorias = [];
+    d.transacoes = [];
+    d.orcamentos = [];
+    d.recorrencias = [];
+    d.cartoes = [];
+    d.faturaPagamentos = [];
+    d.parcelasPrevistas = [];
+    d.importacoes = [];
+    d.revisoesFinanceiras = [];
+    delete d.ultimaRevisaoFinanceira;
+    AppState.persist();
+    _seedDefaults();
+  }
+
   /** APENAS localhost — semeia lançamentos do mês atual para testar a view. */
   function _seedTestData() {
     if (window.location.hostname !== 'localhost') return;
@@ -1598,7 +1621,7 @@ const FinanceService = (() => {
   }
 
   return {
-    _seedDefaults, _seedTestData,
+    _seedDefaults, _seedTestData, _resetFinanceData,
     listContas, getContaById, addConta, arquivarConta,
     listCategorias, getCategoriaById, addCategoria, setGrupoCategoria,
     get503020,

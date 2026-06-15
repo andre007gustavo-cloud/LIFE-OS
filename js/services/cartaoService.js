@@ -15,6 +15,7 @@ const CartaoService = (() => {
     const d = AppState.getDB();
     if (!d.cartoes) d.cartoes = [];
     if (!d.faturaPagamentos) d.faturaPagamentos = [];
+    if (!d.parcelasPrevistas) d.parcelasPrevistas = []; // Fase 8: parcelas futuras reconstruídas
     return d;
   }
 
@@ -159,7 +160,21 @@ const CartaoService = (() => {
     const transacoes = AppState.getDB().transacoes || [];
 
     transacoes.forEach(t => {
-      if (t.cartaoId !== cartaoId) return;
+      if (t.cartaoId !== cartaoId || t.pagamentoFatura) return;
+
+      // Fase 8: item importado já vem preso a uma competência (não expande por data).
+      // CREDIT (estorno/pagamento) entra como entrada → abate a fatura.
+      if (t.faturaImportada) {
+        if (t.competencia !== competencia) return;
+        const sinal = t.tipo === 'entrada' ? -1 : 1;
+        itens.push({
+          transacaoId: t.id, descricao: t.descricao, categoriaId: t.categoriaId,
+          parcelaNum: t.parcelaNum || 1, parcelaTotal: t.parcelaTotal || 1,
+          valorParcelaCentavos: sinal * t.valorCentavos, importada: true
+        });
+        return;
+      }
+
       const totalParcelas = t.parcelas || 1;
       const compBase = competenciaDaCompra(cartao, t.data);
       const baseVal = Math.floor(t.valorCentavos / totalParcelas);
@@ -179,6 +194,16 @@ const CartaoService = (() => {
           valorParcelaCentavos: valorParcela
         });
       }
+    });
+
+    // Fase 8: parcelas futuras reconstruídas (previstas) desta competência
+    db().parcelasPrevistas.forEach(p => {
+      if (p.cartaoId !== cartaoId || p.competencia !== competencia) return;
+      itens.push({
+        transacaoId: '', descricao: p.descricao, categoriaId: p.categoriaId,
+        parcelaNum: p.parcelaNum, parcelaTotal: p.parcelaTotal,
+        valorParcelaCentavos: p.valorCentavos, previsto: true
+      });
     });
 
     const totalCentavos = itens.reduce((s, i) => s + i.valorParcelaCentavos, 0);

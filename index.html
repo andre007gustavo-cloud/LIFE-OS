@@ -835,6 +835,17 @@
   </div>
 </div>
 
+<!-- ========== MODAL: IMPORTAR OFX (Fase 8) ========== -->
+<div class="overlay" id="import-modal">
+  <div class="modal modal-import">
+    <div class="modal-title">
+      <span><i class="ti ti-file-import"></i> Importar OFX</span>
+      <button class="modal-close" onclick="closeModal('import-modal')">×</button>
+    </div>
+    <div id="import-content"></div>
+  </div>
+</div>
+
 <!-- ========== MODAL: POSSO GASTAR? (Fase 7c) ========== -->
 <div class="overlay" id="posso-gastar-modal">
   <div class="modal">
@@ -1048,6 +1059,8 @@
 <script src="js/services/projectService.js"></script>
 <script src="js/services/financeService.js"></script>
 <script src="js/services/cartaoService.js"></script>
+<script src="js/services/ofxService.js"></script>
+<script src="js/services/importService.js"></script>
 <script src="js/services/pomodoroService.js"></script>
 <script src="js/services/habitService.js"></script>
 <script src="js/services/reviewService.js"></script>
@@ -1086,6 +1099,7 @@
 <script src="js/components/financeAlertas.js"></script>
 <script src="js/components/financeReview.js"></script>
 <script src="js/components/financeRegua.js"></script>
+<script src="js/components/financeImport.js"></script>
 
 <script src="js/views/dashboardView.js"></script>
 <script src="js/views/tasksView.js"></script>

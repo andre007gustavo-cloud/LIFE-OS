@@ -701,3 +701,71 @@ body.rv-flow .fin-fab{display:none !important}
 .r503-class-opt.active{color:#fff;font-weight:600;border-color:transparent}
 .r503-class-opt.active.r503-necessidade{background:#60a5fa}
 .r503-class-opt.active.r503-desejo{background:#a78bfa}
+
+/* ===== Fase 8: Importar OFX ===== */
+.fin-toolbar{display:flex;justify-content:flex-end;gap:8px;margin:-4px 0 12px}
+
+.modal-import{max-width:560px}
+#import-content{max-height:70vh;overflow-y:auto}
+
+.import-hint{font-size:13px;color:var(--text2);margin:0 0 14px;line-height:1.5}
+.import-meta{font-size:12px;color:var(--text3);margin:6px 0 14px}
+.import-erro{
+  background:color-mix(in srgb, var(--red) 12%, transparent);color:var(--text);
+  border-radius:var(--radius-sm);padding:10px 12px;font-size:13px;margin-bottom:12px;
+}
+
+.import-drop{
+  display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;
+  border:2px dashed var(--border);border-radius:var(--radius);padding:26px;
+  color:var(--text2);transition:border-color .15s,color .15s;
+}
+.import-drop:hover{border-color:var(--accent);color:var(--accent2)}
+.import-drop i{font-size:30px}
+.import-drop span{font-size:13px;font-weight:600}
+
+.import-detected{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:4px}
+.import-badge{
+  background:var(--accent);color:#fff;font-size:11px;font-weight:700;
+  border-radius:999px;padding:2px 10px;
+}
+
+.import-actions{display:flex;justify-content:space-between;gap:8px;margin-top:16px}
+.import-actions .btn-primary{margin-left:auto}
+
+/* Histórico de importações */
+.import-hist{margin-top:20px;border-top:1px solid var(--border);padding-top:12px}
+.import-hist-head{font-size:12px;font-weight:600;color:var(--text3);
+  text-transform:uppercase;letter-spacing:.03em;margin-bottom:8px}
+.import-hist-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.import-hist-row:last-child{border-bottom:none}
+.import-hist-info{flex:1;min-width:0}
+.import-hist-titulo{font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.import-hist-sub{font-size:11px;color:var(--text3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Tabela de revisão */
+.import-review-list{display:flex;flex-direction:column;gap:2px;margin-top:6px}
+.import-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.import-row:last-child{border-bottom:none}
+.import-row-off{opacity:.45}
+.import-row-main{flex:1;min-width:0}
+.import-row-desc{font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.import-row-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.import-row-cat{flex:none;width:150px}
+.import-cat-sel{padding:4px 6px;font-size:12px;height:auto}
+.import-row-val{flex:none;font-size:13px;font-weight:600;min-width:74px;text-align:right}
+.import-tag-dup,.import-tag-pag{font-size:11px;color:var(--text3);font-style:italic}
+
+/* Resumo final */
+.import-resumo{text-align:center;padding:18px 0}
+.import-resumo i{font-size:40px;color:var(--green)}
+.import-resumo-titulo{font-size:15px;font-weight:700;margin:8px 0}
+.import-resumo ul{list-style:none;padding:0;margin:0;font-size:13px;color:var(--text2);line-height:1.9}
+
+/* Atalho de importação no detalhe do cartão + tag de previsto */
+.fatura-import-row{display:flex;justify-content:flex-end;margin:4px 0 10px}
+.fatura-item-previsto{opacity:.7}
+.fatura-item-prev{
+  font-size:10px;color:var(--text3);border:1px solid var(--border);
+  border-radius:999px;padding:1px 6px;vertical-align:middle;
+}

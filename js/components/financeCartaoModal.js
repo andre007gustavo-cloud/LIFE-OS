@@ -177,9 +177,10 @@ const FinanceCartaoModal = (() => {
           const parcBadge = item.parcelaTotal > 1
             ? `<span class="fatura-item-parcela">${item.parcelaNum}/${item.parcelaTotal}</span>`
             : '';
-          return `<div class="fatura-item">
+          const prevTag = item.previsto ? ` <span class="fatura-item-prev">previsto</span>` : '';
+          return `<div class="fatura-item${item.previsto ? ' fatura-item-previsto' : ''}">
             <div class="fatura-item-info">
-              <div class="fatura-item-desc">${Utils.escapeHtml(item.descricao || 'Compra')}</div>
+              <div class="fatura-item-desc">${Utils.escapeHtml(item.descricao || 'Compra')}${prevTag}</div>
               <div class="fatura-item-sub">${Utils.escapeHtml(cat ? `${cat.icone} ${cat.nome}` : '')}</div>
             </div>
             ${parcBadge}
@@ -216,6 +217,12 @@ const FinanceCartaoModal = (() => {
       </div>
       <div class="orc-bar" style="margin-bottom:14px">
         <div class="orc-bar-fill ${barClass}" style="width:${pct}%"></div>
+      </div>
+
+      <div class="fatura-import-row">
+        <button class="btn btn-ghost btn-sm" onclick="FinanceImport.openForCartao('${cartao.id}')">
+          <i class="ti ti-file-import"></i> Importar fatura (.ofx)
+        </button>
       </div>
 
       <div class="fatura-month-nav">
