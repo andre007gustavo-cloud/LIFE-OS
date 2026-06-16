@@ -17,7 +17,8 @@ const VoiceService = (() => {
 
   function isEnabled() {
     const db = AppState.getDB();
-    return !!(db && db.voice && db.voice.enabled);
+    // Voz ligada por padrão (estilo JARVIS): só fica muda se desligada explicitamente
+    return !(db && db.voice && db.voice.enabled === false);
   }
 
   function setEnabled(on) {
