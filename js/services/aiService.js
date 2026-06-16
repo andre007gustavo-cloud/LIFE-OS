@@ -16,6 +16,12 @@ const AiService = (() => {
   const HISTORY_LIMIT = 40;   // mantém só as últimas N mensagens persistidas
   const LOOP_GUARD = 12;      // teto de iterações do loop de tool calling
 
+  // O transcript é dado LOCAL do dispositivo (como as preferências do feedback.js):
+  // guardamos em localStorage próprio, fora do DB sincronizado. Assim o chat não
+  // entra no documento do Firestore (evita inchar e provocar falha de sync) nem
+  // dispara uma gravação na nuvem a cada mensagem. Exceção registrada no CLAUDE.md.
+  const STORE_KEY = 'lifeos_ai_chat';
+
   let messages = [];          // histórico no formato Anthropic { role, content }
   let _thinking = false;      // esperando a API
   let _pending = null;        // { block, resolve } da confirmação em curso
@@ -197,14 +203,17 @@ REGRAS:
   }
 
   function _persist() {
-    const db = AppState.getDB();
-    db.aiChat = { messages: messages.slice(-HISTORY_LIMIT) };
-    AppState.persist();
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(messages.slice(-HISTORY_LIMIT)));
+    } catch { /* cota cheia / modo privado: o chat em memória segue funcionando */ }
   }
 
   function init() {
-    const db = AppState.getDB();
-    messages = (db.aiChat && Array.isArray(db.aiChat.messages)) ? db.aiChat.messages : [];
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      const parsed = raw ? JSON.parse(raw) : null;
+      messages = Array.isArray(parsed) ? parsed : [];
+    } catch { messages = []; }
   }
 
   function getMessages() { return messages; }
@@ -213,7 +222,7 @@ REGRAS:
   function clear() {
     messages = [];
     _pending = null;
-    _persist();
+    try { localStorage.removeItem(STORE_KEY); } catch { /* ignora */ }
     _emit();
   }
 

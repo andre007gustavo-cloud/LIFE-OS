@@ -13,6 +13,7 @@ Princípios gerais: SOLID e Clean Code, aplicados conforme as regras concretas a
 - js/core/storage.js mostra um toast de erro de sync (`_notifySyncError`) — único ponto de DOM no core, intencional
 - js/pwa.js usa localStorage direto para as chaves próprias dos banners de instalação (não são dados do app)
 - js/components/feedback.js usa localStorage direto para as preferências de feedback (por dispositivo, nunca sincronizam)
+- js/services/aiService.js usa localStorage direto para o transcript do assistente (`lifeos_ai_chat`) — dado local do dispositivo, fora do DB sincronizado (não incha o documento do Firestore nem grava na nuvem a cada mensagem)
 - js/components/loginScreen.js chama Storage.stopListening() no logout (fluxo de autenticação)
 
 ## Checklist obrigatório ao criar/renomear QUALQUER arquivo

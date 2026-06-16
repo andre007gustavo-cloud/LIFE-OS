@@ -40,6 +40,9 @@ body.now-mode #ai-fab{display:none}
   display:flex;align-items:center;justify-content:space-between;
   padding:12px 16px;border-bottom:1px solid var(--border);flex:0 0 auto;
 }
+/* Drawer cobre a tela inteira (top:0): respeita o notch para os botões
+   de limpar/fechar não caírem sob a área não-clicável do recorte. */
+#ai-drawer .ai-head{padding-top:calc(12px + env(safe-area-inset-top,0px))}
 .ai-head-title{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px}
 .ai-head-title i{color:var(--accent2)}
 .ai-head-actions{display:flex;gap:4px}
@@ -107,6 +110,8 @@ body.now-mode #ai-fab{display:none}
 .ai-input-bar{
   flex:0 0 auto;display:flex;align-items:flex-end;gap:8px;
   padding:12px;border-top:1px solid var(--border);
+  /* Respeita o indicador de home (parte de baixo) em telas com notch */
+  padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));
 }
 .ai-input{
   flex:1;resize:none;max-height:120px;
