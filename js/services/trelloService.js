@@ -39,6 +39,7 @@ const TrelloService = (() => {
 
   let _pollTimer  = null;
   let _configured = false;
+  let _errorNotified = false; // avisa o usuário no máximo uma vez por sessão
 
   // ─── Acesso ao DB ─────────────────────────────────────────────────────────
 
@@ -185,11 +186,24 @@ const TrelloService = (() => {
 
   // ─── Lógica de sync ───────────────────────────────────────────────────────
 
+  /** Traduz o erro técnico do fetch numa mensagem acionável para o usuário. */
+  function _humanError(err) {
+    const m = (err && err.message) || '';
+    if (/Failed to fetch|NetworkError|Load failed|ERR_/i.test(m)) {
+      return 'Trello: não consegui acessar api.trello.com (rede ou firewall bloqueou). Tente em outra rede/dispositivo.';
+    }
+    if (/\b40[13]\b/.test(m)) {
+      return 'Trello recusou a chave/token (autenticação). Reconfigure as credenciais.';
+    }
+    return 'Trello: falha ao sincronizar — ' + (m || 'erro desconhecido');
+  }
+
   async function _sync() {
     if (!_isConfigured()) return;
 
     try {
       const cards      = await _fetchCards();
+      _errorNotified   = false; // o sync voltou a funcionar
       const trello     = _integrations();
       const synced     = new Set(trello.lastSyncedCardIds || []);
       const newCards   = cards.filter(c => !synced.has(c.id));
@@ -222,6 +236,12 @@ const TrelloService = (() => {
 
     } catch (err) {
       console.error('[TrelloService] Erro no sync:', err.message);
+      // Antes esse erro era invisível: o polling falhava em silêncio e os cards
+      // simplesmente não importavam. Avisa o usuário uma vez por sessão.
+      if (!_errorNotified && typeof Feedback !== 'undefined') {
+        Feedback.toast(_humanError(err), 'warn');
+        _errorNotified = true;
+      }
     }
   }
 
@@ -259,6 +279,13 @@ const TrelloService = (() => {
 
   /** Força um sync manual (ex.: botão "Sincronizar agora" nas configurações) */
   async function syncNow() {
+    _errorNotified = false; // disparo manual sempre reporta o resultado
+    if (!_isConfigured()) {
+      if (typeof Feedback !== 'undefined') {
+        Feedback.toast('Trello não está configurado neste dispositivo.', 'warn');
+      }
+      return;
+    }
     return _sync();
   }
 
