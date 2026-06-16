@@ -282,6 +282,15 @@ body.light .cmdk-item.selected .cmdk-item-section{color:#4338CA}
 .fbset-label{font-size:14px;font-weight:500}
 .fbset-hint{font-size:11px;color:var(--text3)}
 
+/* Painel da integração com o Trello (dentro das configurações) */
+.trello-set{display:flex;flex-direction:column;gap:10px;padding:8px 4px 4px}
+.trello-set-status{font-size:12px;display:flex;align-items:center;gap:6px;line-height:1.4}
+.trello-set-status i{font-size:15px;flex-shrink:0}
+.trello-set-field{display:flex;flex-direction:column;gap:4px}
+.trello-set-field span{font-size:12px;color:var(--text2)}
+.trello-set-hint{font-size:11px;color:var(--text3);line-height:1.5}
+.trello-set-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
+
 /* Animações desligadas: por preferência do usuário (body.fb-no-anim)
    ou pelo sistema (prefers-reduced-motion) — sons não são afetados */
 body.fb-no-anim .view,

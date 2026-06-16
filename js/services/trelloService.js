@@ -40,6 +40,8 @@ const TrelloService = (() => {
   let _pollTimer  = null;
   let _configured = false;
   let _errorNotified = false; // avisa o usuário no máximo uma vez por sessão
+  let _lastError  = null;     // mensagem do último erro de sync (para o painel)
+  let _lastSyncAt = null;     // ISO do último contato bem-sucedido com o Trello
 
   // ─── Acesso ao DB ─────────────────────────────────────────────────────────
 
@@ -204,6 +206,8 @@ const TrelloService = (() => {
     try {
       const cards      = await _fetchCards();
       _errorNotified   = false; // o sync voltou a funcionar
+      _lastError       = null;
+      _lastSyncAt      = new Date().toISOString();
       const trello     = _integrations();
       const synced     = new Set(trello.lastSyncedCardIds || []);
       const newCards   = cards.filter(c => !synced.has(c.id));
@@ -236,13 +240,28 @@ const TrelloService = (() => {
 
     } catch (err) {
       console.error('[TrelloService] Erro no sync:', err.message);
+      _lastError = _humanError(err);
       // Antes esse erro era invisível: o polling falhava em silêncio e os cards
       // simplesmente não importavam. Avisa o usuário uma vez por sessão.
       if (!_errorNotified && typeof Feedback !== 'undefined') {
-        Feedback.toast(_humanError(err), 'warn');
+        Feedback.toast(_lastError, 'warn');
         _errorNotified = true;
       }
     }
+  }
+
+  /** Estado da integração para o painel de configurações. */
+  function getStatus() {
+    const t = _integrations();
+    return {
+      configured:    _isConfigured(),
+      hasKey:        !!t.apiKey,
+      hasToken:      !!t.token,
+      hasList:       !!t.listId,
+      importedCount: (t.lastSyncedCardIds || []).length,
+      lastSyncAt:    _lastSyncAt,
+      lastError:     _lastError
+    };
   }
 
   // ─── Polling ──────────────────────────────────────────────────────────────
@@ -321,6 +340,7 @@ const TrelloService = (() => {
     syncNow,
     saveCredentials,
     getCredentials,
+    getStatus,
     resetSyncedCards,
     autoConfigureFromBoard,
     WORK_BLOCKS, // exposto para a tela de config exibir/editar os horários

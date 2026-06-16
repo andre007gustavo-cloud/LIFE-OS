@@ -34,6 +34,7 @@ const SettingsModal = (() => {
     document.getElementById('settings-body').innerHTML =
       '<div class="fbset-section">Feedback sensorial</div>'
       + SETTINGS.map(feedbackRowHtml).join('')
+      + trelloHtml()
       + appearanceHtml()
       + accountHtml();
   }
@@ -53,6 +54,74 @@ const SettingsModal = (() => {
         <span class="fb-switch-slider"></span>
       </label>
     </div>`;
+  }
+
+  // ===== Integração: Trello =====
+
+  function trelloHtml() {
+    const c = TrelloService.getCredentials();
+    const st = TrelloService.getStatus();
+    return `<div class="fbset-section">Integração — Trello</div>
+      <div class="trello-set">
+        <div class="trello-set-status">${trelloStatusHtml(st)}</div>
+        <label class="trello-set-field">
+          <span>Chave (API key)</span>
+          <input class="form-input" id="trello-apikey" value="${Utils.escapeAttr(c.apiKey)}" placeholder="sua API key">
+        </label>
+        <label class="trello-set-field">
+          <span>Token</span>
+          <input class="form-input" id="trello-token" type="password" value="${Utils.escapeAttr(c.token)}" placeholder="seu token">
+        </label>
+        <label class="trello-set-field">
+          <span>ID da lista</span>
+          <input class="form-input" id="trello-listid" value="${Utils.escapeAttr(c.listId)}" placeholder="ID da lista (ex.: Andre)">
+        </label>
+        <div class="trello-set-hint">Pegue a chave em trello.com/app-key, gere o token autorizando o app, e copie o ID da lista do quadro. Os cards viram tarefas na área Trabalho.</div>
+        <div class="trello-set-actions">
+          <button class="btn btn-primary btn-sm" onclick="SettingsModal.saveTrello()">Salvar</button>
+          <button class="btn btn-ghost btn-sm" onclick="SettingsModal.syncTrello()">Sincronizar agora</button>
+          <button class="btn btn-ghost btn-sm" onclick="SettingsModal.reimportTrello()">Reimportar tudo</button>
+        </div>
+      </div>`;
+  }
+
+  function trelloStatusHtml(st) {
+    if (st.lastError) {
+      return `<span style="color:var(--amber)"><i class="ti ti-alert-triangle"></i> ${Utils.escapeHtml(st.lastError)}</span>`;
+    }
+    if (!st.configured) {
+      const faltam = [!st.hasKey && 'chave', !st.hasToken && 'token', !st.hasList && 'lista'].filter(Boolean).join(', ');
+      return `<span style="color:var(--text3)"><i class="ti ti-plug-connected-x"></i> Não configurado neste dispositivo (faltam: ${faltam})</span>`;
+    }
+    const quando = st.lastSyncAt
+      ? ' · última sync ' + new Date(st.lastSyncAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+      : ' · ainda não sincronizou nesta sessão';
+    return `<span style="color:var(--green)"><i class="ti ti-plug-connected"></i> Conectado · ${st.importedCount} card(s) já importado(s)${quando}</span>`;
+  }
+
+  function saveTrello() {
+    const apiKey = document.getElementById('trello-apikey').value;
+    const token  = document.getElementById('trello-token').value;
+    const listId = document.getElementById('trello-listid').value;
+    const ok = TrelloService.saveCredentials({ apiKey, token, listId });
+    Feedback.toast(
+      ok ? 'Trello: credenciais salvas' : 'Trello: preencha chave, token e lista',
+      ok ? 'success' : 'warn'
+    );
+    renderBody();
+  }
+
+  async function syncTrello() {
+    Feedback.toast('Trello: sincronizando…', 'info');
+    await TrelloService.syncNow();
+    renderBody();
+  }
+
+  async function reimportTrello() {
+    if (!confirm('Reimportar TODOS os cards da lista? Cards já importados antes podem virar tarefas duplicadas.')) return;
+    TrelloService.resetSyncedCards();
+    await TrelloService.syncNow();
+    renderBody();
   }
 
   /** No mobile o botão de tema sai da nav — fica acessível aqui */
@@ -95,5 +164,5 @@ const SettingsModal = (() => {
     setting.test();
   }
 
-  return { open, toggle, test };
+  return { open, toggle, test, saveTrello, syncTrello, reimportTrello };
 })();
