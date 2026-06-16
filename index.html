@@ -55,6 +55,7 @@
   <link rel="stylesheet" href="css/habits.css">
   <link rel="stylesheet" href="css/review.css">
   <link rel="stylesheet" href="css/now.css">
+  <link rel="stylesheet" href="css/ai-chat.css">
   <link rel="stylesheet" href="css/responsive.css">
 </head>
 <body>
@@ -113,6 +114,9 @@
     </button>
     <button class="nav-btn" id="nav-habits" onclick="showView('habits')">
       <i class="ti ti-repeat"></i><span class="nav-label">Hábitos</span>
+    </button>
+    <button class="nav-btn" id="nav-ia" onclick="showView('ia')">
+      <i class="ti ti-sparkles"></i><span class="nav-label">Assistente</span>
     </button>
     <button class="nav-btn" id="theme-btn" onclick="toggleTheme()" style="margin-left:auto" title="Alternar tema">
       <i class="ti ti-sun" id="theme-icon"></i>
@@ -395,6 +399,9 @@
     </div>
     <div id="now-root"></div>
   </div>
+
+  <!-- ========== IA / ASSISTENTE VIEW ========== -->
+  <div class="view" id="view-ia"></div>
 
   <!-- ========== HABITS VIEW ========== -->
   <div class="view padded" id="view-habits">
@@ -1282,6 +1289,10 @@
 <script src="js/views/reviewView.js"></script>
 <script src="js/views/comebackView.js"></script>
 <script src="js/views/nowView.js"></script>
+
+<script src="js/services/aiTools.js"></script>
+<script src="js/services/aiService.js"></script>
+<script src="js/ui/aiChatView.js"></script>
 
 <script src="js/app.js"></script>
 <script src="js/pwa.js"></script>

@@ -101,6 +101,8 @@
     NowView.init();
     PomodoroService.onComplete(onPomodoroComplete);
     TrelloService.init();
+    AiService.init();
+    AiChatView.init();
 
     // Close day-popover quando clica fora
     document.addEventListener('click', e => {
@@ -124,6 +126,7 @@
     Navigation.register('habits', HabitsView.render);
     Navigation.register('review', ReviewView.render);
     Navigation.register('now', NowView.render);
+    Navigation.register('ia', AiChatView.render);
 
     // Expõe funções globais para onclick inline
     exposeGlobals();
@@ -394,5 +397,9 @@
     window.ImageResize      = ImageResize;
     window.FileHandler      = FileHandler;
     window.TrelloService    = TrelloService;
+
+    // --- Assistente IA ---
+    window.AiService        = AiService;
+    window.AiChatView       = AiChatView;
   }
 })();

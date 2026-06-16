@@ -8,7 +8,7 @@
  * Para publicar nova versão: incremente CACHE_VERSION.
  */
 
-const CACHE_VERSION = 'v20260615-224831';
+const CACHE_VERSION = 'v20260615-234048';
 const CACHE_NAME = `lifeos-${CACHE_VERSION}`;
 
 // Domínios do Firebase/Google — deixa passar, Firebase cuida do offline via IndexedDB
@@ -40,6 +40,7 @@ const PRECACHE = [
   '/css/habits.css',
   '/css/review.css',
   '/css/now.css',
+  '/css/ai-chat.css',
   '/css/responsive.css',
   '/js/config/constants.js',
   '/js/core/utils.js',
@@ -106,6 +107,9 @@ const PRECACHE = [
   '/js/views/reviewView.js',
   '/js/views/comebackView.js',
   '/js/views/nowView.js',
+  '/js/services/aiTools.js',
+  '/js/services/aiService.js',
+  '/js/ui/aiChatView.js',
   '/js/app.js',
   '/js/pwa.js',
 ];
