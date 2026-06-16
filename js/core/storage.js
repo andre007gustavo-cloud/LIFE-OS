@@ -204,7 +204,7 @@ const Storage = (() => {
       console.error('Erro ao salvar no Firestore:', err);
       _isSaving = false;
       _setSyncState('offline');
-      _notifySyncError();
+      _notifySyncError(err);
     }
   }
 
@@ -218,18 +218,22 @@ const Storage = (() => {
     }, DEBOUNCE_MS);
   }
 
-  /** Toast discreto quando o save na nuvem falha (dados continuam no dispositivo) */
-  function _notifySyncError() {
+  /** Toast discreto quando o save na nuvem falha (dados continuam no dispositivo).
+   *  Inclui código/mensagem do erro para diagnóstico (ex.: limite de tamanho do
+   *  documento, valor inválido, permissão). */
+  function _notifySyncError(err) {
     if (document.getElementById('sync-error-toast')) return;
+    const detalhe = err ? (err.code || err.message || String(err)) : '';
     const el = document.createElement('div');
     el.id = 'sync-error-toast';
-    el.textContent = '⚠️ Falha ao sincronizar com a nuvem — os dados estão salvos neste dispositivo';
+    el.innerHTML = '⚠️ Falha ao sincronizar com a nuvem — os dados estão salvos neste dispositivo'
+      + (detalhe ? `<br><span style="opacity:.85;font-size:11px">${Utils.escapeHtml(detalhe)}</span>` : '');
     el.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);'
       + 'background:#7f1d1d;color:#fff;padding:10px 16px;border-radius:10px;'
       + 'font-size:13px;z-index:9999;max-width:calc(100vw - 32px);text-align:center;'
       + 'box-shadow:0 4px 16px #00000066';
     document.body.appendChild(el);
-    setTimeout(() => el.remove(), 6000);
+    setTimeout(() => el.remove(), 9000);
   }
 
   // ===== REAL-TIME SYNC =====
