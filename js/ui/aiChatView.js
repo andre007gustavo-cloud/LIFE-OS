@@ -5,8 +5,9 @@
  *   1. FAB flutuante + drawer lateral direito (visível em qualquer view)
  *   2. Aba dedicada "Assistente" (view 'ia'), em tela cheia
  *
- * O estado da conversa vive no AiService; aqui só desenhamos e captamos input
- * (texto e voz via Web Speech API). Reage às mudanças via AiService.onUpdate.
+ * O estado da conversa vive no AiService; aqui só desenhamos e captamos input.
+ * Entrada por voz via Web Speech API (SpeechRecognition); saída falada via
+ * VoiceService (TTS). Reage às mudanças via AiService.onUpdate.
  */
 
 const AiChatView = (() => {
@@ -15,7 +16,14 @@ const AiChatView = (() => {
   const MOUNTS = ['view', 'drawer'];
 
   let _recognition = null;
+  let _srSupported = false;
+  let _listening = false;
   let _activeMicMount = null;
+  let _finalTranscript = '';
+
+  let _handsfree = false;       // só nesta sessão (toggle por toque)
+  let _greeted = false;         // saudação só uma vez por sessão de abertura
+  let _lastSpoken = '';         // evita refalar a mesma resposta a cada re-render
 
   // ===== Nomes amigáveis das ferramentas de leitura (transparência no chat) =====
   const READ_NAMES = {
@@ -46,6 +54,8 @@ const AiChatView = (() => {
         <div class="ai-head">
           <div class="ai-head-title"><i class="ti ti-sparkles"></i> Assistente</div>
           <div class="ai-head-actions">
+            <button class="icon-btn ai-voice" id="ai-voice-${mount}" title="Voz" onclick="AiChatView.toggleVoice()"><i class="ti ti-volume"></i></button>
+            <button class="icon-btn ai-hands" id="ai-hands-${mount}" title="Mãos-livres" onclick="AiChatView.toggleHandsfree()"><i class="ti ti-ear"></i></button>
             <button class="icon-btn" title="Limpar conversa" onclick="AiChatView.clear()"><i class="ti ti-trash"></i></button>
             ${closeBtn}
           </div>
@@ -56,7 +66,7 @@ const AiChatView = (() => {
                     placeholder="Pergunte ou peça algo…"
                     onkeydown="AiChatView.inputKey(event,'${mount}')"></textarea>
           <button class="ai-mic icon-btn" id="ai-mic-${mount}" title="Falar"
-                  onclick="AiChatView.startVoice('${mount}')"><i class="ti ti-microphone"></i></button>
+                  onclick="AiChatView.toggleMic('${mount}')"><i class="ti ti-microphone"></i></button>
           <button class="ai-send" title="Enviar" onclick="AiChatView.send('${mount}')">
             <i class="ti ti-send"></i>
           </button>
@@ -131,6 +141,37 @@ const AiChatView = (() => {
       box.innerHTML = html;
       box.scrollTop = box.scrollHeight;
     });
+    _syncControls();
+    _maybeSpeak();
+  }
+
+  // ===== Saída falada (fala a última resposta do assistente, uma vez) =====
+
+  function _assistantText(m) {
+    if (!m || m.role !== 'assistant') return '';
+    if (typeof m.content === 'string') return m.content.trim();
+    return (m.content || []).filter(b => b.type === 'text').map(b => b.text).join(' ').trim();
+  }
+
+  function _isFinalAssistant(m) {
+    if (!m || m.role !== 'assistant') return false;
+    if (typeof m.content === 'string') return true;
+    return !(m.content || []).some(b => b.type === 'tool_use'); // mid-loop ainda não é final
+  }
+
+  function _maybeSpeak() {
+    if (!VoiceService.isEnabled()) return;
+    if (AiService.isThinking() || AiService.getPending()) return; // espera a volta terminar
+    const msgs = AiService.getMessages();
+    const last = msgs[msgs.length - 1];
+    if (!_isFinalAssistant(last)) return;
+    const text = _assistantText(last);
+    if (!text || text.startsWith('⚠️') || text === _lastSpoken) return;
+    _lastSpoken = text;
+    VoiceService.speak(text).then(() => {
+      // Mãos-livres: ao terminar de falar, reabre o microfone pra continuar a conversa
+      if (_handsfree && _srSupported) startVoice(_currentMount());
+    });
   }
 
   // ===== Ações de input =====
@@ -141,6 +182,7 @@ const AiChatView = (() => {
     const text = input.value.trim();
     if (!text) return;
     input.value = '';
+    VoiceService.stop(); // barge-in: nova mensagem corta a fala anterior
     AiService.send(text);
   }
 
@@ -156,54 +198,166 @@ const AiChatView = (() => {
   function clear() {
     if (!AiService.getMessages().length) return;
     if (!window.confirm('Limpar toda a conversa?')) return;
+    VoiceService.stop();
+    _lastSpoken = '';
     AiService.clear();
   }
 
-  // ===== Voz (Web Speech API) =====
+  // ===== Controles de voz no topo =====
+
+  function toggleVoice() {
+    const on = !VoiceService.isEnabled();
+    VoiceService.setEnabled(on);
+    if (!on) { VoiceService.stop(); _handsfree = false; }
+    _syncControls();
+    Feedback.toast(on ? 'Voz do assistente ativada' : 'Voz do assistente desativada', 'info');
+  }
+
+  function toggleHandsfree() {
+    if (!_srSupported) {
+      Feedback.toast('Reconhecimento de voz não suportado neste navegador', 'warn');
+      return;
+    }
+    _handsfree = !_handsfree;
+    // Mãos-livres só faz sentido com a voz ligada (precisa ouvir pra reabrir o mic)
+    if (_handsfree && !VoiceService.isEnabled()) VoiceService.setEnabled(true);
+    _syncControls();
+    Feedback.toast(_handsfree ? 'Modo mãos-livres ativado' : 'Modo mãos-livres desativado', 'info');
+  }
+
+  /** Sincroniza ícone/estado dos botões de voz e mãos-livres nos dois mounts. */
+  function _syncControls() {
+    const voiceOn = VoiceService.isEnabled();
+    MOUNTS.forEach(m => {
+      const v = document.getElementById('ai-voice-' + m);
+      if (v) {
+        v.classList.toggle('active', voiceOn);
+        v.title = voiceOn ? 'Voz ligada' : 'Voz desligada';
+        const i = v.querySelector('i');
+        if (i) i.className = 'ti ' + (voiceOn ? 'ti-volume' : 'ti-volume-off');
+      }
+      const h = document.getElementById('ai-hands-' + m);
+      if (h) {
+        h.style.display = _srSupported ? '' : 'none';
+        h.classList.toggle('active', _handsfree);
+        h.title = _handsfree ? 'Mãos-livres ligado' : 'Mãos-livres';
+      }
+    });
+  }
+
+  // ===== Entrada por voz (Web Speech API) =====
 
   function _initVoice() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    _srSupported = !!SR;
     if (!SR) {
       MOUNTS.forEach(m => { const b = document.getElementById('ai-mic-' + m); if (b) b.style.display = 'none'; });
       return;
     }
     _recognition = new SR();
     _recognition.lang = 'pt-BR';
-    _recognition.interimResults = false;
+    _recognition.interimResults = true;
+    _recognition.continuous = false;
     _recognition.maxAlternatives = 1;
+
     _recognition.onresult = e => {
-      const text = e.results[0][0].transcript.trim();
-      const input = document.getElementById('ai-input-' + (_activeMicMount || 'view'));
-      if (input && text) {
-        input.value = (input.value ? input.value + ' ' : '') + text;
-        input.focus();
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) _finalTranscript += t; else interim += t;
       }
+      const input = document.getElementById('ai-input-' + (_activeMicMount || 'view'));
+      if (input) input.value = (_finalTranscript + interim).trim();
     };
+
     _recognition.onerror = e => {
       if (e.error === 'not-allowed') Feedback.toast('Permita o acesso ao microfone para usar a voz', 'warn');
-      _stopMicUI();
     };
-    _recognition.onend = _stopMicUI;
+
+    _recognition.onend = () => {
+      _listening = false;
+      _stopMicUI();
+      const mount = _activeMicMount;
+      const text = _finalTranscript.trim();
+      _finalTranscript = '';
+      // Fim do reconhecimento (silêncio): envia automaticamente
+      if (text && mount) {
+        const input = document.getElementById('ai-input-' + mount);
+        if (input) input.value = text;
+        send(mount);
+      }
+    };
+  }
+
+  function toggleMic(mount) {
+    if (!_recognition) return;
+    if (_listening) { try { _recognition.stop(); } catch { /* ignora */ } return; }
+    startVoice(mount);
   }
 
   function startVoice(mount) {
-    if (!_recognition) return;
+    if (!_recognition || _listening) return;
+    VoiceService.stop(); // barge-in: corta a fala do assistente
     _activeMicMount = mount;
+    _finalTranscript = '';
     const btn = document.getElementById('ai-mic-' + mount);
     if (btn) btn.classList.add('listening');
-    try { _recognition.start(); } catch { /* já ouvindo */ }
+    try { _recognition.start(); _listening = true; } catch { _stopMicUI(); }
   }
 
   function _stopMicUI() {
     MOUNTS.forEach(m => { const b = document.getElementById('ai-mic-' + m); if (b) b.classList.remove('listening'); });
   }
 
+  // ===== Saudação ao abrir (estilo JARVIS, gerada localmente pela hora) =====
+
+  function _greet() {
+    if (_greeted) return;
+    _greeted = true;
+    const h = new Date().getHours();
+    const saud = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
+    let texto;
+    if (AiService.getMessages().length) {
+      // Já há conversa: cumprimento curto, sem resumo
+      texto = `${saud}, senhor. Às suas ordens.`;
+    } else {
+      const aberturas = [
+        `${saud}, senhor André. Como posso ajudá-lo hoje?`,
+        `${saud}, senhor. Em que posso ser útil?`,
+        `${saud}, senhor André. Às suas ordens.`
+      ];
+      texto = aberturas[Math.floor(Math.random() * aberturas.length)];
+      const resumo = _resumoCurto();
+      if (resumo) texto = `${saud}, senhor André. ${resumo}`;
+    }
+    AiService.pushAssistant(texto); // entra na conversa e o _maybeSpeak a fala
+  }
+
+  /** Micro-resumo do dia reaproveitando o get_overview (sem chamar a API). */
+  function _resumoCurto() {
+    try {
+      const o = AiTools.run('get_overview', {});
+      const partes = [];
+      const nt = o.qtdTarefasHoje || 0;
+      if (nt) partes.push(`${nt} ${nt === 1 ? 'tarefa' : 'tarefas'} hoje`);
+      const na = (o.alertas || []).length;
+      if (na) partes.push(`${na} ${na === 1 ? 'alerta financeiro' : 'alertas financeiros'}`);
+      if (!partes.length) return '';
+      return `O senhor tem ${partes.join(' e ')}. Em que posso ajudar?`;
+    } catch { return ''; }
+  }
+
   // ===== Drawer =====
+
+  function _currentMount() {
+    return document.getElementById('ai-drawer')?.classList.contains('open') ? 'drawer' : 'view';
+  }
 
   function openDrawer() {
     document.getElementById('ai-drawer')?.classList.add('open');
     document.getElementById('ai-drawer-backdrop')?.classList.add('open');
     _refresh();
+    _greet();
     setTimeout(() => document.getElementById('ai-input-drawer')?.focus(), 50);
   }
 
@@ -246,6 +400,8 @@ const AiChatView = (() => {
   function init() {
     _inject();
     _initVoice();
+    // Não falar histórico antigo ao abrir: marca a última resposta como "já dita"
+    _lastSpoken = _assistantText(AiService.getMessages().slice(-1)[0]);
     AiService.onUpdate(_refresh);
   }
 
@@ -254,11 +410,13 @@ const AiChatView = (() => {
     const view = document.getElementById('view-ia');
     if (view && !view.querySelector('.ai-chat')) view.innerHTML = buildShell('view');
     _refresh();
+    _greet();
   }
 
   return {
     init, render,
-    send, inputKey, confirm, clear, startVoice,
+    send, inputKey, confirm, clear, toggleMic, startVoice,
+    toggleVoice, toggleHandsfree,
     openDrawer, closeDrawer, toggleDrawer
   };
 })();

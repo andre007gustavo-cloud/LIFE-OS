@@ -82,6 +82,7 @@
     } else {
       // Não logado
       Storage.stopListening();
+      VoiceService.stop();     // corta qualquer fala do assistente em andamento
       PomodoroService.reset(); // para o timer que continuaria rodando após logout
       NextUpBar.stop();        // limpa o setInterval da faixa
       TrelloService.stop();
@@ -102,6 +103,7 @@
     PomodoroService.onComplete(onPomodoroComplete);
     TrelloService.init();
     AiService.init();
+    VoiceService.init(); // carrega a preferência de voz (depois do AiService)
     AiChatView.init();
 
     // Close day-popover quando clica fora
@@ -401,5 +403,6 @@
     // --- Assistente IA ---
     window.AiService        = AiService;
     window.AiChatView       = AiChatView;
+    window.VoiceService     = VoiceService;
   }
 })();

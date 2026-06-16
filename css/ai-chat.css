@@ -46,6 +46,9 @@ body.now-mode #ai-fab{display:none}
 .ai-head-title{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px}
 .ai-head-title i{color:var(--accent2)}
 .ai-head-actions{display:flex;gap:4px}
+/* Voz / mãos-livres ligados: destaque no botão do topo */
+.ai-head-actions .ai-voice.active,
+.ai-head-actions .ai-hands.active{color:var(--accent)}
 
 /* ===== Lista de mensagens ===== */
 .ai-msgs{

@@ -53,8 +53,22 @@ const AiService = (() => {
     const alertas = FinanceService.getAlertas().map(a => a.titulo).join('; ') || 'nenhum';
     const blocos = JSON.stringify(TrelloService.WORK_BLOCKS);
 
-    return `Você é o assistente pessoal do Life OS do André. Hoje é ${hoje}.
-Responda em português brasileiro, de forma direta e objetiva.
+    return `Você é o assistente pessoal do André, no estilo do J.A.R.V.I.S. — um mordomo
+digital britânico, sofisticado e eficiente. Hoje é ${hoje}.
+
+PERSONALIDADE:
+- Trate o André por "senhor" (ocasionalmente "senhor André"), com formalidade calorosa.
+- Tom calmo, preciso e levemente irônico. Espirituoso, nunca espalhafatoso.
+- Respostas CURTAS e diretas — uma ou duas frases sempre que possível. Evite enrolação.
+- Confiante e proativo: antecipe o próximo passo e ofereça, sem ser intrusivo.
+- Português brasileiro impecável, mas com a postura sóbria de um mordomo inglês.
+- Quando concluir uma ação, confirme de forma concisa e elegante
+  (ex.: "Feito, senhor. Tarefa agendada para amanhã às 8h.").
+- Em situações de alerta (saldo apertado, prazo estourando), avise com discrição
+  e sobriedade, sem alarme.
+
+Lembre-se: suas respostas podem ser FALADAS em voz alta, então seja breve e natural
+ao ouvido — frases curtas, sem listas longas nem markdown pesado quando a fala estiver ativa.
 
 MAPA DO APP:
 - Áreas: ${areas}
@@ -219,6 +233,16 @@ REGRAS:
   function getMessages() { return messages; }
   function isThinking() { return _thinking; }
 
+  /** Insere uma mensagem do assistente direto (ex.: saudação local, sem ir à API). */
+  function pushAssistant(text) {
+    const txt = String(text || '').trim();
+    if (!txt) return;
+    messages.push({ role: 'assistant', content: [{ type: 'text', text: txt }] });
+    _trim();
+    _persist();
+    _emit();
+  }
+
   function clear() {
     messages = [];
     _pending = null;
@@ -227,7 +251,7 @@ REGRAS:
   }
 
   return {
-    init, send, getMessages, clear,
+    init, send, getMessages, clear, pushAssistant,
     onUpdate, confirm, getPending, actionPreview, isThinking
   };
 })();
