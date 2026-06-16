@@ -107,6 +107,11 @@ const TrelloService = (() => {
     return match ? match.id : null;
   }
 
+  /** Lista as listas (id+nome) de um quadro. Aceita o ID curto (link) do quadro. */
+  async function getBoardLists(boardId) {
+    return _fetch(`/boards/${(boardId || '').trim()}/lists`, { fields: 'id,name' });
+  }
+
   /** Retorna os cards abertos da lista configurada. */
   async function _fetchCards() {
     const { listId } = _creds();
@@ -341,6 +346,7 @@ const TrelloService = (() => {
     saveCredentials,
     getCredentials,
     getStatus,
+    getBoardLists,
     resetSyncedCards,
     autoConfigureFromBoard,
     WORK_BLOCKS, // exposto para a tela de config exibir/editar os horários

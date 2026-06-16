@@ -74,9 +74,17 @@ const SettingsModal = (() => {
         </label>
         <label class="trello-set-field">
           <span>ID da lista</span>
-          <input class="form-input" id="trello-listid" value="${Utils.escapeAttr(c.listId)}" placeholder="ID da lista (ex.: Andre)">
+          <input class="form-input" id="trello-listid" value="${Utils.escapeAttr(c.listId)}" placeholder="ID da lista (24 caracteres)">
         </label>
-        <div class="trello-set-hint">Pegue a chave em trello.com/app-key, gere o token autorizando o app, e copie o ID da lista do quadro. Os cards viram tarefas na área Trabalho.</div>
+        <label class="trello-set-field">
+          <span>Quadro (ID ou link) — para descobrir a lista</span>
+          <input class="form-input" id="trello-board" placeholder="ex.: gENsQLa4 ou https://trello.com/b/...">
+        </label>
+        <button class="btn btn-ghost btn-sm" onclick="SettingsModal.buscarListas()">
+          <i class="ti ti-list-search"></i> Buscar listas do quadro
+        </button>
+        <div id="trello-lists"></div>
+        <div class="trello-set-hint">Cole o link/ID do quadro e clique em "Buscar listas" para escolher a lista certa (o ID da lista tem 24 caracteres). A chave vem de trello.com/app-key. Os cards viram tarefas na área Trabalho.</div>
         <div class="trello-set-actions">
           <button class="btn btn-primary btn-sm" onclick="SettingsModal.saveTrello()">Salvar</button>
           <button class="btn btn-ghost btn-sm" onclick="SettingsModal.syncTrello()">Sincronizar agora</button>
@@ -124,6 +132,40 @@ const SettingsModal = (() => {
     renderBody();
   }
 
+  /** Extrai o ID curto do quadro de um link trello.com/b/XXXX (ou devolve o texto). */
+  function _parseBoardId(raw) {
+    const s = (raw || '').trim();
+    const m = s.match(/trello\.com\/b\/([^/\s]+)/i);
+    return m ? m[1] : s;
+  }
+
+  /** Busca as listas do quadro e mostra botões para o usuário escolher. */
+  async function buscarListas() {
+    const board = _parseBoardId(
+      document.getElementById('trello-board').value || document.getElementById('trello-listid').value
+    );
+    const cont = document.getElementById('trello-lists');
+    if (!board) { Feedback.toast('Informe o ID ou link do quadro', 'warn'); return; }
+    cont.innerHTML = '<div class="trello-set-hint">Buscando listas…</div>';
+    try {
+      const lists = await TrelloService.getBoardLists(board);
+      if (!lists.length) { cont.innerHTML = '<div class="trello-set-hint">Nenhuma lista nesse quadro.</div>'; return; }
+      // IDs do Trello são hex seguros para o onclick; o NOME (dado do usuário)
+      // vai só como texto escapado, nunca interpolado no handler.
+      cont.innerHTML = lists.map(l =>
+        `<button class="btn btn-ghost btn-sm trello-list-opt" onclick="SettingsModal.pickList('${l.id}')">${Utils.escapeHtml(l.name)}</button>`
+      ).join('');
+    } catch (e) {
+      cont.innerHTML = `<div class="trello-set-hint" style="color:var(--amber)">Não consegui buscar as listas: ${Utils.escapeHtml(e.message)}</div>`;
+    }
+  }
+
+  /** Preenche o campo do ID da lista com a opção escolhida. */
+  function pickList(id) {
+    document.getElementById('trello-listid').value = id;
+    Feedback.toast('Lista selecionada. Clique em Salvar para confirmar.', 'success');
+  }
+
   /** No mobile o botão de tema sai da nav — fica acessível aqui */
   function appearanceHtml() {
     return `<div class="fbset-section">Aparência</div>
@@ -164,5 +206,5 @@ const SettingsModal = (() => {
     setting.test();
   }
 
-  return { open, toggle, test, saveTrello, syncTrello, reimportTrello };
+  return { open, toggle, test, saveTrello, syncTrello, reimportTrello, buscarListas, pickList };
 })();
