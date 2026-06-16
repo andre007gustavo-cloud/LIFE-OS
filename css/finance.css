@@ -738,31 +738,83 @@ body.rv-flow .fin-fab{display:none !important}
 
 /* ===== Fase 9: Hub + sub-telas ===== */
 
-/* Resumo compacto de 3 colunas na home */
-.fin-resumo-3{grid-template-columns:repeat(3,1fr)}
-.fin-resumo-3 .stat.accent .stat-val{color:var(--accent)}
+/* Cabeçalho do hub: título + seletor de mês */
+.fin-hub-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px}
+.fin-hub-title{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:700}
+.fin-hub-icon{
+  width:34px;height:34px;border-radius:9px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--accent);color:#fff;font-size:18px;
+}
+.fin-month-nav{
+  display:flex;align-items:center;gap:2px;
+  background:var(--bg3);border:1px solid var(--border);border-radius:999px;padding:2px;
+}
+.fin-month-btn{
+  background:none;border:none;color:var(--text2);cursor:pointer;
+  width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:.15s;
+}
+.fin-month-btn:hover:not([disabled]){color:var(--text);background:var(--bg4)}
+.fin-month-btn[disabled]{opacity:.35;cursor:default}
+.fin-month-label{font-size:13px;font-weight:600;min-width:104px;text-align:center}
 
-/* "Ver todos" abaixo dos lançamentos recentes */
+/* Resumo: 3 cards com borda, alinhados à esquerda (estado atual) */
+.fin-resumo-3{grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.fin-resumo-3 .stat{background:var(--bg2);border:1px solid var(--border);text-align:left;padding:13px 14px}
+.fin-resumo-3 .stat-val{font-size:21px;margin-top:3px}
+.fin-resumo-3 .stat.accent .stat-val{color:var(--accent2)}
+
+/* Barra de lançamento rápido (parece um input, abre o popover) */
+.fin-quickbar{
+  display:flex;align-items:center;gap:10px;width:100%;
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:12px 14px;margin-bottom:12px;cursor:text;color:var(--text3);transition:border .15s;
+}
+.fin-quickbar:hover{border-color:var(--accent)}
+.fin-quickbar i{font-size:18px}
+.fin-quickbar-ph{flex:1;font-size:14px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fin-quickbar-mic{color:var(--text2)}
+
+/* Banner compacto de alertas (1 linha, abre a sub-tela de detalhe) */
+.fin-alert-compact{
+  display:flex;align-items:center;gap:10px;width:100%;
+  background:color-mix(in srgb, var(--sev) 13%, transparent);
+  border:1px solid color-mix(in srgb, var(--sev) 40%, transparent);
+  border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:14px;
+  cursor:pointer;color:var(--text);transition:filter .15s;
+}
+.fin-alert-compact:hover{filter:brightness(1.1)}
+.fin-alert-compact > i:first-child{color:var(--sev);font-size:18px;flex:none}
+.fin-alert-compact-txt{flex:1;text-align:left;font-size:13px;font-weight:500}
+.fin-alert-compact > i:last-child{color:var(--text3);flex:none}
+
+/* Grade de navegação: 4 colunas, ícone em quadrado indigo + rótulo */
+.fin-nav-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+.fin-nav-btn{
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  padding:14px 6px;border-radius:var(--radius-sm);
+  background:var(--bg2);border:1px solid var(--border);
+  color:var(--text2);cursor:pointer;transition:all .15s;text-align:center;
+}
+.fin-nav-btn:hover{border-color:var(--accent);background:var(--bg3);color:var(--text)}
+.fin-nav-ico{
+  width:40px;height:40px;border-radius:11px;
+  display:flex;align-items:center;justify-content:center;
+  background:color-mix(in srgb, var(--accent) 18%, transparent);color:var(--accent);
+}
+.fin-nav-ico i{font-size:21px}
+.fin-nav-lbl{font-size:11.5px;font-weight:500;line-height:1.2}
+
+/* Lançamentos recentes */
+.fin-recent-head{
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:13px;font-weight:700;color:var(--text2);margin-bottom:8px;
+}
 .fin-ver-todos{
-  display:block;width:100%;margin-top:4px;padding:8px;
   background:none;border:none;cursor:pointer;
-  color:var(--accent);font-size:13px;font-weight:600;text-align:center;
+  color:var(--accent);font-size:13px;font-weight:600;
 }
 .fin-ver-todos:hover{text-decoration:underline}
-
-/* Grade de navegação do hub */
-.fin-nav-grid{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px;
-}
-.fin-nav-btn{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
-  padding:14px 8px;border-radius:var(--radius-sm);
-  background:var(--bg3);border:1px solid var(--border);
-  color:var(--text);cursor:pointer;transition:all .15s;text-align:center;
-}
-.fin-nav-btn:hover{border-color:var(--accent);background:var(--bg4)}
-.fin-nav-btn i{font-size:22px;color:var(--accent)}
-.fin-nav-btn span{font-size:12px;font-weight:500;line-height:1.2}
 
 /* Cabeçalho das sub-telas (Voltar + título) */
 .fin-subhead{display:flex;align-items:center;gap:10px;margin-bottom:14px}

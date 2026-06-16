@@ -44,6 +44,25 @@ const FinanceAlertas = (() => {
     </div>`;
   }
 
+  /**
+   * Banner compacto (1 linha) para o hub: nº de avisos + os 2 primeiros títulos.
+   * Abre a sub-tela de Alertas com o detalhe. Vazio quando não há avisos.
+   */
+  function compactHtml() {
+    if (!FinanceService.listContas().length) return '';
+    const alertas = _ativos();
+    if (!alertas.length) return '';
+    const sev = alertas.some(a => a.severidade === 'critico') ? 'critico'
+      : alertas.some(a => a.severidade === 'atencao') ? 'atencao' : 'info';
+    const resumo = alertas.slice(0, 2).map(a => a.titulo).join(' · ');
+    return `<button class="fin-alert-compact" style="--sev:${SEV[sev].cor}"
+            onclick="FinanceView.openSub('alertas')">
+      <i class="ti ti-bell"></i>
+      <span class="fin-alert-compact-txt">${alertas.length} aviso${alertas.length > 1 ? 's' : ''} · ${Utils.escapeHtml(resumo)}</span>
+      <i class="ti ti-chevron-right"></i>
+    </button>`;
+  }
+
   function _cardHtml(a) {
     const s = SEV[a.severidade] || SEV.info;
     const acao = a.acao
@@ -95,5 +114,5 @@ const FinanceAlertas = (() => {
     </button>`;
   }
 
-  return { sectionHtml, dashHtml, dispensar, acao, criticosCount };
+  return { sectionHtml, compactHtml, dashHtml, dispensar, acao, criticosCount };
 })();

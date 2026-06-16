@@ -13,6 +13,31 @@ const FinanceView = (() => {
   // ao (re)entrar na aba — ver enter().
   let subView = 'home';
 
+  // Mês ('YYYY-MM') que filtra a lista de lançamentos do hub/sub-tela. O resumo
+  // (Disponível/Guardado/Projetado) reflete sempre o estado atual, não o mês.
+  let selectedMonth = null;
+
+  const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+  function mesAtivo() {
+    if (!selectedMonth) selectedMonth = FinanceService.currentMonthPrefix();
+    return selectedMonth;
+  }
+
+  function mesLabel(mes) {
+    const d = Utils.parseISO(`${mes}-01`);
+    return `${MESES[d.getMonth()]} ${d.getFullYear()}`;
+  }
+
+  /** Navega meses na lista de lançamentos; não passa do mês corrente. */
+  function setMes(delta) {
+    const alvo = FinanceService.addMonths(mesAtivo(), delta);
+    if (alvo > FinanceService.currentMonthPrefix()) return;
+    selectedMonth = alvo;
+    render();
+  }
+
   /**
    * Mapa das sub-telas: título + ícone do cabeçalho + função que devolve o HTML
    * do componente JÁ EXISTENTE. Nada de lógica nova aqui, só roteamento.
@@ -27,7 +52,8 @@ const FinanceView = (() => {
     categorias:   { title: 'Categorias',      icon: 'ti-tag',              render: () => FinanceCategorias.sectionHtml() },
     metas:        { title: 'Metas',           icon: 'ti-target',           render: () => FinanceMetas.sectionHtml() },
     recorrencias: { title: 'Recorrências',    icon: 'ti-repeat',           render: () => FinanceRecorrencias.sectionHtml(FinanceService.currentMonthPrefix()) },
-    lancamentos:  { title: 'Lançamentos',     icon: 'ti-list',             render: () => listHtml(FinanceService.listTransactions({ mes: FinanceService.currentMonthPrefix() })) }
+    alertas:      { title: 'Alertas',         icon: 'ti-bell',             render: () => FinanceAlertas.sectionHtml() },
+    lancamentos:  { title: 'Lançamentos',     icon: 'ti-list',             render: () => listHtml(FinanceService.listTransactions({ mes: mesAtivo() })) }
   };
 
   /**
@@ -38,14 +64,14 @@ const FinanceView = (() => {
     { icon: 'ti-target-arrow',     label: 'Orçamento',      onclick: "FinanceView.openSub('orcamento')" },
     { icon: 'ti-chart-line',       label: 'Projeção',       onclick: "FinanceView.openSub('projecao')" },
     { icon: 'ti-report-analytics', label: 'Relatórios',     onclick: "FinanceView.openSub('relatorios')" },
-    { icon: 'ti-scale',            label: 'Régua 50/30/20', onclick: "FinanceView.openSub('regua')" },
     { icon: 'ti-credit-card',      label: 'Cartões',        onclick: "FinanceView.openSub('cartoes')" },
-    { icon: 'ti-wallet',           label: 'Carteiras',      onclick: "FinanceView.openSub('carteiras')" },
-    { icon: 'ti-tag',              label: 'Categorias',     onclick: "FinanceView.openSub('categorias')" },
     { icon: 'ti-target',           label: 'Metas',          onclick: "FinanceView.openSub('metas')" },
     { icon: 'ti-repeat',           label: 'Recorrências',   onclick: "FinanceView.openSub('recorrencias')" },
+    { icon: 'ti-file-import',      label: 'Importar',       onclick: "FinanceImport.openCentral()" },
     { icon: 'ti-wallet',           label: 'Posso gastar?',  onclick: "FinancePossoGastar.open()" },
-    { icon: 'ti-file-import',      label: 'Importar OFX',   onclick: "FinanceImport.openCentral()" }
+    { icon: 'ti-building-bank',    label: 'Carteiras',      onclick: "FinanceView.openSub('carteiras')" },
+    { icon: 'ti-tag',              label: 'Categorias',     onclick: "FinanceView.openSub('categorias')" },
+    { icon: 'ti-scale',            label: 'Régua 50/30/20', onclick: "FinanceView.openSub('regua')" }
   ];
 
   // ===== Roteamento =====
@@ -53,6 +79,7 @@ const FinanceView = (() => {
   /** Ponto de entrada da aba (registrado na Navigation): sempre abre no hub. */
   function enter() {
     subView = 'home';
+    selectedMonth = FinanceService.currentMonthPrefix();
     render();
   }
 
@@ -86,14 +113,30 @@ const FinanceView = (() => {
   // ===== HUB (home) =====
 
   function homeHtml() {
-    const mes = FinanceService.currentMonthPrefix();
-    const recentes = FinanceService.listTransactions({ mes }).slice(0, 5);
-    return resumoHtml() +
+    const recentes = FinanceService.listTransactions({ mes: mesAtivo() }).slice(0, 5);
+    return hubHeaderHtml() +
+      resumoHtml() +
+      quickbarHtml() +
       FinanceReview.offerHtml() +
-      FinanceAlertas.sectionHtml() +
-      recentesHtml(recentes) +
+      FinanceAlertas.compactHtml() +
       navGridHtml() +
+      recentesHtml(recentes) +
       devButtonHtml();
+  }
+
+  /** Cabeçalho do hub: título + seletor de mês da lista de lançamentos. */
+  function hubHeaderHtml() {
+    const noAtual = mesAtivo() >= FinanceService.currentMonthPrefix();
+    return `<div class="fin-hub-head">
+      <div class="fin-hub-title">
+        <span class="fin-hub-icon"><i class="ti ti-wallet"></i></span> Financeiro
+      </div>
+      <div class="fin-month-nav">
+        <button class="fin-month-btn" onclick="FinanceView.setMes(-1)" title="Mês anterior"><i class="ti ti-chevron-left"></i></button>
+        <span class="fin-month-label">${Utils.escapeHtml(mesLabel(mesAtivo()))}</span>
+        <button class="fin-month-btn" onclick="FinanceView.setMes(1)" title="Próximo mês" ${noAtual ? 'disabled' : ''}><i class="ti ti-chevron-right"></i></button>
+      </div>
+    </div>`;
   }
 
   /** Resumo compacto: caixa disponível, guardado em metas e projeção do mês. */
@@ -103,9 +146,9 @@ const FinanceView = (() => {
       .reduce((s, m) => s + FinanceService.getSaldo(m.id), 0);
     const projetado = FinanceService.getSaldoProjetadoFimMes();
     return `<div class="fin-resumo fin-resumo-3">
-      ${statHtml('Disponível', disponivel, disponivel >= 0 ? 'green' : 'red')}
-      ${statHtml('Guardado', guardado, 'accent')}
-      ${statHtml('Projetado fim do mês', projetado, projetado >= 0 ? 'green' : 'red')}
+      ${statHtml('Disponível', disponivel, disponivel >= 0 ? '' : 'red')}
+      ${statHtml('Guardado', guardado, 'green')}
+      ${statHtml('Projetado fim do mês', projetado, 'accent')}
     </div>`;
   }
 
@@ -116,31 +159,34 @@ const FinanceView = (() => {
     </div>`;
   }
 
-  function recentesHtml(txs) {
-    const corpo = txs.length
-      ? txs.map(entryHtml).join('') +
-        `<button class="fin-ver-todos" onclick="FinanceView.openSub('lancamentos')">Ver todos →</button>`
-      : `<div class="text-muted" style="margin:4px 0 8px">Nenhum lançamento este mês</div>`;
-    return `<div class="card">
-      <div class="card-title fin-cartoes-title">
-        <span><i class="ti ti-receipt"></i> Lançamentos recentes</span>
-        <button class="btn btn-ghost btn-sm" onclick="FinanceQuickAdd.open()">
-          <i class="ti ti-plus"></i> Lançar
-        </button>
-      </div>
-      ${corpo}
-    </div>`;
+  /** Barra de lançamento rápido (abre o popover do FinanceQuickAdd). */
+  function quickbarHtml() {
+    return `<button class="fin-quickbar" onclick="FinanceQuickAdd.open()">
+      <i class="ti ti-plus"></i>
+      <span class="fin-quickbar-ph">Novo lançamento — ex.: almoço 32 #alimentação @nubank</span>
+      <i class="ti ti-microphone fin-quickbar-mic"></i>
+    </button>`;
   }
 
   function navGridHtml() {
-    return `<div class="card">
-      <div class="card-title"><i class="ti ti-layout-grid"></i> Mais</div>
-      <div class="fin-nav-grid">
-        ${NAV_ITEMS.map(it => `
-          <button class="fin-nav-btn" onclick="${it.onclick}">
-            <i class="ti ${it.icon}"></i><span>${it.label}</span>
-          </button>`).join('')}
+    return `<div class="fin-nav-grid">
+      ${NAV_ITEMS.map(it => `
+        <button class="fin-nav-btn" onclick="${it.onclick}">
+          <span class="fin-nav-ico"><i class="ti ${it.icon}"></i></span>
+          <span class="fin-nav-lbl">${it.label}</span>
+        </button>`).join('')}
+    </div>`;
+  }
+
+  function recentesHtml(txs) {
+    return `<div class="fin-recent">
+      <div class="fin-recent-head">
+        <span>Lançamentos recentes</span>
+        ${txs.length ? `<button class="fin-ver-todos" onclick="FinanceView.openSub('lancamentos')">ver todos</button>` : ''}
       </div>
+      ${txs.length
+        ? txs.map(entryHtml).join('')
+        : `<div class="text-muted" style="margin:4px 0 8px">Nenhum lançamento neste mês</div>`}
     </div>`;
   }
 
@@ -292,5 +338,5 @@ const FinanceView = (() => {
     if (window.DashboardView) DashboardView.render();
   }
 
-  return { enter, openSub, goHome, render, remove, seedTest, resetData };
+  return { enter, openSub, goHome, setMes, render, remove, seedTest, resetData };
 })();
