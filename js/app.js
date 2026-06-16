@@ -84,6 +84,7 @@
       Storage.stopListening();
       PomodoroService.reset(); // para o timer que continuaria rodando após logout
       NextUpBar.stop();        // limpa o setInterval da faixa
+      TrelloService.stop();
       appInitialized = false;
       LoginScreen.show();
     }
@@ -99,6 +100,7 @@
     NextUpBar.init();
     NowView.init();
     PomodoroService.onComplete(onPomodoroComplete);
+    TrelloService.init();
 
     // Close day-popover quando clica fora
     document.addEventListener('click', e => {
@@ -391,5 +393,6 @@
     window.NoteEditor       = NoteEditor;
     window.ImageResize      = ImageResize;
     window.FileHandler      = FileHandler;
+    window.TrelloService    = TrelloService;
   }
 })();
