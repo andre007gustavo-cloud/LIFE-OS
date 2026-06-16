@@ -191,8 +191,12 @@ const Storage = (() => {
     // Offline, o set() fica enfileirado pelo Firestore — indica vermelho, não "salvando"
     _setSyncState(navigator.onLine ? 'saving' : 'offline');
     try {
+      // Limpa undefined/NaN antes de enviar (o Firestore rejeita com
+      // 'invalid-argument'); o round-trip JSON espelha o que o localStorage já
+      // grava. Aplicado só nos dados — o serverTimestamp() é sentinela e fica fora.
+      const dadosLimpos = JSON.parse(JSON.stringify(_pickDbFields(db)));
       await docRef.set({
-        ..._pickDbFields(db),
+        ...dadosLimpos,
         lastWriter: _sessionId, // marca a escrita como nossa (ver listener)
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true }); // não deixa um cliente que omite um campo (ex.: versão

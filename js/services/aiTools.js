@@ -441,7 +441,12 @@ const AiTools = (() => {
       },
       run({ nome, areaId, descricao, prazo }) {
         const r = resolveArea(areaId); if (r.erro) return r;
-        const p = ProjectService.save({ name: nome, area: r.area.id, desc: descricao || '', deadline: prazo || '' });
+        // ProjectService.save não dá default a color: herda a cor da área (com
+        // fallback) para não gravar undefined, que o Firestore rejeita.
+        const p = ProjectService.save({
+          name: nome, area: r.area.id, desc: descricao || '', deadline: prazo || '',
+          color: r.area.color || Constants.COLORS[0], icon: '📁'
+        });
         return { ok: true, id: p.id, nome: p.name, area: r.area.name };
       }
     },
