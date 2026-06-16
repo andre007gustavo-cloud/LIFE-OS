@@ -5,12 +5,19 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
+  // Aparar espaços/quebras de linha que costumam vir colados junto da chave
+  const apiKey = (process.env.ANTHROPIC_API_KEY || '').trim();
+  if (!apiKey) {
+    return res.status(500).json({
+      error: { message: 'ANTHROPIC_API_KEY não está configurada na Vercel (Production). Adicione a chave e faça um novo deploy.' },
+    });
+  }
   try {
     const apiResp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify(req.body),
