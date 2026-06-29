@@ -25,6 +25,7 @@ const FinanceBudget = (() => {
     const orcs = FinanceService.getOrcamentoMes(mes);
     const resumo = FinanceService.getResumoOrcamento(mes);
     const dias = FinanceService.diasRestantesMes(mes);
+    const gastosPorCategoria = FinanceService.getGastosPorCategoria(mes);
     const lista = orcs.length
       ? orcs.map(o => rowHtml(o, dias)).join('')
       : `<div class="text-muted" style="margin:4px 0 8px">Nenhum orçamento definido ainda</div>`;
@@ -32,7 +33,7 @@ const FinanceBudget = (() => {
       <div class="card-title"><i class="ti ti-target-arrow"></i> Orçamento</div>
       ${resumoHtml(resumo)}
       ${lista}
-      ${semOrcamentoHtml(resumo.categoriasSemOrcamento)}
+      ${semOrcamentoHtml(resumo.categoriasSemOrcamento, gastosPorCategoria)}
     </div>`;
   }
 
@@ -77,14 +78,22 @@ const FinanceBudget = (() => {
     return `<span class="orc-carry">${sinal}${Utils.formatBRL(Math.abs(carryover))} acum.</span>`;
   }
 
-  /** Categorias de despesa sem orçamento, cada uma com CTA. */
-  function semOrcamentoHtml(ids) {
+  /** Categorias de despesa sem orçamento, cada uma com o gasto do mês (se houver) + CTA. */
+  function semOrcamentoHtml(ids, gastosPorCategoria) {
     if (!ids.length) return '';
+    const gastoMap = new Map(gastosPorCategoria.map(g => [g.categoriaId, g.totalCentavos]));
     const rows = ids.map(id => {
       const cat = FinanceService.getCategoriaById(id);
       if (!cat) return '';
+      const gasto = gastoMap.get(id) || 0;
+      const gastoHtml = gasto > 0
+        ? `<span class="orc-sem-gasto">${Utils.formatBRL(gasto)} gasto este mês</span>`
+        : '';
       return `<div class="orc-sem-row">
-        <span class="orc-cat">${Utils.escapeHtml(`${cat.icone} ${cat.nome}`)}</span>
+        <div class="orc-sem-info">
+          <span class="orc-cat">${Utils.escapeHtml(`${cat.icone} ${cat.nome}`)}</span>
+          ${gastoHtml}
+        </div>
         <button class="btn btn-ghost btn-sm" onclick="FinanceBudget.openDefine('${id}')">definir orçamento</button>
       </div>`;
     }).join('');
