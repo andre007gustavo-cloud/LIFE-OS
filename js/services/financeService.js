@@ -49,6 +49,24 @@ const FinanceService = (() => {
       .reduce((s, t) => s + t.valorCentavos, 0);
   }
 
+  /**
+   * Gasto da categoria no mês quebrado por CANAL de pagamento:
+   *   conta  → PIX/débito/dinheiro (a saída já pesou no caixa)
+   *   cartao → compra no cartão (só vira caixa no vencimento da fatura)
+   * A soma dos dois é o mesmo total de _gastoCategoriaMes. Usado para o
+   * breakdown visual do orçamento (uma mesma categoria pode misturar os dois).
+   */
+  function _gastoCategoriaMesPorCanal(categoriaId, mes) {
+    let conta = 0, cartao = 0;
+    db().transacoes.forEach(t => {
+      if (t.tipo !== 'saida' || t.categoriaId !== categoriaId) return;
+      if (!(t.data || '').startsWith(mes)) return;
+      if (t.cartaoId) cartao += t.valorCentavos;
+      else conta += t.valorCentavos;
+    });
+    return { contaCentavos: conta, cartaoCentavos: cartao };
+  }
+
   /** Estado do orçamento (sobre a base): ok < alerta < estourado. */
   function _estado(gastoCentavos, baseCentavos) {
     if (baseCentavos <= 0) return gastoCentavos > 0 ? 'estourado' : 'ok';
@@ -421,7 +439,8 @@ const FinanceService = (() => {
     const ehMesCorrente = mes === currentMonthPrefix();
     const diasRestantes = ehMesCorrente ? _diasRestantesMes(Utils.today()) : null;
     return db().orcamentos.map(o => {
-      const gastoCentavos = _gastoCategoriaMes(o.categoriaId, mes);
+      const canal = _gastoCategoriaMesPorCanal(o.categoriaId, mes);
+      const gastoCentavos = canal.contaCentavos + canal.cartaoCentavos;
       const carryoverCentavos = getCarryover(o.categoriaId, mes);
       const baseCentavos = o.limiteCentavos + carryoverCentavos;
       const restanteCentavos = baseCentavos - gastoCentavos;
@@ -433,7 +452,10 @@ const FinanceService = (() => {
         : null;
       return {
         categoriaId: o.categoriaId, limiteCentavos: o.limiteCentavos,
-        gastoCentavos, carryoverCentavos, baseCentavos, restanteCentavos,
+        gastoCentavos,
+        gastoContaCentavos: canal.contaCentavos,
+        gastoCartaoCentavos: canal.cartaoCentavos,
+        carryoverCentavos, baseCentavos, restanteCentavos,
         percentual, estado: _estado(gastoCentavos, baseCentavos), porDiaCentavos
       };
     });

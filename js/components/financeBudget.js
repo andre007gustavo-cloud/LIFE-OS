@@ -67,7 +67,27 @@ const FinanceBudget = (() => {
         ${carry}
       </div>
       ${barHtml(o)}
+      ${canalHtml(o)}
       <div class="orc-row-foot">${foot}${perDia}</div>
+    </div>`;
+  }
+
+  /**
+   * Quebra do gasto por canal (conta vs. cartão). Só aparece quando o orçamento
+   * mistura os dois: numa categoria 100% cartão ou 100% PIX/débito, a informação
+   * seria redundante. Mistura é justamente onde essa distinção ajuda a decidir.
+   */
+  function canalHtml(o) {
+    const conta = o.gastoContaCentavos || 0;
+    const cartao = o.gastoCartaoCentavos || 0;
+    if (conta === 0 || cartao === 0) return '';
+    return `<div class="orc-row-canal">
+      <span class="orc-canal orc-canal-conta">
+        <i class="ti ti-wallet"></i> ${Utils.formatBRL(conta)} já saiu
+      </span>
+      <span class="orc-canal orc-canal-cartao">
+        <i class="ti ti-credit-card"></i> ${Utils.formatBRL(cartao)} vira dívida
+      </span>
     </div>`;
   }
 

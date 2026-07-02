@@ -107,6 +107,13 @@
 .orc-row-sub{display:flex;align-items:baseline;gap:8px;margin-top:2px}
 .orc-spent{font-size:13px;color:var(--text2);font-weight:600}
 .orc-carry{font-size:11px;color:var(--text3)}
+/* Quebra por canal (conta vs. cartão) — só aparece em categorias mistas */
+.orc-row-canal{display:flex;flex-wrap:wrap;gap:12px;margin-top:6px;font-size:11px}
+.orc-canal{display:inline-flex;align-items:center;gap:4px;color:var(--text3)}
+.orc-canal i{font-size:13px}
+.orc-canal-conta{color:var(--text2)}
+.orc-canal-cartao{color:var(--amber)}
+
 .orc-row-foot{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-top:6px}
 .orc-left{font-size:11px;color:var(--text3)}
 .orc-over{font-size:11px;color:var(--red);font-weight:600}
