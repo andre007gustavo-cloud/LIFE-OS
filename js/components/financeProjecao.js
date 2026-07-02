@@ -42,6 +42,7 @@ const FinanceProjecao = (() => {
       </div>
       ${topoHtml(proj)}
       ${avisoHtml(proj)}
+      ${dividaCartaoHtml()}
       ${chartHtml(proj)}
       ${eventosHtml(proj)}
     </div>`;
@@ -76,6 +77,64 @@ const FinanceProjecao = (() => {
       <span>Seu saldo chega a <strong>${Utils.formatBRL(proj.menorSaldo.valorCentavos)}</strong>
         em ${Utils.fmtDayMonth(proj.menorSaldo.data)}</span>
     </div>`;
+  }
+
+  // ===== Dívida do cartão em formação =====
+  // Explicita o que a projeção de caixa ESCONDE por natureza: as compras que
+  // você já fez no cartão ainda não pesaram no saldo, mas viram um débito
+  // fechado no dia do vencimento. Cada cartão vira uma linha; a fatura atual
+  // é a "em formação", a fatura anterior em aberto é o próximo débito real.
+
+  function dividaCartaoHtml() {
+    if (!window.CartaoService) return '';
+    const cartoes = CartaoService.listCartoes();
+    if (!cartoes.length) return '';
+    const linhas = cartoes.map(_dividaCartaoLinha).filter(Boolean).join('');
+    if (!linhas) return '';
+    return `<div class="fin-proj-divida">
+      <div class="fin-proj-divida-head">Dívida do cartão em formação</div>
+      ${linhas}
+    </div>`;
+  }
+
+  function _dividaCartaoLinha(cartao) {
+    const compAtual = CartaoService.competenciaDaCompra(cartao, Utils.today());
+    const compAnterior = _addMonths(compAtual, -1);
+    const fAtual = CartaoService.getFatura(cartao.id, compAtual);
+    const fAnt = CartaoService.getFatura(cartao.id, compAnterior);
+    const emFormacao = fAtual && fAtual.totalCentavos > 0 ? fAtual : null;
+    const proximoDebito = fAnt && !fAnt.paga && fAnt.totalCentavos > 0 ? fAnt : null;
+    if (!emFormacao && !proximoDebito) return '';
+
+    const badge = `<div class="fin-proj-divida-badge" style="background:${cartao.cor}22;color:${cartao.cor}">💳</div>`;
+    const linhas = [];
+    if (proximoDebito) {
+      linhas.push(`<div class="fin-proj-divida-sub">
+        <span>Fatura em aberto vence <strong>${Utils.fmtDayMonth(proximoDebito.dataVencimento)}</strong></span>
+        <span class="fin-proj-divida-val red">−${Utils.formatBRL(proximoDebito.totalCentavos)}</span>
+      </div>`);
+    }
+    if (emFormacao) {
+      linhas.push(`<div class="fin-proj-divida-sub">
+        <span>Fatura em formação · pesa em <strong>${Utils.fmtDayMonth(emFormacao.dataVencimento)}</strong></span>
+        <span class="fin-proj-divida-val">${Utils.formatBRL(emFormacao.totalCentavos)}</span>
+      </div>`);
+    }
+    return `<div class="fin-proj-divida-item">
+      ${badge}
+      <div class="fin-proj-divida-info">
+        <div class="fin-proj-divida-name">${Utils.escapeHtml(cartao.nome)}</div>
+        ${linhas.join('')}
+      </div>
+    </div>`;
+  }
+
+  function _addMonths(prefix, delta) {
+    let [y, m] = prefix.split('-').map(Number);
+    m += delta;
+    while (m < 1) { m += 12; y--; }
+    while (m > 12) { m -= 12; y++; }
+    return `${y}-${String(m).padStart(2, '0')}`;
   }
 
   // ===== Gráfico de linha (SVG puro) =====

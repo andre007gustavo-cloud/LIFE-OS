@@ -279,11 +279,18 @@ const FinanceView = (() => {
       : '';
     const sub = [cat?.nome, cartao?.nome].filter(Boolean).join(' · ');
     const cor = cartao?.cor || 'var(--accent)';
+    // Data em que a compra vai virar débito real na conta (vencimento da fatura
+    // que ela cai). Mostrar torna claro que a saída ainda está "em fila".
+    const vencimento = cartao ? CartaoService.vencimentoDaCompra(cartao, t.data) : '';
+    const pesaEm = vencimento
+      ? `<div class="fin-sub fin-entry-pesa">pesa em ${Utils.fmtDayMonth(vencimento)}</div>`
+      : '';
     return `<div class="fin-entry fin-entry-card" onclick="FinanceCartaoModal.openDetalhe('${t.cartaoId}')">
       <div class="fin-dot" style="background:${cor}22;color:${cor}">💳</div>
       <div class="fin-info">
         <div class="fin-title">${Utils.escapeHtml(t.descricao || 'Compra no cartão')} ${parcelaBadge}</div>
         <div class="fin-sub">${Utils.escapeHtml(sub)}</div>
+        ${pesaEm}
       </div>
       <div class="fin-amount" style="color:var(--red)">−${Utils.formatBRL(t.valorCentavos)}</div>
       <button class="icon-btn" title="Excluir"

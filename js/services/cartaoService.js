@@ -107,6 +107,22 @@ const CartaoService = (() => {
     return `${ano}-${String(mes).padStart(2, '0')}`;
   }
 
+  /**
+   * Data ISO em que a fatura da compra vai pesar no caixa (vencimento). Mesma
+   * regra de getFatura: se diaVencimento < diaFechamento, vence no mês seguinte
+   * ao da competência. Helper para as views mostrarem "pesará em DD/MM" sem
+   * precisar computar a fatura toda por linha.
+   */
+  function vencimentoDaCompra(cartao, dataCompra) {
+    const comp = competenciaDaCompra(cartao, dataCompra);
+    const [cAno, cMes] = comp.split('-').map(Number);
+    let vAno = cAno, vMes = cMes;
+    if (cartao.diaVencimento < cartao.diaFechamento) {
+      vMes++; if (vMes > 12) { vMes = 1; vAno++; }
+    }
+    return _dateISO(vAno, vMes, cartao.diaVencimento);
+  }
+
   // ===== Compra no cartão =====
 
   /**
@@ -415,7 +431,7 @@ const CartaoService = (() => {
 
   return {
     listCartoes, getCartaoById, addCartao, updateCartao, arquivarCartao, removeCartao,
-    addCompraCartao, competenciaDaCompra, getFatura, getFaturaAtual, listFaturas,
+    addCompraCartao, competenciaDaCompra, vencimentoDaCompra, getFatura, getFaturaAtual, listFaturas,
     getParcelasComprometidas, getLimiteDisponivel, pagarFatura, desfazerPagamento,
     _seedCartoes
   };
