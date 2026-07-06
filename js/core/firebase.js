@@ -19,6 +19,7 @@ const FirebaseApp = (() => {
 
   const auth = firebase.auth();
   const db = firebase.firestore();
+  const storage = firebase.storage();
 
   // Habilita cache offline do Firestore
   db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
@@ -31,6 +32,18 @@ const FirebaseApp = (() => {
     const user = auth.currentUser;
     if (!user) return null;
     return db.collection('users').doc(user.uid);
+  }
+
+  /** Retorna referência a um caminho dentro da pasta do usuário no Storage. */
+  function getUserStorageRef(path) {
+    const user = auth.currentUser;
+    if (!user) return null;
+    return storage.ref(`users/${user.uid}/${path}`);
+  }
+
+  /** Referência do Storage a partir da URL pública (para deletar). */
+  function storageRefFromUrl(url) {
+    return storage.refFromURL(url);
   }
 
   /** Login com conta Google */
@@ -56,5 +69,8 @@ const FirebaseApp = (() => {
     return auth.currentUser;
   }
 
-  return { getUserDoc, loginWithGoogle, logout, onAuthChanged, currentUser };
+  return {
+    getUserDoc, getUserStorageRef, storageRefFromUrl,
+    loginWithGoogle, logout, onAuthChanged, currentUser
+  };
 })();

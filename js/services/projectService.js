@@ -71,6 +71,8 @@ const ProjectService = (() => {
 
   function remove(id) {
     const db = AppState.getDB();
+    const project = db.projects.find(p => p.id === id);
+    if (project) _cleanupProjectImages(project);
     db.projects = db.projects.filter(p => p.id !== id);
     db.areas.forEach(a => {
       if (a.projects) a.projects = a.projects.filter(p => p.id !== id);
@@ -117,6 +119,8 @@ const ProjectService = (() => {
   function removeNote(projectId, noteId) {
     const p = getById(projectId);
     if (!p) return;
+    const note = (p.notes || []).find(n => n.id === noteId);
+    if (note) _cleanupNoteImages(note);
     p.notes = (p.notes || []).filter(n => n.id !== noteId);
     AppState.persist();
   }
@@ -160,6 +164,17 @@ const ProjectService = (() => {
   }
 
   // ===== Internal =====
+
+  /** Apaga do Storage as imagens de uma nota (fire-and-forget). */
+  function _cleanupNoteImages(note) {
+    if (!window.ImageService) return;
+    ImageService.removeMany(ImageService.extractStorageUrls(note.content || ''));
+  }
+
+  /** Idem para todas as notas de um projeto. */
+  function _cleanupProjectImages(project) {
+    (project.notes || []).forEach(_cleanupNoteImages);
+  }
 
   function buildProject(data, existing) {
     return {
