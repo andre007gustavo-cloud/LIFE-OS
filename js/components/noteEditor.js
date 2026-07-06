@@ -94,10 +94,10 @@ const NoteEditor = (() => {
   // ===== Internal =====
 
   function readAndInsert(file, fallbackName) {
-    const reader = new FileReader();
-    reader.onload = ev => ImageResize.insertAtCursor(ev.target.result, fallbackName || file.name);
-    reader.onerror = () => alert('Erro ao ler a imagem: ' + (fallbackName || file.name));
-    reader.readAsDataURL(file);
+    const name = fallbackName || file.name;
+    Utils.compressImage(file)
+      .then(dataUrl => ImageResize.insertAtCursor(dataUrl, name))
+      .catch(err => alert('Erro ao ler a imagem: ' + name + ' — ' + err.message));
   }
 
   /** When opening a saved note, wrap existing <img> tags with resize handles */

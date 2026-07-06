@@ -255,6 +255,38 @@ const Utils = (() => {
     return [...d.querySelectorAll('img')].map(i => i.src).slice(0, limit);
   }
 
+  // ===== Image compression =====
+
+  /**
+   * Redimensiona e recomprime uma imagem antes de virar data URL. Necessário
+   * porque a nota é salva DENTRO do documento do Firestore (limite de 1 MiB) —
+   * uma foto de celular crua vira ~3–5 MB em base64 e trava o sync. JPEG 0.8 a
+   * 1600 px cabe folgado e mantém qualidade suficiente para leitura na tela.
+   */
+  function compressImage(file, { maxDim = 1600, quality = 0.8 } = {}) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const img = new Image();
+        img.onload = () => {
+          let w = img.naturalWidth, h = img.naturalHeight;
+          const scale = Math.min(1, maxDim / Math.max(w, h));
+          w = Math.round(w * scale);
+          h = Math.round(h * scale);
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = () => reject(new Error('Falha ao decodificar a imagem'));
+        img.src = ev.target.result;
+      };
+      reader.onerror = () => reject(new Error('Falha ao ler o arquivo'));
+      reader.readAsDataURL(file);
+    });
+  }
+
   return {
     uid,
     toISO,
@@ -285,6 +317,7 @@ const Utils = (() => {
     escapeHtml,
     escapeAttr,
     extractHtmlText,
-    extractHtmlImages
+    extractHtmlImages,
+    compressImage
   };
 })();
