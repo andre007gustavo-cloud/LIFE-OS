@@ -19,12 +19,6 @@ const FirebaseApp = (() => {
 
   const auth = firebase.auth();
   const db = firebase.firestore();
-  // Storage é opcional: se o SDK não carregou (CDN fora do ar, precache
-  // desatualizado no PWA), não pode derrubar auth/firestore. Uploads de imagem
-  // ficam desabilitados até o SDK voltar; o resto do app segue vivo.
-  let storage = null;
-  try { storage = firebase.storage(); }
-  catch (err) { console.warn('[Firebase] Storage SDK indisponível:', err.message); }
 
   // Habilita cache offline do Firestore
   db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
@@ -37,24 +31,6 @@ const FirebaseApp = (() => {
     const user = auth.currentUser;
     if (!user) return null;
     return db.collection('users').doc(user.uid);
-  }
-
-  /** Retorna referência a um caminho dentro da pasta do usuário no Storage. */
-  function getUserStorageRef(path) {
-    const user = auth.currentUser;
-    if (!user || !storage) return null;
-    return storage.ref(`users/${user.uid}/${path}`);
-  }
-
-  /** Referência do Storage a partir da URL pública (para deletar). */
-  function storageRefFromUrl(url) {
-    if (!storage) return null;
-    return storage.refFromURL(url);
-  }
-
-  /** true se o SDK do Storage subiu — permite ao imageService falhar rápido. */
-  function isStorageAvailable() {
-    return storage !== null;
   }
 
   /** Login com conta Google */
@@ -81,7 +57,7 @@ const FirebaseApp = (() => {
   }
 
   return {
-    getUserDoc, getUserStorageRef, storageRefFromUrl, isStorageAvailable,
+    getUserDoc,
     loginWithGoogle, logout, onAuthChanged, currentUser
   };
 })();

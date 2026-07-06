@@ -1,65 +1,86 @@
 /**
  * ===================== IMAGE SERVICE =====================
- * Sobe imagens das notas para o Firebase Storage e devolve a URL pública.
- * Existe porque embutir base64 direto no documento Firestore estoura o teto
- * de 1 MiB por doc e o de ~5 MiB do localStorage (ver noteEditor / storage).
+ * Guarda imagens das notas dentro do próprio Firestore (subcoleção
+ * `users/{uid}/noteImages/{id}` com o base64 comprimido no campo `dataUrl`).
  *
- * A compressão fica a cargo do chamador (Utils.compressImage) — o editor
- * já comprime uma vez para mostrar como placeholder, então repassa o blob
- * pronto pra cá e evitamos comprimir a mesma imagem duas vezes.
+ * Por que subcoleção e não Storage: Storage exige plano Blaze (cartão) desde
+ * out/2024. O Firestore free tier dá 1 GiB — cabem ~3-5 mil imagens. Cada
+ * imagem vira 1 doc, ficando bem abaixo do limite de 1 MiB por documento;
+ * o doc principal do usuário fica pequeno porque a nota só guarda o ID.
+ *
+ * A compressão é responsabilidade do chamador (Utils.compressImage).
  */
 
 const ImageService = (() => {
 
-  const NOTES_PREFIX = 'notes';
+  const SUBCOLLECTION = 'noteImages';
 
-  /**
-   * Sobe um blob para users/{uid}/notes/{id}.jpg e devolve a URL pública.
-   * Assume que o chamador já comprimiu (senão o blob vai gigante).
-   */
-  async function uploadNoteImage(blob) {
-    const ref = FirebaseApp.getUserStorageRef(`${NOTES_PREFIX}/${Utils.uid()}.jpg`);
-    if (!ref) throw new Error('Não autenticado');
-    await ref.put(blob, { contentType: 'image/jpeg' });
-    return ref.getDownloadURL();
+  function _collection() {
+    const userDoc = FirebaseApp.getUserDoc();
+    return userDoc ? userDoc.collection(SUBCOLLECTION) : null;
   }
 
-  /** Best-effort: apaga o arquivo do Storage. Falha silenciosa (só loga). */
-  async function removeByUrl(url) {
-    if (!url || !_isStorageUrl(url)) return;
+  /**
+   * Grava a data URL comprimida em um novo doc e devolve o ID gerado.
+   * Falha rápido se não estiver autenticado (bubble up para o chamador exibir).
+   */
+  async function uploadImage(dataUrl) {
+    const col = _collection();
+    if (!col) throw new Error('Não autenticado');
+    const ref = col.doc(Utils.uid());
+    await ref.set({
+      dataUrl,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    return ref.id;
+  }
+
+  /** Lê o dataUrl de uma imagem pelo ID. Retorna null se não existir/erro. */
+  async function fetchImage(id) {
+    const col = _collection();
+    if (!col || !id) return null;
     try {
-      await FirebaseApp.storageRefFromUrl(url).delete();
+      const snap = await col.doc(id).get();
+      return snap.exists ? (snap.data().dataUrl || null) : null;
+    } catch (err) {
+      console.warn('[ImageService] falha ao buscar imagem:', err.code || err.message);
+      return null;
+    }
+  }
+
+  /** Best-effort: deleta doc da imagem. Falha silenciosa (só loga). */
+  async function removeById(id) {
+    const col = _collection();
+    if (!col || !id) return;
+    try {
+      await col.doc(id).delete();
     } catch (err) {
       console.warn('[ImageService] falha ao remover imagem:', err.code || err.message);
     }
   }
 
-  /** URLs de imagens do Storage encontradas num HTML de nota. */
-  function extractStorageUrls(html) {
+  /** Dispara delete para cada ID sem esperar (fire-and-forget). */
+  function removeMany(ids) {
+    (ids || []).forEach(id => removeById(id));
+  }
+
+  /** IDs de imagens (data-image-id) referenciados no HTML da nota. */
+  function extractIds(html) {
     const div = document.createElement('div');
     div.innerHTML = html || '';
-    return [...div.querySelectorAll('img')]
-      .map(img => img.getAttribute('src'))
-      .filter(src => src && _isStorageUrl(src));
+    return [...div.querySelectorAll('img[data-image-id]')]
+      .map(img => img.getAttribute('data-image-id'))
+      .filter(Boolean);
   }
 
-  /** URLs presentes em `oldHtml` que sumiram em `newHtml`. */
-  function diffRemovedUrls(oldHtml, newHtml) {
-    const remaining = new Set(extractStorageUrls(newHtml));
-    return extractStorageUrls(oldHtml).filter(u => !remaining.has(u));
-  }
-
-  /** Dispara delete para cada URL sem esperar (fire-and-forget). */
-  function removeMany(urls) {
-    (urls || []).forEach(u => removeByUrl(u));
-  }
-
-  function _isStorageUrl(url) {
-    return typeof url === 'string' && url.includes('firebasestorage.googleapis.com');
+  /** IDs em `oldHtml` que sumiram em `newHtml` — para deletar do Firestore. */
+  function diffRemovedIds(oldHtml, newHtml) {
+    const remaining = new Set(extractIds(newHtml));
+    return extractIds(oldHtml).filter(id => !remaining.has(id));
   }
 
   return {
-    uploadNoteImage, removeByUrl, removeMany,
-    extractStorageUrls, diffRemovedUrls
+    uploadImage, fetchImage, removeById, removeMany,
+    extractIds, diffRemovedIds
   };
 })();

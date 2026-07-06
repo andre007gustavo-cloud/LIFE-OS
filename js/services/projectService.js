@@ -165,10 +165,10 @@ const ProjectService = (() => {
 
   // ===== Internal =====
 
-  /** Apaga do Storage as imagens de uma nota (fire-and-forget). */
+  /** Apaga do Firestore as imagens de uma nota (fire-and-forget). */
   function _cleanupNoteImages(note) {
     if (!window.ImageService) return;
-    ImageService.removeMany(ImageService.extractStorageUrls(note.content || ''));
+    ImageService.removeMany(ImageService.extractIds(note.content || ''));
   }
 
   /** Idem para todas as notas de um projeto. */

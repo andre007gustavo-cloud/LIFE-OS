@@ -210,14 +210,16 @@ const AreasView = (() => {
       </div>
       ${notes.length ? notes.slice().reverse().map(n => {
         const text = Utils.extractHtmlText(n.content).slice(0, 200);
-        const imgs = Utils.extractHtmlImages(n.content, 3);
+        const imgCount = ImageService.extractIds(n.content).length;
         return `<div class="note-item" onclick="openNote('${n.id}')">
           <div style="display:flex;justify-content:space-between">
             <div style="flex:1">
               <div class="note-item-title">${escapeHtml(n.title)}</div>
               <div class="note-item-preview">${escapeHtml(text)}</div>
-              ${imgs.length ? `<div class="note-item-imgs">${imgs.map(s => `<img class="note-item-thumb" src="${escapeAttr(s)}">`).join('')}</div>` : ''}
-              <div class="note-item-date">${Utils.fmtDate(n.updatedAt || n.createdAt)}</div>
+              <div class="note-item-date">
+                ${Utils.fmtDate(n.updatedAt || n.createdAt)}
+                ${imgCount ? `<span style="margin-left:10px;opacity:.7"><i class="ti ti-photo"></i> ${imgCount}</span>` : ''}
+              </div>
             </div>
             <button class="icon-btn" onclick="event.stopPropagation();deleteNote('${n.id}')" style="color:var(--red)">
               <i class="ti ti-trash"></i>

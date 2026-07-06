@@ -3,15 +3,15 @@
  * Rich-text editor for project notes.
  * Supports headings, lists, blockquotes, inline images with resize, paste/drop.
  *
- * Imagens: comprimidas e enviadas pro Firebase Storage; a nota só guarda a URL.
- * Enquanto o upload roda, o próprio data URL comprimido serve de placeholder
- * (img.dataset.pending='1'). Save aguarda uploads pendentes; excluir/remover
- * imagens dispara delete no Storage para não deixar órfãos.
+ * Imagens: comprimidas e gravadas em docs próprios do Firestore
+ * (users/{uid}/noteImages/{id}). A nota guarda só `<img data-image-id="{id}">`.
+ * Ao abrir, um hidratador busca cada doc e injeta o `src` (base64). Ao salvar,
+ * o `src` é removido do HTML persistido — só o `data-image-id` fica.
  */
 
 const NoteEditor = (() => {
 
-  function open(noteId) {
+  async function open(noteId) {
     AppState.ui.editNoteId = noteId;
     const projectId = AppState.ui.activeProjectId;
     const note = noteId ? ProjectService.getNote(projectId, noteId) : null;
@@ -26,6 +26,8 @@ const NoteEditor = (() => {
       attachResizeToExistingImages(editor);
       document.getElementById('note-title-input').focus();
     }, 120);
+
+    hydrateImages(editor);
   }
 
   function close() {
@@ -36,7 +38,7 @@ const NoteEditor = (() => {
     if (e.target === document.getElementById('note-overlay')) close();
   }
 
-  async function save() {
+  function save() {
     const projectId = AppState.ui.activeProjectId;
     const project = ProjectService.getById(projectId);
     if (!project) return;
@@ -48,7 +50,7 @@ const NoteEditor = (() => {
     }
 
     const title = document.getElementById('note-title-input').value.trim();
-    const content = editor.innerHTML.trim();
+    const content = _serializeContent(editor);
     const textOnly = editor.innerText.trim();
 
     if (!title && !textOnly) return close();
@@ -64,7 +66,7 @@ const NoteEditor = (() => {
       ProjectService.addNote(projectId, { title, content });
     }
 
-    ImageService.removeMany(ImageService.diffRemovedUrls(oldContent, content));
+    ImageService.removeMany(ImageService.diffRemovedIds(oldContent, content));
 
     close();
     if (window.AreasView?.renderWorkspace) AreasView.renderWorkspace();
@@ -129,16 +131,15 @@ const NoteEditor = (() => {
     img.style.opacity = '0.55';
 
     try {
-      const blob = await (await fetch(dataUrl)).blob();
-      const url = await ImageService.uploadNoteImage(blob);
+      const id = await ImageService.uploadImage(dataUrl);
       // Se o usuário já apagou a imagem enquanto subia, o img saiu do DOM.
-      if (!editor.contains(img)) return ImageService.removeByUrl(url);
-      img.src = url;
+      if (!editor.contains(img)) return ImageService.removeById(id);
+      img.dataset.imageId = id;
       delete img.dataset.pending;
       img.style.opacity = '';
     } catch (err) {
       console.error('[NoteEditor] upload falhou:', err);
-      alert('Falha ao enviar imagem "' + name + '": ' + (err.message || err.code || err));
+      alert('Falha ao salvar imagem "' + name + '": ' + (err.message || err.code || err));
       img.remove();
     }
   }
@@ -148,6 +149,36 @@ const NoteEditor = (() => {
     editor.querySelectorAll('img:not(.img-resize-wrap img)').forEach(img => {
       if (!img.closest('.img-resize-wrap')) ImageResize.makeResizable(img);
     });
+  }
+
+  /** Busca cada imagem referenciada por data-image-id e injeta o src (base64). */
+  async function hydrateImages(editor) {
+    const imgs = [...editor.querySelectorAll('img[data-image-id]')];
+    await Promise.all(imgs.map(async img => {
+      if (img.src && !img.src.startsWith('http')) return; // já hidratada / inline
+      const id = img.dataset.imageId;
+      img.style.opacity = '0.55';
+      const dataUrl = await ImageService.fetchImage(id);
+      if (dataUrl) {
+        img.src = dataUrl;
+        img.style.opacity = '';
+      } else {
+        img.alt = '⚠ imagem não encontrada';
+        img.style.opacity = '';
+      }
+    }));
+  }
+
+  /**
+   * Prepara o HTML para persistir: tira o `src` das imagens que têm ID
+   * (o base64 vive no Firestore, não no doc principal). Imagens sem ID
+   * (legado ou pendentes) ficam como estão — para pendentes o save() já
+   * bloqueou antes.
+   */
+  function _serializeContent(editor) {
+    const clone = editor.cloneNode(true);
+    clone.querySelectorAll('img[data-image-id]').forEach(img => img.removeAttribute('src'));
+    return clone.innerHTML.trim();
   }
 
   return {

@@ -248,13 +248,6 @@ const Utils = (() => {
     return d.innerText || d.textContent || '';
   }
 
-  /** Extract image sources from HTML string (limit to N) */
-  function extractHtmlImages(html, limit = 3) {
-    const d = document.createElement('div');
-    d.innerHTML = html || '';
-    return [...d.querySelectorAll('img')].map(i => i.src).slice(0, limit);
-  }
-
   // ===== Image compression =====
 
   /**
@@ -317,7 +310,6 @@ const Utils = (() => {
     escapeHtml,
     escapeAttr,
     extractHtmlText,
-    extractHtmlImages,
     compressImage
   };
 })();
