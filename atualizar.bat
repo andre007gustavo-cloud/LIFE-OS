@@ -1,8 +1,9 @@
 @echo off
 REM ===================================================
-REM  Life OS - envia atualizacoes para GitHub
+REM  Life OS - sincroniza com o GitHub e envia atualizacoes
 REM  (a Vercel publica automaticamente apos o push)
 REM
+REM  0. git pull --rebase (traz o que foi enviado de outro lugar)
 REM  1. Verifica se ha mudancas no repositorio
 REM  2. Incrementa a versao de cache do service worker
 REM     (sem isso, dispositivos com o PWA instalado
@@ -27,6 +28,20 @@ if "%MSG%"=="" (
 
 echo.
 echo === Atualizando Life OS ===
+echo.
+
+REM 0. Baixa o que foi enviado ao GitHub de outro lugar. Roda ANTES de mexer no
+REM sw.js: se rodasse depois do commit, o CACHE_VERSION alterado nas duas maquinas
+REM daria conflito toda vez. --autostash guarda e reaplica as alteracoes locais.
+echo Baixando atualizacoes do GitHub...
+git pull --rebase --autostash
+if errorlevel 1 (
+  git rebase --abort >nul 2>&1
+  echo.
+  echo ERRO ao baixar do GitHub - conexao ou conflito. Nada foi enviado.
+  echo Verifique as mensagens acima e rode de novo.
+  goto fim
+)
 echo.
 
 REM 1. Ha mudancas para enviar?
