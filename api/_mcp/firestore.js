@@ -1,7 +1,7 @@
-// api/_mcp/firestore.js — acesso ao documento users/{uid} via REST do Firestore.
-// Sem dependências (nada de firebase-admin/package.json): autentica com a conta de
-// serviço assinando um JWT com node:crypto. A conta de serviço ignora as regras do
-// Firestore, por isso só o servidor a conhece (env FIREBASE_SERVICE_ACCOUNT).
+// api/_mcp/firestore.js — acesso ao Firestore via REST, sem dependências (nada de
+// firebase-admin/package.json): autentica com a conta de serviço assinando um JWT
+// com node:crypto. A conta de serviço ignora as regras do Firestore, por isso só o
+// servidor a conhece (env FIREBASE_SERVICE_ACCOUNT).
 import crypto from 'node:crypto';
 
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -9,10 +9,8 @@ const SCOPE = 'https://www.googleapis.com/auth/datastore';
 const API = 'https://firestore.googleapis.com/v1';
 const TOKEN_MARGIN_MS = 60_000;
 const MAX_ATTEMPTS = 3;
-
-// Valor de 'lastWriter': o listener do app ignora snapshots SEM lastWriter
-// (cliente antigo), então toda escrita daqui precisa carimbá-lo.
-const WRITER_ID = 'mcp-claude';
+const HTTP_NOT_FOUND = 404;
+const HTTP_ABORTED = 409; // transação perdeu a corrida (contenção): refazer
 
 let _token = null; // { value, expiresAtMs } — reaproveitado entre invocações quentes
 
@@ -71,13 +69,14 @@ async function _call(method, url, body) {
   return data;
 }
 
-function _docName() {
-  const sa = _serviceAccount();
-  return `projects/${sa.project_id}/databases/(default)/documents/users/${process.env.LIFEOS_UID}`;
+function _documentsRoot() {
+  return `projects/${_serviceAccount().project_id}/databases/(default)/documents`;
 }
 
-function _databaseUrl() {
-  return `${API}/${_docName().split('/documents/')[0]}/documents`;
+/** Nome completo de um doc a partir do caminho relativo ao usuário ('' = o próprio users/{uid}). */
+export function userDocName(subpath = '') {
+  const base = `${_documentsRoot()}/users/${process.env.LIFEOS_UID}`;
+  return subpath ? `${base}/${subpath}` : base;
 }
 
 // ===== Conversão Firestore Value <-> JSON =====
@@ -114,54 +113,69 @@ export function encodeValue(x) {
   return { mapValue: { fields } };
 }
 
-// ===== Leitura / escrita =====
+// ===== Leitura / transação =====
 
-function _maskQuery(fieldPaths) {
-  return fieldPaths.map(f => `mask.fieldPaths=${encodeURIComponent(f)}`).join('&');
-}
-
-/** Lê só os campos pedidos: { data (JSON), raw (fields no formato Firestore) }. */
-export async function readUserDoc(fieldPaths) {
-  const doc = await _call('GET', `${API}/${_docName()}?${_maskQuery(fieldPaths)}`);
-  return { data: decodeFields(doc.fields), raw: doc.fields || {} };
+/** Lê um doc: { fields } no formato Firestore, ou null se não existe. */
+export async function readDoc(name, transaction) {
+  const tx = transaction ? `?transaction=${encodeURIComponent(transaction)}` : '';
+  try {
+    const doc = await _call('GET', `${API}/${name}${tx}`);
+    return { fields: doc.fields || {} };
+  } catch (err) {
+    if (err.status === HTTP_NOT_FOUND) return null;
+    throw err;
+  }
 }
 
 /**
- * Lê e grava numa transação do Firestore (sem corrida com o app aberto em outro
- * aparelho). mutate({data, raw}) devolve { writes: {campo: valorCodificado}, result }
- * ou { erro } para abortar sem gravar. Só os campos de 'writes' são tocados, junto
- * com lastWriter/updatedAt que o listener do app usa para aplicar a mudança.
+ * Transação do Firestore (sem corrida com o app aberto em outro aparelho).
+ * work(read) recebe read(name) → doc dentro da transação e devolve
+ * { writes: [Write REST], result } ou { erro } para abortar sem gravar.
+ * Refaz tudo (até MAX_ATTEMPTS) se outra escrita ganhar a corrida.
  */
-export async function transactUserDoc(fieldPaths, mutate) {
+export async function runTransaction(work) {
   for (let attempt = 1; ; attempt++) {
     try {
-      return await _tryTransaction(fieldPaths, mutate);
+      return await _tryTransaction(work);
     } catch (err) {
-      if (err.status !== 409 || attempt >= MAX_ATTEMPTS) throw err; // 409 = ABORTED (contenção)
+      if (err.status !== HTTP_ABORTED || attempt >= MAX_ATTEMPTS) throw err;
     }
   }
 }
 
-async function _tryTransaction(fieldPaths, mutate) {
-  const base = _databaseUrl();
+async function _tryTransaction(work) {
+  const base = `${API}/${_documentsRoot()}`;
   const { transaction } = await _call('POST', `${base}:beginTransaction`, {});
-  const tx = encodeURIComponent(transaction);
-  const doc = await _call('GET', `${API}/${_docName()}?${_maskQuery(fieldPaths)}&transaction=${tx}`);
-  const out = mutate({ data: decodeFields(doc.fields), raw: doc.fields || {} });
-  if (out.erro) {
+  const out = await work(name => readDoc(name, transaction));
+  if (out.erro || !out.writes || !out.writes.length) {
     await _call('POST', `${base}:rollback`, { transaction });
-    return out;
+    return out.erro ? out : out.result;
   }
-  await _call('POST', `${base}:commit`, { transaction, writes: [_updateWrite(out.writes)] });
+  await _call('POST', `${base}:commit`, { transaction, writes: out.writes });
   return out.result;
 }
 
-function _updateWrite(writes) {
-  const fields = { ...writes, lastWriter: { stringValue: WRITER_ID } };
+/**
+ * Write que altera SÓ os campos de updateMask (campo no mask e ausente em
+ * fields = apagado), carimbando lastWriter + updatedAt: o listener do app ignora
+ * escrita sem lastWriter (cliente antigo) e só aplica updatedAt mais novo.
+ */
+export function updateFieldsWrite(name, fields, maskPaths, writerId) {
+  const allFields = { ...fields, lastWriter: { stringValue: writerId } };
   return {
-    update: { name: _docName(), fields },
-    updateMask: { fieldPaths: Object.keys(fields) },
+    update: { name, fields: allFields },
+    updateMask: { fieldPaths: [...new Set([...maskPaths, 'lastWriter'])].map(_quotePath) },
     updateTransforms: [{ fieldPath: 'updatedAt', setToServerValue: 'REQUEST_TIME' }],
     currentDocument: { exists: true }
   };
+}
+
+/** Write que substitui o doc inteiro (cria se não existir). */
+export function setDocWrite(name, fields) {
+  return { update: { name, fields } };
+}
+
+/** Nome de campo fora de [A-Za-z_][A-Za-z_0-9]* precisa de crases no field path. */
+function _quotePath(key) {
+  return /^[A-Za-z_][A-Za-z_0-9]*$/.test(key) ? key : '`' + key.replace(/[`\\]/g, '\\$&') + '`';
 }

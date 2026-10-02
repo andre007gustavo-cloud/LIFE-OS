@@ -106,11 +106,16 @@ Copie a pasta `life-os/` inteira para dentro do repositório do GitHub Pages (su
 
 ## 🔌 Conector do Claude (MCP)
 
-`api/mcp.js` expõe as finanças do Life OS como um conector MCP, para o Claude
-(claude.ai / app) consultar e fazer lançamentos direto no Firestore.
+`api/mcp.js` expõe o Life OS inteiro como um conector MCP, para o Claude (claude.ai / app)
+consultar e alterar tarefas, agenda, projetos e notas, áreas, hábitos, inbox, revisão semanal
+e finanças (contas, cartões e faturas, orçamentos, recorrências, metas, relatórios).
 
-Ferramentas: `get_finance_setup`, `list_transactions`, `add_transaction`,
-`add_card_purchase`, `add_transfer`, `delete_transaction`.
+As ferramentas **são as do assistente do app** (`js/services/aiTools*.js`): o servidor roda os
+próprios arquivos do app num sandbox `vm` (`api/_mcp/appRuntime.js`), então ferramenta nova
+lá aparece no conector sozinha, com as mesmas regras. Cada escrita é uma transação que grava
+só os campos que mudaram e guarda um backup do valor anterior (`users/{uid}/mcpBackups`,
+últimas 20): a ferramenta `undo_last_change` desfaz, desde que o dado não tenha mudado
+depois no app.
 
 ### Configuração (uma vez)
 
@@ -129,4 +134,4 @@ Ferramentas: `get_finance_setup`, `list_transactions`, `add_transaction`,
 não compartilhe nem commite. Para revogar, troque o `LIFEOS_MCP_SECRET` na Vercel.
 
 Os lançamentos aparecem no app em tempo real (o listener do Firestore aplica a
-escrita, marcada com `lastWriter: 'mcp-claude'` e `fonte: 'claude'`).
+escrita, marcada com `lastWriter: 'mcp-claude'`).

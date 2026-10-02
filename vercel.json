@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/mcp.js": {
+      "includeFiles": "js/**"
+    }
+  }
+}
