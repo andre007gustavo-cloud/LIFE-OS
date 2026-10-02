@@ -161,6 +161,18 @@ const Utils = (() => {
     return task.status !== 'concluida' && task.status !== 'descartada';
   }
 
+  /**
+   * Comparador cronológico de tarefas: data, depois horário; no mesmo dia as sem
+   * horário vêm depois das com horário; sem data vão para o fim.
+   */
+  function compareTasksByDateTime(a, b) {
+    if (!a.date !== !b.date) return a.date ? -1 : 1;
+    if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+    if (!a.start !== !b.start) return a.start ? -1 : 1;
+    if (a.start !== b.start) return a.start < b.start ? -1 : 1;
+    return 0;
+  }
+
   /** Returns true if a task occupies the given ISO date (handles multi-day tasks) */
   function taskCoversDay(task, isoDate) {
     if (!task.date) return false;
@@ -298,6 +310,7 @@ const Utils = (() => {
     humanDuration,
     fmtMoney,
     isTaskOpen,
+    compareTasksByDateTime,
     taskCoversDay,
     taskRecursOnDay,
     formatFileSize,

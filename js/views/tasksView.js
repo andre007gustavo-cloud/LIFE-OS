@@ -126,14 +126,14 @@ const TasksView = (() => {
   }
 
   function sortTasks(tasks) {
-    const sort = document.getElementById('tt-sort')?.value || 'priority';
+    const sort = document.getElementById('tt-sort')?.value || 'date';
     const ttList = AppState.ui.ttList;
 
     if (CHRONO_LISTS.includes(ttList)) {
-      const withTime = tasks.filter(t => t.start).sort((a, b) => a.start > b.start ? 1 : -1);
-      const noTime = tasks.filter(t => !t.start)
-        .sort((a, b) => Constants.PRI_ORDER[a.priority] - Constants.PRI_ORDER[b.priority]);
-      return [...withTime, ...noTime];
+      // Prioridade antes, para no empate de data/horário as mais importantes subirem
+      return tasks
+        .sort((a, b) => Constants.PRI_ORDER[a.priority] - Constants.PRI_ORDER[b.priority])
+        .sort(Utils.compareTasksByDateTime);
     }
 
     if (ttList === 'semdata') {
@@ -142,10 +142,10 @@ const TasksView = (() => {
 
     const sorters = {
       priority: (a, b) => Constants.PRI_ORDER[a.priority] - Constants.PRI_ORDER[b.priority],
-      date: (a, b) => a.date > b.date ? 1 : -1,
+      date: Utils.compareTasksByDateTime,
       name: (a, b) => a.name.localeCompare(b.name)
     };
-    return tasks.sort(sorters[sort] || sorters.priority);
+    return tasks.sort(sorters[sort] || sorters.date);
   }
 
   function renderHeader(count) {

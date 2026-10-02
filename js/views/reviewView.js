@@ -362,7 +362,8 @@ const ReviewView = (() => {
       const iso = Utils.addDays(weekStart, i);
       const d = Utils.parseISO(iso);
       const tasks = TaskService.getAll().filter(t =>
-        Utils.taskCoversDay(t, iso) || Utils.taskRecursOnDay(t, iso));
+        Utils.taskCoversDay(t, iso) || Utils.taskRecursOnDay(t, iso))
+        .sort((a, b) => (a.start || '99:99').localeCompare(b.start || '99:99'));
       const names = tasks.slice(0, 4).map(t =>
         `<div class="rv-week-task">${escapeHtml(t.name)}</div>`).join('');
       const more = tasks.length > 4 ? `<div class="rv-week-more">+${tasks.length - 4}</div>` : '';

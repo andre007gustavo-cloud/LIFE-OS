@@ -195,7 +195,7 @@ const TaskService = (() => {
   }
 
   function forDay(isoDate) {
-    return getAll().filter(t => Utils.taskCoversDay(t, isoDate));
+    return getAll().filter(t => Utils.taskCoversDay(t, isoDate)).sort(Utils.compareTasksByDateTime);
   }
 
   /**
@@ -208,7 +208,7 @@ const TaskService = (() => {
   }
 
   function forProject(projectId) {
-    return getAll().filter(t => t.project === projectId);
+    return getAll().filter(t => t.project === projectId).sort(Utils.compareTasksByDateTime);
   }
 
   // ===== Internal builders =====
