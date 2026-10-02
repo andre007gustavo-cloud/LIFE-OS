@@ -103,3 +103,30 @@ Copie a pasta `life-os/` inteira para dentro do repositório do GitHub Pages (su
 - Tema claro/escuro
 - Responsivo mobile
 - Migração automática de dados existentes
+
+## 🔌 Conector do Claude (MCP)
+
+`api/mcp.js` expõe as finanças do Life OS como um conector MCP, para o Claude
+(claude.ai / app) consultar e fazer lançamentos direto no Firestore.
+
+Ferramentas: `get_finance_setup`, `list_transactions`, `add_transaction`,
+`add_card_purchase`, `add_transfer`, `delete_transaction`.
+
+### Configuração (uma vez)
+
+1. **Conta de serviço**: Firebase Console → ⚙️ Configurações do projeto → Contas de
+   serviço → *Gerar nova chave privada*. Baixa um `.json`.
+2. **Seu uid**: Firebase Console → Authentication → Users → copie o *User UID* da sua conta Google.
+3. **Vercel** → Settings → Environment Variables (Production):
+   - `FIREBASE_SERVICE_ACCOUNT` = conteúdo inteiro do `.json` do passo 1
+   - `LIFEOS_UID` = uid do passo 2
+   - `LIFEOS_MCP_SECRET` = uma senha longa e aleatória (ex.: um UUID)
+4. Faça um novo deploy.
+5. **Claude** → Configurações → Conectores → *Adicionar conector personalizado*, com a URL:
+   `https://SEU-APP.vercel.app/api/mcp?key=SEU_LIFEOS_MCP_SECRET`
+
+⚠️ A chave da conta de serviço e a URL com `key=` dão acesso total aos seus dados —
+não compartilhe nem commite. Para revogar, troque o `LIFEOS_MCP_SECRET` na Vercel.
+
+Os lançamentos aparecem no app em tempo real (o listener do Firestore aplica a
+escrita, marcada com `lastWriter: 'mcp-claude'` e `fonte: 'claude'`).
