@@ -4,7 +4,7 @@
 
 /* ===== Modo resumo ===== */
 .rv-summary-head { margin-bottom: 18px; }
-.rv-title { font-size: 20px; font-weight: 700; }
+.rv-title { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
 .rv-sub { font-size: 13px; color: var(--text3); margin-top: 4px; }
 
 .rv-stat-grid {

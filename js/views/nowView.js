@@ -180,9 +180,9 @@ const NowView = (() => {
     const pct = pomo.total ? Math.round((pomo.total - pomo.seconds) / pomo.total * 100) : 0;
     const dur = PomodoroService.getDurations();
     return `<div class="now-pomo">
-      <div class="now-pomo-modes">
-        <button class="now-pomo-mode${pomo.mode === 'work' ? ' active' : ''}" onclick="NowView.pomoMode('work')">Trabalho</button>
-        <button class="now-pomo-mode${pomo.mode === 'short' ? ' active' : ''}" onclick="NowView.pomoMode('short')">Pausa</button>
+      <div class="now-pomo-modes seg">
+        <button class="now-pomo-mode seg-btn${pomo.mode === 'work' ? ' active' : ''}" onclick="NowView.pomoMode('work')">Trabalho</button>
+        <button class="now-pomo-mode seg-btn${pomo.mode === 'short' ? ' active' : ''}" onclick="NowView.pomoMode('short')">Pausa</button>
       </div>
       <div class="now-timer" id="now-timer">${Utils.formatPomodoroTime(pomo.seconds)}</div>
       <div class="now-progress-track"><div class="now-progress-fill" id="now-progress" style="width:${pct}%"></div></div>

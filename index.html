@@ -317,10 +317,10 @@
       </div>
     </div>
 
-    <div class="cal-tabs">
-      <button class="cal-tab" id="cal-tab-day" onclick="setCalView('day')">Dia</button>
-      <button class="cal-tab" id="cal-tab-week" onclick="setCalView('week')">Semana</button>
-      <button class="cal-tab active" id="cal-tab-month" onclick="setCalView('month')">Mês</button>
+    <div class="cal-tabs seg">
+      <button class="cal-tab seg-btn" id="cal-tab-day" onclick="setCalView('day')">Dia</button>
+      <button class="cal-tab seg-btn" id="cal-tab-week" onclick="setCalView('week')">Semana</button>
+      <button class="cal-tab seg-btn active" id="cal-tab-month" onclick="setCalView('month')">Mês</button>
     </div>
 
     <div id="cal-filter-panel" class="card" style="display:none;margin-bottom:12px">
@@ -338,7 +338,7 @@
   </div>
 
   <!-- ========== FINANCE VIEW ========== -->
-  <div class="view padded" id="view-finance">
+  <div class="view padded" id="view-finance" data-d="finance">
     <div id="fin-content"></div>
     <button class="fin-fab" title="Novo lançamento" onclick="FinanceQuickAdd.open()">
       <i class="ti ti-plus"></i>
@@ -385,7 +385,7 @@
   </div>
 
   <!-- ========== REVIEW VIEW (Revisão semanal guiada) ========== -->
-  <div class="view padded" id="view-review">
+  <div class="view padded" id="view-review" data-d="review">
     <div id="review-root"></div>
   </div>
 
@@ -404,9 +404,9 @@
   <div class="view" id="view-ia"></div>
 
   <!-- ========== HABITS VIEW ========== -->
-  <div class="view padded" id="view-habits">
+  <div class="view padded" id="view-habits" data-d="habits">
     <div class="section-title">
-      <span><i class="ti ti-repeat"></i> Hábitos</span>
+      <span><span class="head-icon"><i class="ti ti-repeat"></i></span> Hábitos</span>
       <div style="display:flex;gap:8px">
         <button class="btn btn-ghost btn-sm" id="habits-overview-btn" onclick="HabitsView.toggleOverview()">
           <i class="ti ti-chart-bar"></i> Visão geral

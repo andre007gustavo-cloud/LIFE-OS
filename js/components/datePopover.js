@@ -82,9 +82,9 @@ const DatePopover = (() => {
 
   function render() {
     el().innerHTML = `
-      <div class="dp-tabs">
-        <button class="dp-tab${tab === 'data' ? ' active' : ''}" onclick="dpTab('data')">Data</button>
-        <button class="dp-tab${tab === 'duracao' ? ' active' : ''}" onclick="dpTab('duracao')">Duração</button>
+      <div class="dp-tabs seg">
+        <button class="dp-tab seg-btn${tab === 'data' ? ' active' : ''}" onclick="dpTab('data')">Data</button>
+        <button class="dp-tab seg-btn${tab === 'duracao' ? ' active' : ''}" onclick="dpTab('duracao')">Duração</button>
       </div>
       <div class="dp-body">${tab === 'data' ? dataPanel() : duracaoPanel()}</div>
       ${repeatRow()}

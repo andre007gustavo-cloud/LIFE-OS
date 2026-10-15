@@ -24,7 +24,6 @@
 .dash-grid .card{transition:transform .15s ease,border-color .15s ease}
 .dash-grid .card:hover{transform:translateY(-1px);border-color:var(--accent2)}
 .metric-label{
-  font-size:11px;color:var(--text3);
   display:flex;align-items:center;gap:5px;margin-bottom:6px;
 }
 .metric-value{font-size:21px;font-weight:500;line-height:1.2;white-space:nowrap}
@@ -111,8 +110,6 @@ body.light .dh-hardmode{background:#7C3AED12;color:#6D28D9}
 
 /* ===== Sem horário ===== */
 .dash-notime-label{
-  font-size:11px;font-weight:600;color:var(--text3);
-  text-transform:uppercase;letter-spacing:.5px;
   margin:14px 0 4px;padding:0 10px;
 }
 .tl-notime-item{

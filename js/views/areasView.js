@@ -107,9 +107,9 @@ const AreasView = (() => {
           <div class="proj-meta-chip">${tasks.length} tarefas · ${progress}%</div>
         </div>
 
-        <div class="proj-tabs">
+        <div class="proj-tabs seg">
           ${['overview', 'tasks', 'notes', 'files'].map(tab => `
-            <button class="proj-tab${AppState.ui.activeProjTab === tab ? ' active' : ''}" onclick="setProjTab('${tab}')">
+            <button class="proj-tab seg-btn${AppState.ui.activeProjTab === tab ? ' active' : ''}" onclick="setProjTab('${tab}')">
               <i class="ti ti-${tabIcon(tab)}"></i> ${tabLabel(tab)}
             </button>
           `).join('')}

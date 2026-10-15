@@ -17,6 +17,9 @@
   --nav-active-bg:var(--acc-dim);--nav-active-text:var(--accent2);
   --sidebar-w:220px;--detail-w:320px;
   --nav-glass:rgba(10,11,14,0.86);
+  /* Controle segmentado (abas em pílula): trilho + item ativo elevado */
+  --seg-track:#0F1116;--seg-on:#272B35;
+  --seg-on-shadow:0 1px 2px rgba(0,0,0,.4),inset 0 0 0 1px rgba(255,255,255,.06);
   /* Cor por domínio (aplicada via [data-d]) */
   --d-tasks:#57A0E6;--d-habits:#4FC3D9;--d-finance:#41B883;
   --d-projects:#A98BE6;--d-calendar:#E06A92;--d-now:#E6B04F;
@@ -33,6 +36,8 @@ body.light{
   --task-active-bg:#E8F1FB;
   --nav-active-bg:var(--acc-dim);--nav-active-text:var(--accent2);
   --nav-glass:rgba(255,255,255,0.86);
+  --seg-track:#EBEDF0;--seg-on:#FFFFFF;
+  --seg-on-shadow:0 1px 2px rgba(15,23,42,.14),0 0 0 1px rgba(15,23,42,.06);
   --d-tasks:#1873D3;--d-habits:#1D8299;--d-finance:#1A9265;
   --d-projects:#6B3FC4;--d-calendar:#C9306A;--d-now:#B7791F;
   --d-review:#5F7A4C;--d-inbox:#B7791F;
@@ -49,6 +54,8 @@ body.light{
 
 body{
   font-family:'Segoe UI',system-ui,sans-serif;
+  /* Dígitos de largura fixa: valores e horas não "dançam" ao mudar */
+  font-variant-numeric:tabular-nums;
   background:var(--bg);color:var(--text);
   min-height:100vh;font-size:14px;line-height:1.5;
 }
@@ -96,6 +103,7 @@ nav{
   font-size:18px;font-weight:700;margin-bottom:16px;
   display:flex;align-items:center;justify-content:space-between;
 }
+.section-title>span{display:flex;align-items:center;gap:10px}
 .section-sub{font-size:13px;color:var(--text3);font-weight:400}
 
 /* ===== Divider / misc ===== */

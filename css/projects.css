@@ -35,8 +35,6 @@
   padding:8px 14px 12px;border-top:1px solid var(--border);flex-shrink:0;
 }
 .proj-sidebar-label{
-  font-size:10px;font-weight:700;color:var(--text3);
-  letter-spacing:.8px;text-transform:uppercase;
   margin-bottom:6px;display:flex;align-items:center;
 }
 
@@ -82,7 +80,7 @@
   align-items:center;justify-content:center;
   padding:40px;text-align:center;
 }
-.proj-ws-header{padding:20px 24px 0;flex-shrink:0}
+.proj-ws-header{padding:20px 24px 0;flex-shrink:0;border-bottom:1px solid var(--border)}
 .proj-ws-title-row{
   display:flex;align-items:center;gap:12px;margin-bottom:12px;
 }
@@ -113,17 +111,7 @@
   font-size:12px;outline:none;cursor:pointer;
 }
 
-.proj-tabs{
-  display:flex;gap:2px;border-bottom:1px solid var(--border);padding:0 24px;
-}
-.proj-tab{
-  padding:8px 16px;border:none;background:transparent;
-  color:var(--text3);cursor:pointer;font-size:13px;font-weight:500;
-  border-bottom:2px solid transparent;margin-bottom:-1px;
-  transition:all .15s;display:flex;align-items:center;gap:6px;
-}
-.proj-tab:hover{color:var(--text)}
-.proj-tab.active{color:var(--accent2);border-bottom-color:var(--accent2)}
+.proj-tabs{margin-bottom:12px}
 .proj-tab-content{flex:1;overflow-y:auto;padding:20px 24px}
 
 /* ===== Overview tab ===== */

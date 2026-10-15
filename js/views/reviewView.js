@@ -41,7 +41,7 @@ const ReviewView = (() => {
 
     return `<div class="rv-summary">
       <div class="rv-summary-head">
-        <h2 class="rv-title">Revisão semanal</h2>
+        <h2 class="rv-title"><span class="head-icon"><i class="ti ti-report-analytics"></i></span> Revisão semanal</h2>
         <p class="rv-sub">${lastLabel}</p>
       </div>
       <div class="rv-stat-grid">

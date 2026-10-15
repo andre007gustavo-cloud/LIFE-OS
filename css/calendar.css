@@ -19,16 +19,7 @@
 .cal-nav:hover{border-color:var(--accent);color:var(--text)}
 .cal-title{font-size:16px;font-weight:600}
 
-.cal-tabs{display:flex;gap:4px;margin-bottom:12px}
-.cal-tab{
-  padding:6px 14px;border-radius:var(--radius-sm);
-  border:1px solid var(--border);background:transparent;
-  color:var(--text2);cursor:pointer;font-size:13px;font-weight:500;
-  transition:all .15s;
-}
-.cal-tab.active{
-  background:var(--acc-dim);border-color:var(--accent);color:var(--accent2);
-}
+.cal-tabs{margin-bottom:12px}
 
 /* ===== Month view ===== */
 .month-grid{

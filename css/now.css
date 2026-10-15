@@ -103,18 +103,7 @@ body.now-mode #inbox-fab { display: none !important; }
 /* ===== Painel de foco (pomodoro) ===== */
 .now-pomo { margin-top: 28px; display: flex; flex-direction: column; align-items: center; width: 100%; }
 .now-pomo .now-timer { margin-top: 18px; }
-.now-pomo-modes {
-  display: inline-flex; gap: 6px; padding: 4px;
-  background: var(--bg2); border: 1px solid var(--border); border-radius: 999px;
-}
-.now-pomo-mode {
-  padding: 8px 20px; border-radius: 999px;
-  background: transparent; border: none; color: var(--text2);
-  font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
-  transition: all .15s;
-}
-.now-pomo-mode:hover { color: var(--text); }
-.now-pomo-mode.active { background: var(--accent); color: var(--on-accent); }
+.now-pomo-mode { padding: 8px 20px; font-size: 14px; }
 
 .now-pomo-toggle {
   margin-top: 20px;

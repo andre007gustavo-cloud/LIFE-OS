@@ -28,8 +28,7 @@
 
 .tt-sidebar-section{padding:8px 0}
 .tt-sidebar-label{
-  font-size:10px;font-weight:700;color:var(--text3);
-  letter-spacing:.8px;padding:6px 14px 4px;text-transform:uppercase;
+  padding:6px 14px 4px;
   display:flex;justify-content:space-between;align-items:center;
 }
 
@@ -149,15 +148,8 @@
   padding:8px;font-size:13px;
 }
 .date-pop.open{display:block}
-.dp-tabs{
-  display:flex;gap:4px;background:var(--bg3);
-  border-radius:8px;padding:3px;margin-bottom:10px;
-}
-.dp-tab{
-  flex:1;padding:6px;border:none;border-radius:6px;cursor:pointer;
-  background:transparent;color:var(--text2);font-size:13px;font-family:inherit;
-}
-.dp-tab.active{background:var(--bg2);color:var(--text);font-weight:600}
+.dp-tabs{display:flex;margin-bottom:10px}
+.dp-tab{flex:1}
 .dp-cal-head{
   display:flex;align-items:center;justify-content:space-between;
   padding:2px 4px 8px;
@@ -234,8 +226,6 @@
 
 /* ===== Task items ===== */
 .tt-section-header{
-  font-size:12px;font-weight:600;color:var(--text3);
-  text-transform:uppercase;letter-spacing:.5px;
   padding:12px 0 6px;display:flex;align-items:center;gap:8px;
 }
 .tt-section-header::after{content:'';flex:1;height:1px;background:var(--border)}
@@ -346,10 +336,7 @@
 }
 .tt-detail-row select option{background:var(--bg3)}
 
-.detail-section-title{
-  font-size:11px;font-weight:700;color:var(--text3);
-  text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px;
-}
+.detail-section-title{margin:16px 0 8px}
 .detail-notes{
   width:100%;background:var(--bg3);border:1px solid var(--border);
   border-radius:var(--radius-sm);color:var(--text);

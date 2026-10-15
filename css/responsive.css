@@ -73,8 +73,7 @@
     margin-bottom:0;
   }
   .cal-tabs{
-    padding:0 14px;
-    margin-bottom:4px;
+    margin:0 14px 4px;
   }
   #cal-body{
     flex:1;min-height:0;
@@ -235,8 +234,7 @@
 
   .file-grid{grid-template-columns:repeat(2,1fr)}
 
-  .proj-tabs{overflow-x:auto;flex-wrap:nowrap;padding:0 12px}
-  .proj-tab{white-space:nowrap;padding:8px 12px;font-size:12px}
+  .proj-tab{padding:6px 10px;font-size:12px}
 
   .proj-ws-title-row{flex-wrap:wrap}
   .proj-ws-name{font-size:16px}

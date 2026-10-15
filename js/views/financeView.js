@@ -129,7 +129,7 @@ const FinanceView = (() => {
     const noAtual = mesAtivo() >= FinanceService.currentMonthPrefix();
     return `<div class="fin-hub-head">
       <div class="fin-hub-title">
-        <span class="fin-hub-icon"><i class="ti ti-wallet"></i></span> Financeiro
+        <span class="head-icon"><i class="ti ti-wallet"></i></span> Financeiro
       </div>
       <div class="fin-month-nav">
         <button class="fin-month-btn" onclick="FinanceView.setMes(-1)" title="Mês anterior"><i class="ti ti-chevron-left"></i></button>
