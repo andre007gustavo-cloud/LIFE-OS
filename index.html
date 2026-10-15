@@ -9,7 +9,7 @@
   <link rel="manifest" href="/manifest.json">
 
   <!-- ===== PWA: Theme color ===== -->
-  <meta name="theme-color" content="#0F172A">
+  <meta name="theme-color" content="#0A0B0E">
 
   <!-- ===== PWA: iOS / Safari ===== -->
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -26,7 +26,7 @@
   <meta name="application-name" content="LIFE OS">
 
   <!-- ===== PWA: Windows / Edge ===== -->
-  <meta name="msapplication-TileColor" content="#0F172A">
+  <meta name="msapplication-TileColor" content="#0A0B0E">
   <meta name="msapplication-TileImage" content="/icons/icon-144.png">
   <meta name="msapplication-tap-highlight" content="no">
 
@@ -94,25 +94,25 @@
     <button class="nav-btn active" id="nav-dashboard" onclick="showView('dashboard')">
       <i class="ti ti-layout-dashboard"></i><span class="nav-label">Painel</span>
     </button>
-    <button class="nav-btn" id="nav-now" onclick="showView('now')">
+    <button class="nav-btn" id="nav-now" data-d="now" onclick="showView('now')">
       <i class="ti ti-target"></i><span class="nav-label">Agora</span>
     </button>
-    <button class="nav-btn" id="nav-tasks" onclick="showView('tasks')">
+    <button class="nav-btn" id="nav-tasks" data-d="tasks" onclick="showView('tasks')">
       <i class="ti ti-checklist"></i><span class="nav-label">Tarefas</span>
     </button>
-    <button class="nav-btn" id="nav-calendar" onclick="openCalendar()">
+    <button class="nav-btn" id="nav-calendar" data-d="calendar" onclick="openCalendar()">
       <i class="ti ti-calendar"></i><span class="nav-label">Calendário</span>
     </button>
-    <button class="nav-btn" id="nav-finance" onclick="showView('finance')">
+    <button class="nav-btn" id="nav-finance" data-d="finance" onclick="showView('finance')">
       <i class="ti ti-coin"></i><span class="nav-label">Finanças</span>
     </button>
-    <button class="nav-btn" id="nav-areas" onclick="showView('areas')">
+    <button class="nav-btn" id="nav-areas" data-d="projects" onclick="showView('areas')">
       <i class="ti ti-briefcase"></i><span class="nav-label">Projetos</span>
     </button>
-    <button class="nav-btn" id="nav-review" onclick="showView('review')">
+    <button class="nav-btn" id="nav-review" data-d="review" onclick="showView('review')">
       <i class="ti ti-report-analytics"></i><span class="nav-label">Revisão</span>
     </button>
-    <button class="nav-btn" id="nav-habits" onclick="showView('habits')">
+    <button class="nav-btn" id="nav-habits" data-d="habits" onclick="showView('habits')">
       <i class="ti ti-repeat"></i><span class="nav-label">Hábitos</span>
     </button>
     <button class="nav-btn" id="nav-ia" onclick="showView('ia')">
@@ -149,43 +149,43 @@
     <div class="metric-grid" id="dash-metrics"></div>
 
     <div class="dash-grid">
-      <div class="card">
+      <div class="card" data-d="now">
         <div class="card-title"><i class="ti ti-timeline-event"></i> Linha do tempo de hoje</div>
         <div id="dash-timeline"></div>
       </div>
 
       <div class="dash-col-side">
-        <div class="card">
+        <div class="card" data-d="habits">
           <div class="card-title dash-habits-title">
             <span><i class="ti ti-repeat"></i> Hábitos</span>
             <span class="dash-habits-range">seg–dom</span>
           </div>
           <div id="dash-habits"></div>
         </div>
-        <div class="card">
+        <div class="card" data-d="inbox">
           <div class="card-title"><i class="ti ti-inbox"></i> Caixa de entrada <span class="inbox-badge" id="dash-inbox-badge"></span></div>
           <div id="dash-inbox"></div>
         </div>
         <div class="card" id="dash-alertas-card" style="display:none;padding:0;background:transparent;border:none;box-shadow:none">
           <div id="dash-alertas"></div>
         </div>
-        <div class="card" id="dash-budget-card" style="display:none">
+        <div class="card" data-d="finance" id="dash-budget-card" style="display:none">
           <div class="card-title fin-dash-link" onclick="finGoto('orcamento')"><span><i class="ti ti-target-arrow"></i> Orçamento por categoria</span><i class="ti ti-chevron-right"></i></div>
           <div id="dash-budget"></div>
         </div>
-        <div class="card" id="dash-cartoes-card" style="display:none">
+        <div class="card" data-d="finance" id="dash-cartoes-card" style="display:none">
           <div class="card-title fin-dash-link" onclick="finGoto('cartoes')"><span><i class="ti ti-credit-card"></i> Cartões</span><i class="ti ti-chevron-right"></i></div>
           <div id="dash-cartoes"></div>
         </div>
-        <div class="card" id="dash-projecao-card" style="display:none">
+        <div class="card" data-d="finance" id="dash-projecao-card" style="display:none">
           <div class="card-title fin-dash-link" onclick="finGoto('projecao')"><span><i class="ti ti-chart-line"></i> Saldo projetado</span><i class="ti ti-chevron-right"></i></div>
           <div id="dash-projecao"></div>
         </div>
-        <div class="card" id="dash-posso-card" style="display:none">
+        <div class="card" data-d="finance" id="dash-posso-card" style="display:none">
           <div class="card-title"><i class="ti ti-wallet"></i> Posso gastar?</div>
           <div id="dash-posso"></div>
         </div>
-        <div class="card">
+        <div class="card" data-d="calendar">
           <div class="card-title"><i class="ti ti-calendar-week"></i> Esta semana</div>
           <div id="dash-week"></div>
         </div>

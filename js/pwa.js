@@ -123,7 +123,7 @@ const PWA = (() => {
 
   const BANNER_STYLE = [
     'position:fixed', 'bottom:24px', 'left:50%', 'transform:translateX(-50%)',
-    'background:#1E293B', 'border:1px solid #334155', 'border-radius:16px',
+    'background:#16181F', 'border:1px solid rgba(255,255,255,.12)', 'border-radius:16px',
     'padding:14px 18px', 'display:flex', 'align-items:center', 'gap:10px',
     'z-index:10000', 'box-shadow:0 8px 40px rgba(0,0,0,.55)',
     'max-width:min(400px,calc(100vw - 32px))', 'width:100%',
@@ -157,29 +157,29 @@ const PWA = (() => {
       banner.innerHTML = `
         <span style="font-size:28px;flex-shrink:0" aria-hidden="true">📱</span>
         <div style="flex:1;min-width:0">
-          <div style="color:#F8FAFC;font-weight:700;font-size:14px;margin-bottom:3px">Instalar LIFE OS</div>
-          <div style="color:#94A3B8;font-size:12px;line-height:1.4">
-            Toque em <strong style="color:#F8FAFC">Compartilhar ↑</strong> e depois
-            <strong style="color:#F8FAFC">Adicionar à Tela Inicial</strong>
+          <div style="color:#F2F3F6;font-weight:700;font-size:14px;margin-bottom:3px">Instalar LIFE OS</div>
+          <div style="color:#9BA1AD;font-size:12px;line-height:1.4">
+            Toque em <strong style="color:#F2F3F6">Compartilhar ↑</strong> e depois
+            <strong style="color:#F2F3F6">Adicionar à Tela Inicial</strong>
           </div>
         </div>
         <button onclick="PWA.dismissBanner()"
-                style="background:none;border:none;color:#64748B;font-size:24px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0"
+                style="background:none;border:none;color:#6B7280;font-size:24px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0"
                 aria-label="Fechar">×</button>
       `;
     } else {
       banner.innerHTML = `
         <span style="font-size:28px;flex-shrink:0" aria-hidden="true">⚡</span>
         <div style="flex:1;min-width:0">
-          <div style="color:#F8FAFC;font-weight:700;font-size:14px;margin-bottom:3px">Instalar LIFE OS</div>
-          <div style="color:#94A3B8;font-size:12px">Acesso rápido como app nativo</div>
+          <div style="color:#F2F3F6;font-weight:700;font-size:14px;margin-bottom:3px">Instalar LIFE OS</div>
+          <div style="color:#9BA1AD;font-size:12px">Acesso rápido como app nativo</div>
         </div>
         <button onclick="PWA.installApp()"
-                style="background:#6366F1;border:none;color:#fff;padding:8px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;flex-shrink:0;white-space:nowrap">
+                style="background:#4C93DD;border:none;color:#fff;padding:8px 16px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;flex-shrink:0;white-space:nowrap">
           Instalar
         </button>
         <button onclick="PWA.dismissBanner()"
-                style="background:none;border:none;color:#64748B;font-size:24px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0"
+                style="background:none;border:none;color:#6B7280;font-size:24px;cursor:pointer;padding:0 2px;line-height:1;flex-shrink:0"
                 aria-label="Fechar">×</button>
       `;
     }

@@ -2,30 +2,50 @@
 
 *{box-sizing:border-box;margin:0;padding:0}
 
+/* Paleta neutra: superfícies quase sem matiz, um único azul de destaque e
+   bordas finas translúcidas (--border para divisórias, --border-strong para
+   contorno de controles, que precisam continuar visíveis) */
 :root{
-  --bg:#0B1220;--bg2:#0F172A;--bg3:#1E293B;--bg4:#283548;
-  --accent:#6366F1;--accent2:#818CF8;--acc-dim:#6366F122;--on-accent:#EEF2FF;
-  --text:#F1F5F9;--text2:#94A3B8;--text3:#64748B;
-  --green:#22C55E;--red:#F87171;--amber:#F59E0B;--blue:#60A5FA;--pink:#F472B6;
-  --emerald:#34D399;--teal:#2DD4BF;
-  --border:#1E293B;--radius:12px;--radius-sm:8px;
-  --task-active-bg:#13203A;
-  --nav-active-bg:#312E81;--nav-active-text:#C7D2FE;
+  --bg:#0A0B0E;--bg2:#16181F;--bg3:#1E222B;--bg4:#272B35;
+  --accent:#4C93DD;--accent2:#6EA8E4;--acc-dim:#4C93DD24;--on-accent:#FFFFFF;
+  --text:#F2F3F6;--text2:#9BA1AD;--text3:#6B7280;
+  --green:#41B883;--red:#E0606A;--amber:#D9A648;--blue:#57A0E6;--pink:#E06A92;
+  --emerald:#4FC59A;--teal:#4FC3D9;
+  --border:rgba(255,255,255,.07);--border-strong:rgba(255,255,255,.14);
+  --radius:12px;--radius-sm:8px;
+  --task-active-bg:#1A2230;
+  --nav-active-bg:var(--acc-dim);--nav-active-text:var(--accent2);
   --sidebar-w:220px;--detail-w:320px;
-  --nav-glass:rgba(11,18,32,0.88);
+  --nav-glass:rgba(10,11,14,0.86);
+  /* Cor por domínio (aplicada via [data-d]) */
+  --d-tasks:#57A0E6;--d-habits:#4FC3D9;--d-finance:#41B883;
+  --d-projects:#A98BE6;--d-calendar:#E06A92;--d-now:#E6B04F;
+  --d-review:#A3B992;--d-inbox:#E6B04F;
 }
 
 body.light{
-  --bg:#F1F5F9;--bg2:#ffffff;--bg3:#E2E8F0;--bg4:#CBD5E1;
-  --accent:#6366F1;--accent2:#4F46E5;--acc-dim:#6366F114;--on-accent:#EEF2FF;
-  --text:#0F172A;--text2:#475569;--text3:#94A3B8;
-  --green:#16A34A;--red:#DC2626;--amber:#D97706;--blue:#2563EB;--pink:#DB2777;
-  --emerald:#059669;--teal:#0D9488;
-  --border:#E2E8F0;
-  --task-active-bg:#E0E7FF;
-  --nav-active-bg:#E0E7FF;--nav-active-text:#4338CA;
-  --nav-glass:rgba(241,245,249,0.88);
+  --bg:#FFFFFF;--bg2:#F7F8FA;--bg3:#EEF0F3;--bg4:#E2E5EA;
+  --accent:#1873D3;--accent2:#1563B8;--acc-dim:#1873D31A;--on-accent:#FFFFFF;
+  --text:#14161B;--text2:#4B5260;--text3:#8A919E;
+  --green:#1A9265;--red:#CF3F4A;--amber:#B7791F;--blue:#1873D3;--pink:#C9306A;
+  --emerald:#138A5E;--teal:#1D8299;
+  --border:rgba(15,23,42,.09);--border-strong:rgba(15,23,42,.18);
+  --task-active-bg:#E8F1FB;
+  --nav-active-bg:var(--acc-dim);--nav-active-text:var(--accent2);
+  --nav-glass:rgba(255,255,255,0.86);
+  --d-tasks:#1873D3;--d-habits:#1D8299;--d-finance:#1A9265;
+  --d-projects:#6B3FC4;--d-calendar:#C9306A;--d-now:#B7791F;
+  --d-review:#5F7A4C;--d-inbox:#B7791F;
 }
+
+[data-d=tasks]{--d:var(--d-tasks)}
+[data-d=habits]{--d:var(--d-habits)}
+[data-d=finance]{--d:var(--d-finance)}
+[data-d=projects]{--d:var(--d-projects)}
+[data-d=calendar]{--d:var(--d-calendar)}
+[data-d=now]{--d:var(--d-now)}
+[data-d=review]{--d:var(--d-review)}
+[data-d=inbox]{--d:var(--d-inbox)}
 
 body{
   font-family:'Segoe UI',system-ui,sans-serif;
@@ -54,6 +74,7 @@ nav{
 }
 .nav-btn:hover{background:var(--bg3);color:var(--text)}
 .nav-btn.active{background:var(--nav-active-bg);color:var(--nav-active-text)}
+.nav-btn[data-d].active{background:color-mix(in srgb,var(--d) 14%,transparent);color:var(--d)}
 .logo{
   font-size:16px;font-weight:700;color:var(--accent2);
   padding:7px 12px;letter-spacing:-0.5px;margin-right:8px;
@@ -122,7 +143,7 @@ nav{
 #login-btn:disabled{opacity:.6;cursor:wait}
 .google-icon{width:20px;height:20px}
 .login-spinner{
-  width:18px;height:18px;border:2px solid var(--border);
+  width:18px;height:18px;border:2px solid var(--border-strong);
   border-top-color:var(--accent);border-radius:50%;
   animation:spin .6s linear infinite;display:inline-block;
 }
@@ -173,7 +194,7 @@ nav{
   width:52px;height:52px;border-radius:50%;
   background:var(--accent);border:none;color:#fff;
   font-size:24px;cursor:pointer;
-  box-shadow:0 4px 20px #6366F144;
+  box-shadow:0 4px 20px color-mix(in srgb,var(--accent) 30%,transparent);
   display:flex;align-items:center;justify-content:center;
   z-index:200;transition:all .2s;
 }

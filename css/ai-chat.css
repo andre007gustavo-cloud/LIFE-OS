@@ -8,7 +8,7 @@
   width:52px;height:52px;border-radius:50%;
   background:var(--accent);border:none;color:#fff;
   font-size:24px;cursor:pointer;
-  box-shadow:0 4px 20px #6366F155;
+  box-shadow:0 4px 20px color-mix(in srgb,var(--accent) 33%,transparent);
   display:flex;align-items:center;justify-content:center;
   transition:transform .15s,background .15s;
 }
