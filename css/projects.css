@@ -233,6 +233,8 @@
 .note-editor-rich a{color:var(--accent2);text-decoration:underline}
 
 .note-img-wrap{position:relative;display:inline-block;margin:8px 0}
+/* Sem src enquanto busca no Firestore: o skeleton precisa de tamanho */
+.note-editor-rich img.img-loading{min-width:200px;min-height:120px}
 .note-img-del{
   position:absolute;top:4px;right:4px;
   background:#00000088;border:none;border-radius:50%;

@@ -269,15 +269,29 @@
 /* Confete (canvas por cima de tudo, nunca captura cliques) */
 .fb-confetti-canvas{position:fixed;inset:0;pointer-events:none;z-index:9998}
 
-/* Skeleton: 3 linhas cinzas pulsando enquanto dados carregam */
-.fb-skeleton{display:flex;flex-direction:column;gap:8px;width:180px}
-.fb-skeleton span{height:10px;border-radius:5px;background:var(--bg3);animation:fb-skeleton-pulse 1.2s ease-in-out infinite}
-.fb-skeleton span:nth-child(2){animation-delay:.15s;width:80%}
-.fb-skeleton span:nth-child(3){animation-delay:.3s;width:60%}
-@keyframes fb-skeleton-pulse{0%,100%{opacity:.45}50%{opacity:1}}
+/* Skeleton: bloco no formato do conteúdo, com um brilho que atravessa
+   enquanto os dados carregam (tela de carregamento, imagens das notas) */
+.skel{
+  border-radius:var(--radius-sm);
+  background:linear-gradient(100deg,var(--bg3) 40%,var(--bg4) 50%,var(--bg3) 60%) var(--bg3);
+  background-size:200% 100%;
+  animation:skel-shine 1.4s linear infinite;
+}
+@keyframes skel-shine{from{background-position:150% 0}to{background-position:-50% 0}}
 
-/* Botão primário: resposta tátil instantânea no clique */
-.btn-primary:active{transform:scale(.97);transition-duration:0s}
+/* Toque: o elemento afunda na hora em que é pressionado e volta suave ao soltar
+   (a volta usa a transition do próprio elemento). Botões afundam mais que linhas */
+.btn,.nav-btn,.seg-btn,.icon-btn,.fin-nav-btn,.fin-month-btn,.habit-check,
+.tt-task,.tt-list-item,.fin-entry,.rec-row,.orc-row,.fin-card-item,.fin-manage-item,
+.cmdk-item{-webkit-tap-highlight-color:transparent}
+.btn:active:not(:disabled),.nav-btn:active,.seg-btn:active,.icon-btn:active:not(:disabled),
+.fin-nav-btn:active,.fin-month-btn:active:not(:disabled),.habit-check:active{
+  transform:scale(var(--press-btn,.965));transition-duration:0s;
+}
+.tt-task:active,.tt-list-item:active,.fin-entry:active,.rec-row:active,.orc-row:active,
+.fin-card-item:active,.fin-manage-item:active,.cmdk-item:active{
+  transform:scale(var(--press-row,.985));transition-duration:0s;
+}
 
 /* Switch das configurações */
 .fb-switch{position:relative;display:inline-block;width:38px;height:22px;flex-shrink:0}
@@ -311,16 +325,19 @@
 .trello-list-opt{border:1px solid var(--border)}
 
 /* Animações desligadas: por preferência do usuário (body.fb-no-anim)
-   ou pelo sistema (prefers-reduced-motion) — sons não são afetados */
-body.fb-no-anim .view,
-body.fb-no-anim .fb-pulse,
-body.fb-no-anim .fb-slide-in,
-body.fb-no-anim .app-toast{animation:none}
-body.fb-no-anim .metric-card:hover,
-body.fb-no-anim .dash-grid .card:hover{transform:none}
-body.fb-no-anim .btn-primary:active{transform:none}
+   ou pelo sistema (prefers-reduced-motion) — sons não são afetados.
+   Regra geral (pega animações futuras sem precisar listá-las); só ficam os
+   indicadores de status: carregando, "pensando…" do assistente e microfone ouvindo */
+body.fb-no-anim *:not(.login-spinner):not(.listening):not(.ai-thinking span),
+body.fb-no-anim *::before,body.fb-no-anim *::after{
+  animation:none!important;transition-duration:0s!important;
+}
+body.fb-no-anim{--press-btn:1;--press-row:1}
+body.fb-no-anim .metric-card:hover,body.fb-no-anim .dash-grid .card:hover{transform:none}
 @media (prefers-reduced-motion: reduce){
-  .view,.fb-pulse,.fb-slide-in,.app-toast,.fb-skeleton span{animation:none}
+  *:not(.login-spinner):not(.listening):not(.ai-thinking span),*::before,*::after{
+    animation:none!important;transition-duration:0s!important;scroll-behavior:auto!important;
+  }
+  body{--press-btn:1;--press-row:1}
   .metric-card:hover,.dash-grid .card:hover{transform:none}
-  .btn-primary:active{transform:none}
 }

@@ -8,6 +8,18 @@
 .dash-greeting{font-size:19px;font-weight:500}
 .dash-subtitle{font-size:13px;color:var(--text2);margin-top:2px}
 
+/* ===== Entrada escalonada: blocos estáticos sobem um após o outro ao abrir o
+   Painel. Os contêineres são fixos no HTML, então re-render não reanima ===== */
+#view-dashboard>.dash-header,
+#view-dashboard>.metric-grid,
+.dash-grid>.card,
+.dash-col-side>.card{animation:arise var(--dur-slow) var(--ease-out) backwards}
+#view-dashboard>.metric-grid{animation-delay:.04s}
+.dash-grid>.card{animation-delay:.08s}
+.dash-col-side>.card:nth-child(1){animation-delay:.12s}
+.dash-col-side>.card:nth-child(2){animation-delay:.16s}
+.dash-col-side>.card:nth-child(n+3){animation-delay:.2s}
+
 /* ===== Cards de métrica ===== */
 .metric-grid{
   display:grid;grid-template-columns:repeat(4,1fr);

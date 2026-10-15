@@ -157,15 +157,11 @@ const NoteEditor = (() => {
     await Promise.all(imgs.map(async img => {
       if (img.src && !img.src.startsWith('http')) return; // já hidratada / inline
       const id = img.dataset.imageId;
-      img.style.opacity = '0.55';
+      img.classList.add('skel', 'img-loading');
       const dataUrl = await ImageService.fetchImage(id);
-      if (dataUrl) {
-        img.src = dataUrl;
-        img.style.opacity = '';
-      } else {
-        img.alt = '⚠ imagem não encontrada';
-        img.style.opacity = '';
-      }
+      img.classList.remove('skel', 'img-loading');
+      if (dataUrl) img.src = dataUrl;
+      else img.alt = '⚠ imagem não encontrada';
     }));
   }
 

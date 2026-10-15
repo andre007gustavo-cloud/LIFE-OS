@@ -24,6 +24,9 @@
   --d-tasks:#57A0E6;--d-habits:#4FC3D9;--d-finance:#41B883;
   --d-projects:#A98BE6;--d-calendar:#E06A92;--d-now:#E6B04F;
   --d-review:#A3B992;--d-inbox:#E6B04F;
+  /* Movimento: uma curva só (desacelera suave) e três durações */
+  --ease-out:cubic-bezier(.22,1,.36,1);
+  --dur-fast:.12s;--dur:.2s;--dur-slow:.45s;
 }
 
 body.light{
@@ -89,13 +92,17 @@ nav{
 
 /* ===== VIEWS ===== */
 /* Cross-fade só na troca de view raiz: a animação roda quando .active
-   muda display none→block, não a cada re-render de conteúdo */
-.view{display:none;animation:fadeIn .12s ease}
+   muda display none→block, não a cada re-render de conteúdo.
+   Só opacidade: transform na view deslocaria os filhos position:fixed
+   (FAB de Finanças, menu de Hábitos) durante a animação */
+.view{display:none;animation:fadeIn var(--dur) var(--ease-out)}
 .view.active{display:block}
 @keyframes fadeIn{
   from{opacity:0}
   to{opacity:1}
 }
+/* Subida suave de blocos estáticos (sem filhos fixos) */
+@keyframes arise{from{opacity:0;transform:translateY(8px)}}
 .padded{padding:20px 16px}
 
 /* ===== Section heading helpers ===== */
@@ -163,12 +170,30 @@ nav{
   font-size:11px;color:var(--text3);margin-top:24px;
 }
 
-/* ===== Loading screen ===== */
+/* ===== Loading screen: esqueleto do app (menu, métricas, cartões) ===== */
 #loading-screen{
   display:none;position:fixed;inset:0;
   background:var(--bg);z-index:9999;
-  align-items:center;justify-content:center;
-  flex-direction:column;gap:12px;
+  flex-direction:column;overflow:hidden;
+}
+.skel.load-nav{height:52px;border-radius:0}
+.load-body{
+  width:100%;max-width:1200px;margin:0 auto;padding:20px 16px;
+  display:flex;flex-direction:column;gap:12px;
+}
+.load-caption{font-size:13px;color:var(--text3)}
+.load-head{height:26px;width:220px}
+.load-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.load-metrics .skel{height:84px;border-radius:var(--radius)}
+.load-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:12px}
+.load-grid .skel{border-radius:var(--radius)}
+.load-main{height:320px}
+.load-side{display:flex;flex-direction:column;gap:12px}
+.load-side .skel{height:154px}
+@media (max-width:768px){
+  .load-metrics{grid-template-columns:repeat(2,1fr)}
+  .load-grid{grid-template-columns:1fr}
+  .load-side{display:none}
 }
 
 /* ===== User block in nav (avatar + nome + estado de sync) ===== */

@@ -75,10 +75,19 @@
 </div>
 
 <!-- ========== LOADING SCREEN ========== -->
-<div id="loading-screen">
-  <div style="font-size:20px;font-weight:700;color:var(--accent2)">LIFE OS</div>
-  <div class="fb-skeleton"><span></span><span></span><span></span></div>
-  <div style="font-size:13px;color:var(--text3)">Carregando dados...</div>
+<div id="loading-screen" aria-busy="true">
+  <div class="skel load-nav"></div>
+  <div class="load-body">
+    <div class="load-caption">LIFE OS · Carregando dados...</div>
+    <div class="skel load-head"></div>
+    <div class="load-metrics">
+      <div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div>
+    </div>
+    <div class="load-grid">
+      <div class="skel load-main"></div>
+      <div class="load-side"><div class="skel"></div><div class="skel"></div></div>
+    </div>
+  </div>
 </div>
 
 <!-- ========== COMEBACK SCREEN (Recomeço sem culpa) ========== -->
