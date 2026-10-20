@@ -198,6 +198,13 @@ const Constants = (() => {
     revisoesFinanceiras: []
   };
 
+  /**
+   * Página privada do Jarvis (assistente pessoal no PC do André), pelo Tailscale.
+   * Substitui o assistente pago (proxy /api/chat + ElevenLabs) desde 19/10/2026.
+   * Só abre em aparelho com o Tailscale ligado na mesma conta.
+   */
+  const JARVIS_URL = 'https://desktop-2t7j9hm.taild9b255.ts.net/';
+
   return Object.freeze({
     COLORS,
     PRI_ICONS,
@@ -216,6 +223,7 @@ const Constants = (() => {
     FINANCE,
     STORAGE_KEY,
     THEME_KEY,
+    JARVIS_URL,
     SEED_DATA
   });
 })();

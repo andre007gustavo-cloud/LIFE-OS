@@ -371,7 +371,16 @@ const AiChatView = (() => {
     if (open) closeDrawer(); else openDrawer();
   }
 
-  // ===== Injeção do FAB + drawer (uma vez) =====
+  // ===== Jarvis =====
+  // Desde 19/10/2026 o assistente é o Jarvis (página privada no PC do André). O chat
+  // daqui chamava a API paga pelo proxy /api/chat, hoje desligado; o FAB e a aba
+  // abrem a página do Jarvis em vez do drawer.
+
+  function openJarvis() {
+    window.open(Constants.JARVIS_URL, '_blank', 'noopener');
+  }
+
+  // ===== Injeção do FAB (uma vez) =====
 
   function _inject() {
     const host = document.getElementById('app') || document.body;
@@ -379,20 +388,10 @@ const AiChatView = (() => {
 
     const fab = document.createElement('button');
     fab.id = 'ai-fab';
-    fab.title = 'Assistente IA';
+    fab.title = 'Abrir o Jarvis';
     fab.innerHTML = '<i class="ti ti-sparkles"></i>';
-    fab.onclick = toggleDrawer;
+    fab.onclick = openJarvis;
     host.appendChild(fab);
-
-    const backdrop = document.createElement('div');
-    backdrop.id = 'ai-drawer-backdrop';
-    backdrop.onclick = closeDrawer;
-    host.appendChild(backdrop);
-
-    const drawer = document.createElement('div');
-    drawer.id = 'ai-drawer';
-    drawer.innerHTML = buildShell('drawer');
-    host.appendChild(drawer);
   }
 
   // ===== API pública =====
@@ -405,16 +404,20 @@ const AiChatView = (() => {
     AiService.onUpdate(_refresh);
   }
 
-  /** Render da aba dedicada (registrada na Navigation). Monta o shell uma vez. */
+  /** Aba 'ia' (chegada por link antigo): aponta para o Jarvis. */
   function render() {
     const view = document.getElementById('view-ia');
-    if (view && !view.querySelector('.ai-chat')) view.innerHTML = buildShell('view');
-    _refresh();
-    _greet();
+    if (!view) return;
+    view.innerHTML = `
+      <div class="ai-empty">
+        <i class="ti ti-sparkles"></i>
+        <p>O assistente agora é o Jarvis. Ele abre com o Tailscale ligado.</p>
+        <button class="btn btn-primary" onclick="AiChatView.openJarvis()">Abrir o Jarvis</button>
+      </div>`;
   }
 
   return {
-    init, render,
+    init, render, openJarvis,
     send, inputKey, confirm, clear, toggleMic, startVoice,
     toggleVoice, toggleHandsfree,
     openDrawer, closeDrawer, toggleDrawer
