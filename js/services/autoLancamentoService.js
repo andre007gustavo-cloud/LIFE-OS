@@ -38,7 +38,7 @@ const AutoLancamentoService = (() => {
     if (!cartao) return { erro: 'Cartão não informado' };
     const dataCompra = data == null || data === '' ? Utils.today() : data;
     if (!_dataValida(dataCompra)) return { erro: 'Data inválida: use o formato AAAA-MM-DD' };
-    const tipoCompra = _textoLimpo(tipo).toLowerCase();
+    const tipoCompra = Utils.normalizeText(_textoLimpo(tipo));
     if (tipoCompra && !Object.values(TIPOS).includes(tipoCompra)) {
       return { erro: `Tipo inválido: use "${TIPOS.CREDITO}" ou "${TIPOS.DEBITO}" (ou deixe em branco)` };
     }

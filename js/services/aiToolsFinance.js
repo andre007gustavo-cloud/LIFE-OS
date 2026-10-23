@@ -459,22 +459,26 @@
             valor: { type: ['number', 'string'], description: 'Valor em reais: número (12.9) ou texto ("R$ 12,90", "12,90")' },
             estabelecimento: { type: 'string', description: 'Nome do estabelecimento' },
             cartao: { type: 'string', description: 'Nome do cartão como está na Carteira' },
+            tipo: { type: 'string', enum: ['credito', 'debito'], description: 'Opcional: "credito" (cartão) ou "debito" (conta). Sem ele, a compra vai para o cartão se o nome existir como cartão; senão, para a conta.' },
             data: dataISO
           },
           required: ['valor', 'estabelecimento', 'cartao']
         }
       },
-      run({ valor, estabelecimento, cartao, data }) {
+      run({ valor, estabelecimento, cartao, tipo, data }) {
         const valorCentavos = _centavosDoValor(valor);
         if (valorCentavos === null) return { erro: 'Valor não reconhecido: informe em reais (ex.: 12,90). Moeda estrangeira não é aceita.' };
         const r = AutoLancamentoService.registrarCompraCarteira({
-          valorCentavos, estabelecimento, nomeCartao: cartao, data
+          valorCentavos, estabelecimento, nomeCartao: cartao, tipo, data
         });
         if (r.erro) return r;
         const resumo = _transacaoResumo(r.transacao);
+        const aviso = r.colisao
+          ? `. Atenção: "${cartao}" também é uma conta; se foi no débito, corrija na conferência (ou configure tipo=debito no Atalho).`
+          : '';
         return {
           ok: true, duplicada: r.duplicada, lancamento: resumo,
-          mensagem: `${r.duplicada ? 'Já registrada: ' : ''}${_linhaCompra(r.transacao)}`
+          mensagem: `${r.duplicada ? 'Já registrada: ' : ''}${_linhaCompra(r.transacao)}${aviso}`
         };
       }
     },
