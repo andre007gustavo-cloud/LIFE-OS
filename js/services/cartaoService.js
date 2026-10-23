@@ -114,7 +114,7 @@ const CartaoService = (() => {
    * valorCentavos = valor TOTAL da compra (não a parcela).
    * A fatura expande virtualmente parcela a parcela em getFatura().
    */
-  function addCompraCartao({ cartaoId, descricao, categoriaId, valorTotalCentavos, parcelas = 1, dataCompra }) {
+  function addCompraCartao({ cartaoId, descricao, categoriaId, valorTotalCentavos, parcelas = 1, dataCompra, fonte = 'manual' }) {
     const now = new Date().toISOString();
     const t = {
       id: Utils.uid(),
@@ -126,7 +126,7 @@ const CartaoService = (() => {
       contaId: '',
       parcelas: Math.max(1, parseInt(parcelas, 10) || 1),
       data: dataCompra || Utils.today(),
-      fonte: 'manual',
+      fonte,
       criadoEm: now,
       atualizadoEm: now
     };

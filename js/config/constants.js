@@ -127,6 +127,12 @@ const Constants = (() => {
       ASSINATURA_DIAS: 90,     // assinatura não confirmada há >= N dias
       META_SEM_APORTE_MESES: 2 // meta sem aporte há >= N meses
     },
+    // Lançamento automático da Carteira (Apple Pay): limites de validação e de duplicidade
+    AUTO_LANCAMENTO: {
+      DEDUP_MINUTOS: 10,
+      VALOR_MAX_CENTAVOS: 5000000, // R$ 50.000
+      TEXTO_MAX: 80
+    },
     // Régua 50/30/20 (Fase 7f): proporções-alvo sobre a renda do mês
     R503020: { NECESSIDADE: 50, DESEJO: 30, POUPANCA: 20 },
     SEED_CONTA: {
