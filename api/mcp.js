@@ -12,7 +12,7 @@
 //   LIFEOS_MCP_SECRET        chave longa e aleatória; vai na URL do conector (?key=...)
 //   FIREBASE_SERVICE_ACCOUNT JSON da conta de serviço do projeto Firebase
 //   LIFEOS_UID               uid do usuário no Firebase Auth (dono dos dados)
-import crypto from 'node:crypto';
+import { segredoConfere } from './_mcp/auth.js';
 import { ferramentas } from './_mcp/appRuntime.js';
 import { executarLeitura, executarEscrita, desfazerUltima } from './_mcp/store.js';
 import { isConfigured } from './_mcp/firestore.js';
@@ -40,12 +40,8 @@ const UNDO_TOOL = {
 const JSONRPC_METHOD_NOT_FOUND = -32601;
 const JSONRPC_INVALID_REQUEST = -32600;
 
-/** Compara em tempo constante para não vazar a chave por timing. */
 function isAuthorized(req) {
-  const expected = process.env.LIFEOS_MCP_SECRET || '';
-  const given = String((req.query && req.query.key) || '');
-  if (!expected || given.length !== expected.length) return false;
-  return crypto.timingSafeEqual(Buffer.from(given), Buffer.from(expected));
+  return segredoConfere(req.query && req.query.key);
 }
 
 function initializeResult(params) {

@@ -2,6 +2,9 @@
   "functions": {
     "api/mcp.js": {
       "includeFiles": "js/**"
+    },
+    "api/transacao.js": {
+      "includeFiles": "js/**"
     }
   }
 }
