@@ -35,6 +35,7 @@ const SettingsModal = (() => {
       '<div class="fbset-section">Feedback sensorial</div>'
       + SETTINGS.map(feedbackRowHtml).join('')
       + trelloHtml()
+      + applePayHtml()
       + appearanceHtml()
       + accountHtml();
   }
@@ -164,6 +165,41 @@ const SettingsModal = (() => {
   function pickList(id) {
     document.getElementById('trello-listid').value = id;
     Feedback.toast('Lista selecionada. Clique em Salvar para confirmar.', 'success');
+  }
+
+  // ===== Apple Pay → Finanças (Atalhos do iPhone) =====
+
+  const APPLE_PAY_STEPS = [
+    'No app Atalhos, abra Automação > Nova automação > "Transação" (iOS 17 ou superior).',
+    'Escolha os cartões e marque "Executar imediatamente".',
+    'Adicione a ação "Obter conteúdo do URL" com o URL acima, Método POST e o cabeçalho Authorization = "Bearer " seguido da chave do conector (a mesma usada no Claude/Jarvis).',
+    'Em Corpo da solicitação, escolha JSON e crie os campos: valor = variável Valor, estabelecimento = Estabelecimento (Comerciante), cartao = Cartão.',
+    'Opcional: adicione "Mostrar notificação" com o resultado (campo mensagem, ou erro).'
+  ];
+
+  const APPLE_PAY_WARNINGS = [
+    'Só funciona com pagamentos por Apple Pay: cartão físico ou compra online não disparam a automação.',
+    'O nome do cartão na Carteira precisa conter (ou estar contido no) nome do cartão/conta cadastrado no LifeOS.',
+    'Os lançamentos entram como "a conferir" e o Jarvis pede a conferência à noite.'
+  ];
+
+  function listHtml(tag, items) {
+    return `<${tag} class="trello-set-hint" style="padding-left:18px">`
+      + items.map(i => `<li>${Utils.escapeHtml(i)}</li>`).join('')
+      + `</${tag}>`;
+  }
+
+  function applePayHtml() {
+    const url = Utils.escapeHtml(location.origin + '/api/transacao');
+    return `<div class="fbset-section">Apple Pay → Finanças (Atalhos do iPhone)</div>
+      <div class="trello-set">
+        <div class="trello-set-field">
+          <span>URL do endpoint (toque para selecionar)</span>
+          <code style="user-select:all;word-break:break-all">${url}</code>
+        </div>
+        ${listHtml('ol', APPLE_PAY_STEPS)}
+        ${listHtml('ul', APPLE_PAY_WARNINGS)}
+      </div>`;
   }
 
   /** No mobile o botão de tema sai da nav — fica acessível aqui */
