@@ -11,6 +11,7 @@ const AutoLancamentoService = (() => {
 
   const FONTE = 'carteira';
   const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+  const TIPOS = { CREDITO: 'credito', DEBITO: 'debito' };
 
   const _limites = () => Constants.FINANCE.AUTO_LANCAMENTO;
   const _transacoes = () => AppState.getDB().transacoes;
@@ -24,7 +25,7 @@ const AutoLancamentoService = (() => {
   }
 
   /** Valida e normaliza a entrada externa. Retorna os campos limpos ou { erro }. */
-  function _validar({ valorCentavos, estabelecimento, nomeCartao, data }) {
+  function _validar({ valorCentavos, estabelecimento, nomeCartao, data, tipo }) {
     if (!Number.isInteger(valorCentavos) || valorCentavos <= 0) {
       return { erro: 'Valor inválido: informe centavos inteiros maiores que zero' };
     }
@@ -37,7 +38,11 @@ const AutoLancamentoService = (() => {
     if (!cartao) return { erro: 'Cartão não informado' };
     const dataCompra = data == null || data === '' ? Utils.today() : data;
     if (!_dataValida(dataCompra)) return { erro: 'Data inválida: use o formato AAAA-MM-DD' };
-    return { valorCentavos, descricao, nomeCartao: cartao, data: dataCompra };
+    const tipoCompra = _textoLimpo(tipo).toLowerCase();
+    if (tipoCompra && !Object.values(TIPOS).includes(tipoCompra)) {
+      return { erro: `Tipo inválido: use "${TIPOS.CREDITO}" ou "${TIPOS.DEBITO}" (ou deixe em branco)` };
+    }
+    return { valorCentavos, descricao, nomeCartao: cartao, data: dataCompra, tipo: tipoCompra };
   }
 
   /** O lado contido no outro precisa ter tamanho mínimo, para "Nu" não casar com tudo. */
@@ -63,12 +68,33 @@ const AutoLancamentoService = (() => {
     return parciais.length ? { item: parciais[0].item } : null;
   }
 
-  /** Cartão primeiro, depois conta (débito). Retorna { cartaoId } | { contaId } | { erro } | null. */
-  function _resolverMeio(nomeCartao) {
-    const cartao = _acharPorNome(CartaoService.listCartoes(), nomeCartao);
-    if (cartao) return cartao.erro ? cartao : { cartaoId: cartao.item.id };
-    const contas = FinanceService.listContas().filter(c => c.tipo !== 'meta');
-    const conta = _acharPorNome(contas, nomeCartao);
+  const _contasDebito = () => FinanceService.listContas().filter(c => c.tipo !== 'meta');
+
+  /** Com tipo informado, busca só na lista dele (nunca cai na outra). Retorna { cartaoId } | { contaId } | { erro }. */
+  function _resolverPorTipo(nome, tipo) {
+    const credito = tipo === TIPOS.CREDITO;
+    const achado = _acharPorNome(credito ? CartaoService.listCartoes() : _contasDebito(), nome);
+    if (!achado) {
+      const alvo = credito ? 'cartão de crédito' : 'conta';
+      return { erro: `Nenhum${credito ? '' : 'a'} ${alvo} com o nome "${nome}" para compra no ${credito ? 'crédito' : 'débito'}` };
+    }
+    if (achado.erro) return achado;
+    return credito ? { cartaoId: achado.item.id } : { contaId: achado.item.id };
+  }
+
+  /**
+   * Sem tipo: cartão primeiro, depois conta. `colisao` avisa que o nome do
+   * cartão também casa com uma conta (a compra foi para o cartão por regra).
+   * Retorna { cartaoId, colisao? } | { contaId } | { erro } | null.
+   */
+  function _resolverMeio(nome, tipo) {
+    if (tipo) return _resolverPorTipo(nome, tipo);
+    const cartao = _acharPorNome(CartaoService.listCartoes(), nome);
+    const conta = _acharPorNome(_contasDebito(), nome);
+    if (cartao) {
+      if (cartao.erro) return cartao;
+      return { cartaoId: cartao.item.id, colisao: !!(conta && conta.item) };
+    }
     if (conta) return conta.erro ? conta : { contaId: conta.item.id };
     return null;
   }
@@ -113,22 +139,22 @@ const AutoLancamentoService = (() => {
 
   /**
    * Registra uma compra vinda da Carteira.
-   * Retorna { transacao, duplicada } ou { erro } (entrada inválida / cartão desconhecido).
+   * Retorna { transacao, duplicada, colisao } ou { erro } (entrada inválida / cartão desconhecido).
    */
   function registrarCompraCarteira(entrada) {
     const compra = _validar(entrada);
     if (compra.erro) return compra;
-    const meio = _resolverMeio(compra.nomeCartao);
+    const meio = _resolverMeio(compra.nomeCartao, compra.tipo);
     if (!meio) return { erro: `Cartão "${compra.nomeCartao}" não cadastrado no LifeOS` };
     if (meio.erro) return meio;
 
     const existente = _acharDuplicada(compra, meio);
-    if (existente) return { transacao: existente, duplicada: true };
+    if (existente) return { transacao: existente, duplicada: true, colisao: !!meio.colisao };
 
     const transacao = _criarLancamento(compra, meio, _categoriaSugerida(compra.descricao));
     transacao.aConferir = true;
     AppState.persist();
-    return { transacao, duplicada: false };
+    return { transacao, duplicada: false, colisao: !!meio.colisao };
   }
 
   function listAConferir() {
