@@ -173,7 +173,8 @@ const SettingsModal = (() => {
     'No app Atalhos, abra Automação > Nova automação > "Transação" (iOS 17 ou superior).',
     'Escolha os cartões e marque "Executar imediatamente".',
     'Adicione a ação "Obter conteúdo do URL" com o URL acima, Método POST e o cabeçalho Authorization = "Bearer " seguido da chave do conector (a mesma usada no Claude/Jarvis).',
-    'Em Corpo da solicitação, escolha JSON e crie os campos: valor = variável Valor, estabelecimento = Estabelecimento (Comerciante), cartao = Cartão.',
+    'Em Corpo da solicitação, escolha JSON e crie os campos: valor = variável Valor, estabelecimento = Estabelecimento (Comerciante), cartao = Cartão. Campo opcional: tipo = texto fixo "credito" ou "debito".',
+    'Se o mesmo banco tem cartão e conta com o mesmo nome no LifeOS, crie uma automação para cada cartão da Carteira: uma com tipo = credito e outra com tipo = debito.',
     'Opcional: adicione "Mostrar notificação" com o resultado (campo mensagem, ou erro).'
   ];
 
@@ -181,6 +182,8 @@ const SettingsModal = (() => {
     'Só funciona com pagamentos por Apple Pay: cartão físico ou compra online não disparam a automação.',
     'O nome do cartão na Carteira precisa conter (ou estar contido no) nome do cartão/conta cadastrado no LifeOS.',
     'Se o nome do cartão combinar com mais de um cadastrado, a compra é recusada.',
+    'Sem o campo tipo, a compra vai para o cartão quando o nome existe como cartão; se o nome também for uma conta, o Atalho avisa para corrigir na conferência.',
+    'Com tipo, a compra vai só para a lista escolhida (credito = cartões, debito = contas) e é recusada se o nome não existir nela.',
     'Duas compras idênticas (mesmo valor, local e cartão) em menos de 10 minutos contam como uma só.',
     'Os lançamentos entram como "a conferir" e o Jarvis pede a conferência à noite.'
   ];
