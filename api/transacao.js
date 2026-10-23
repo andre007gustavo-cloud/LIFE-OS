@@ -10,7 +10,7 @@ import { executarEscrita } from './_mcp/store.js';
 import { isConfigured } from './_mcp/firestore.js';
 
 const TOOL = 'register_wallet_purchase';
-const CAMPOS_PERMITIDOS = ['valor', 'estabelecimento', 'cartao', 'data'];
+const CAMPOS_PERMITIDOS = ['valor', 'estabelecimento', 'cartao', 'data', 'tipo'];
 const MAX_BODY_CHARS = 2000;
 const MAX_TEXT_CHARS = 200;
 const MSG_GENERICA = 'Não consegui registrar agora. Tente de novo.';
@@ -43,6 +43,7 @@ function _validar(b) {
   if (!_texto(b.estabelecimento)) return 'Estabelecimento inválido.';
   if (!_texto(b.cartao)) return 'Cartão inválido.';
   if (b.data !== undefined && typeof b.data !== 'string') return 'Data inválida.';
+  if (b.tipo !== undefined && typeof b.tipo !== 'string') return 'Tipo inválido: use "credito" ou "debito".';
   return null;
 }
 
