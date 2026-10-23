@@ -180,6 +180,8 @@ const SettingsModal = (() => {
   const APPLE_PAY_WARNINGS = [
     'Só funciona com pagamentos por Apple Pay: cartão físico ou compra online não disparam a automação.',
     'O nome do cartão na Carteira precisa conter (ou estar contido no) nome do cartão/conta cadastrado no LifeOS.',
+    'Se o nome do cartão combinar com mais de um cadastrado, a compra é recusada.',
+    'Duas compras idênticas (mesmo valor, local e cartão) em menos de 10 minutos contam como uma só.',
     'Os lançamentos entram como "a conferir" e o Jarvis pede a conferência à noite.'
   ];
 

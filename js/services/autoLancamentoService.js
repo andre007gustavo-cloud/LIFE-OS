@@ -40,23 +40,37 @@ const AutoLancamentoService = (() => {
     return { valorCentavos, descricao, nomeCartao: cartao, data: dataCompra };
   }
 
-  /** Nome da Carteira contém o do app ou o inverso; match exato vence o parcial. */
-  function _acharPorNome(itens, nomeNormalizado) {
-    const comNome = itens.map(i => ({ item: i, nome: Utils.normalizeText(i.nome) })).filter(x => x.nome);
-    const exato = comNome.find(x => x.nome === nomeNormalizado);
-    const parcial = comNome.find(x =>
-      nomeNormalizado.includes(x.nome) || x.nome.includes(nomeNormalizado));
-    return (exato || parcial || {}).item || null;
+  /** O lado contido no outro precisa ter tamanho mínimo, para "Nu" não casar com tudo. */
+  function _casaParcial(nomeA, nomeB) {
+    const min = _limites().NOME_MIN;
+    return (nomeA.length >= min && nomeB.includes(nomeA)) || (nomeB.length >= min && nomeA.includes(nomeB));
   }
 
-  /** Cartão primeiro, depois conta (débito). Retorna { cartaoId } | { contaId } | null. */
+  /**
+   * Nome exato (normalizado) vence; senão aceita casamento parcial só se for
+   * único. Retorna { item } | { erro } (ambíguo) | null (nenhum).
+   */
+  function _acharPorNome(itens, nomeOriginal) {
+    const nome = Utils.normalizeText(nomeOriginal);
+    const comNome = itens.map(i => ({ item: i, nome: Utils.normalizeText(i.nome) })).filter(x => x.nome);
+    const exato = comNome.find(x => x.nome === nome);
+    if (exato) return { item: exato.item };
+    const parciais = comNome.filter(x => _casaParcial(x.nome, nome));
+    if (parciais.length > 1) {
+      const nomes = parciais.map(x => x.item.nome).join(', ');
+      return { erro: `Cartão "${nomeOriginal}" ambíguo: combina com ${nomes}` };
+    }
+    return parciais.length ? { item: parciais[0].item } : null;
+  }
+
+  /** Cartão primeiro, depois conta (débito). Retorna { cartaoId } | { contaId } | { erro } | null. */
   function _resolverMeio(nomeCartao) {
-    const nome = Utils.normalizeText(nomeCartao);
-    const cartao = _acharPorNome(CartaoService.listCartoes(), nome);
-    if (cartao) return { cartaoId: cartao.id };
+    const cartao = _acharPorNome(CartaoService.listCartoes(), nomeCartao);
+    if (cartao) return cartao.erro ? cartao : { cartaoId: cartao.item.id };
     const contas = FinanceService.listContas().filter(c => c.tipo !== 'meta');
-    const conta = _acharPorNome(contas, nome);
-    return conta ? { contaId: conta.id } : null;
+    const conta = _acharPorNome(contas, nomeCartao);
+    if (conta) return conta.erro ? conta : { contaId: conta.item.id };
+    return null;
   }
 
   /** Categoria do mesmo estabelecimento já conferido; senão histórico por tokens; senão ''. */
@@ -71,11 +85,12 @@ const AutoLancamentoService = (() => {
     return sugestao ? sugestao.categoriaId : '';
   }
 
-  function _acharDuplicada({ valorCentavos, descricao }, meio) {
+  function _acharDuplicada({ valorCentavos, descricao, data }, meio) {
     const norm = Utils.normalizeText(descricao);
     const limite = Date.now() - _limites().DEDUP_MINUTOS * 60 * 1000;
     return _transacoes().find(t =>
       t.fonte === FONTE
+      && t.data === data
       && t.valorCentavos === valorCentavos
       && Utils.normalizeText(t.descricao) === norm
       && (t.cartaoId || '') === (meio.cartaoId || '')
@@ -105,6 +120,7 @@ const AutoLancamentoService = (() => {
     if (compra.erro) return compra;
     const meio = _resolverMeio(compra.nomeCartao);
     if (!meio) return { erro: `Cartão "${compra.nomeCartao}" não cadastrado no LifeOS` };
+    if (meio.erro) return meio;
 
     const existente = _acharDuplicada(compra, meio);
     if (existente) return { transacao: existente, duplicada: true };
@@ -123,10 +139,9 @@ const AutoLancamentoService = (() => {
   function confirmar(ids) {
     const alvo = new Set(ids || []);
     const pendentes = listAConferir().filter(t => alvo.has(t.id));
-    pendentes.forEach(t => {
-      delete t.aConferir;
-      FinanceService.updateTransaction(t.id, {});
-    });
+    // updateTransaction não remove campos, por isso a marca sai direto do objeto
+    pendentes.forEach(t => { delete t.aConferir; });
+    if (pendentes.length) AppState.persist();
     return pendentes.length;
   }
 

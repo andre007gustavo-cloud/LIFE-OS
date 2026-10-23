@@ -131,7 +131,8 @@ const Constants = (() => {
     AUTO_LANCAMENTO: {
       DEDUP_MINUTOS: 10,
       VALOR_MAX_CENTAVOS: 5000000, // R$ 50.000
-      TEXTO_MAX: 80
+      TEXTO_MAX: 80,
+      NOME_MIN: 3 // tamanho mínimo do nome contido no outro para casar por parcial
     },
     // Régua 50/30/20 (Fase 7f): proporções-alvo sobre a renda do mês
     R503020: { NECESSIDADE: 50, DESEJO: 30, POUPANCA: 20 },

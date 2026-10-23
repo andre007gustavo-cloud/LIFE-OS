@@ -3,8 +3,9 @@
 import crypto from 'node:crypto';
 
 export function segredoConfere(given) {
-  const expected = process.env.LIFEOS_MCP_SECRET || '';
-  const candidate = String(given || '');
-  if (!expected || candidate.length !== expected.length) return false;
-  return crypto.timingSafeEqual(Buffer.from(candidate), Buffer.from(expected));
+  const expected = Buffer.from(process.env.LIFEOS_MCP_SECRET || '');
+  const candidate = Buffer.from(String(given || ''));
+  // Tamanho em bytes: timingSafeEqual lança se os Buffers diferem, e texto não-ASCII engana .length
+  if (!expected.length || candidate.length !== expected.length) return false;
+  return crypto.timingSafeEqual(candidate, expected);
 }

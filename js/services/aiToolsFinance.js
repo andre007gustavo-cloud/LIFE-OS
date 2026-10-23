@@ -456,7 +456,7 @@
         input_schema: {
           type: 'object',
           properties: {
-            valor: { type: 'string', description: 'Valor em reais: número (12.9) ou texto ("R$ 12,90", "12,90")' },
+            valor: { type: ['number', 'string'], description: 'Valor em reais: número (12.9) ou texto ("R$ 12,90", "12,90")' },
             estabelecimento: { type: 'string', description: 'Nome do estabelecimento' },
             cartao: { type: 'string', description: 'Nome do cartão como está na Carteira' },
             data: dataISO
