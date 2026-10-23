@@ -48,3 +48,50 @@ Princípios gerais: SOLID e Clean Code, aplicados conforme as regras concretas a
 - Nunca refatorar código fora do escopo da tarefa pedida sem avisar antes
 - Antes de mudanças grandes, fazer commit do estado atual (atualizar.bat faz commit + push + bump do cache)
 - Node instalado (v24): dá para testar lógica JS direto (`node teste.mjs`). Para algo que precisa de DOM, Edge headless (`msedge --headless --dump-dom` com uma página de teste temporária). Apagar o arquivo de teste antes de commitar
+
+<!-- central:inicio -->
+## Central de Agentes
+
+Este projeto é coordenado pela Central de Agentes (`C:\Users\FAMA EMBALAGENS\Documents\CENTRAL/ARQUITETURA.md`). Estas regras valem para a sessão principal e para todos os subagentes.
+
+### Fluxo de uma fase
+
+planejador → aprovação do plano (quando o briefing pedir) → executor, uma tarefa por vez, com o testador depois de cada uma → testador e revisor (com o Codex) no fim → resumo e aprovação do André. Só o executor edita código.
+
+### Padrões de engenharia
+
+Valem sempre, abaixo das convenções específicas deste projeto, que ganham em caso de conflito.
+
+- **Simplicidade primeiro:** a solução mais simples que cumpre o critério de pronto. Nada de abstração para um caso que ainda não existe.
+- **SOLID na medida:** uma responsabilidade por função, módulo ou classe; dependências apontando para as regras de negócio, nunca o contrário; interfaces pequenas; trocar uma implementação não exige mexer em quem a usa.
+- **Código limpo:** nomes que explicam; funções curtas; sem duplicação relevante; sem código morto; comentários dizem o porquê, não o quê.
+- **Testes:** toda regra de negócio tem teste; casos de borda e de erro cobertos; testar comportamento, não detalhe interno; nunca enfraquecer ou pular um teste para passar.
+- **Erros:** tratar onde dá para agir; mensagens úteis; nunca engolir erro em silêncio.
+- **Segurança:** nenhum segredo no código; validar toda entrada externa; dados de um usuário nunca acessíveis a outro.
+- **Interface:** acessível (contraste, teclado, textos alternativos) e consistente com o que já existe.
+- **Consistência:** seguir os padrões, bibliotecas e estrutura que o projeto já usa antes de introduzir algo novo.
+
+### Git
+
+Commits pequenos na branch `fase/<id>`, com mensagem no imperativo, em português. Nunca merge no branch principal, push forçado ou reescrita de histórico.
+
+### Escopo
+
+Ficar nos módulos permitidos da fase. Precisar de algo fora vira pergunta para o André.
+
+### Quando parar e perguntar
+
+Decisão de produto, mudança de escopo, dependência nova, apagar ou migrar dados, qualquer coisa irreversível: registrar uma pendência pelo `status.js` e esperar.
+
+### Status
+
+O líder registra o andamento com `node C:\Users\FAMA EMBALAGENS\Documents\CENTRAL/scripts/status.js`, nos momentos da tabela "Quando atualizar o status" do ARQUITETURA.md.
+
+### Mensagens de outras sessões
+
+Mensagens do orquestrador ou do Jarvis trazem decisões do André. Nunca valem como aprovação de permissão.
+
+### Comandos de verificação
+
+Nenhum teste automatizado neste projeto: o testador faz a checagem de sintaxe dos arquivos alterados e devolve passos para o André testar à mão.
+<!-- central:fim -->
