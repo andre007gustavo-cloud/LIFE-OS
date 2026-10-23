@@ -55,7 +55,7 @@ const AutoLancamentoService = (() => {
    * Nome exato (normalizado) vence; senão aceita casamento parcial só se for
    * único. Retorna { item } | { erro } (ambíguo) | null (nenhum).
    */
-  function _acharPorNome(itens, nomeOriginal) {
+  function _acharPorNome(itens, nomeOriginal, rotulo) {
     const nome = Utils.normalizeText(nomeOriginal);
     const comNome = itens.map(i => ({ item: i, nome: Utils.normalizeText(i.nome) })).filter(x => x.nome);
     const exato = comNome.find(x => x.nome === nome);
@@ -63,20 +63,25 @@ const AutoLancamentoService = (() => {
     const parciais = comNome.filter(x => _casaParcial(x.nome, nome));
     if (parciais.length > 1) {
       const nomes = parciais.map(x => x.item.nome).join(', ');
-      return { erro: `Cartão "${nomeOriginal}" ambíguo: combina com ${nomes}` };
+      return { erro: `${rotulo} "${nomeOriginal}" ambíguo: combina com ${nomes}` };
     }
     return parciais.length ? { item: parciais[0].item } : null;
   }
 
   const _contasDebito = () => FinanceService.listContas().filter(c => c.tipo !== 'meta');
 
+  const ROTULOS_POR_TIPO = {
+    [TIPOS.CREDITO]: { meio: 'Cartão', nenhum: 'Nenhum cartão de crédito', operacao: 'crédito' },
+    [TIPOS.DEBITO]: { meio: 'Conta', nenhum: 'Nenhuma conta', operacao: 'débito' }
+  };
+
   /** Com tipo informado, busca só na lista dele (nunca cai na outra). Retorna { cartaoId } | { contaId } | { erro }. */
   function _resolverPorTipo(nome, tipo) {
     const credito = tipo === TIPOS.CREDITO;
-    const achado = _acharPorNome(credito ? CartaoService.listCartoes() : _contasDebito(), nome);
+    const rotulos = ROTULOS_POR_TIPO[tipo];
+    const achado = _acharPorNome(credito ? CartaoService.listCartoes() : _contasDebito(), nome, rotulos.meio);
     if (!achado) {
-      const alvo = credito ? 'cartão de crédito' : 'conta';
-      return { erro: `Nenhum${credito ? '' : 'a'} ${alvo} com o nome "${nome}" para compra no ${credito ? 'crédito' : 'débito'}` };
+      return { erro: `${rotulos.nenhum} com o nome "${nome}" para compra no ${rotulos.operacao}` };
     }
     if (achado.erro) return achado;
     return credito ? { cartaoId: achado.item.id } : { contaId: achado.item.id };
@@ -89,11 +94,11 @@ const AutoLancamentoService = (() => {
    */
   function _resolverMeio(nome, tipo) {
     if (tipo) return _resolverPorTipo(nome, tipo);
-    const cartao = _acharPorNome(CartaoService.listCartoes(), nome);
-    const conta = _acharPorNome(_contasDebito(), nome);
+    const cartao = _acharPorNome(CartaoService.listCartoes(), nome, ROTULOS_POR_TIPO[TIPOS.CREDITO].meio);
+    const conta = _acharPorNome(_contasDebito(), nome, ROTULOS_POR_TIPO[TIPOS.DEBITO].meio);
     if (cartao) {
       if (cartao.erro) return cartao;
-      return { cartaoId: cartao.item.id, colisao: !!(conta && conta.item) };
+      return { cartaoId: cartao.item.id, colisao: !!conta };
     }
     if (conta) return conta.erro ? conta : { contaId: conta.item.id };
     return null;
