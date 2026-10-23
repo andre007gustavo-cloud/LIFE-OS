@@ -17,6 +17,7 @@
 
   const TIPOS_CONTA = ['corrente', 'poupanca', 'dinheiro', 'meta'];
   const LISTA_MAX = 50;
+  const SEM_CATEGORIA = 'sem categoria';
   const PROJECAO_EVENTOS_MAX = 30;
 
   const valorReais = { type: 'number', description: 'Valor em reais (ex.: 85.5 para R$ 85,50)' };
@@ -37,6 +38,33 @@
       cartao: nomeCartao(t.cartaoId) || null, parcelas: t.parcelas || null,
       pagamentoDeFatura: !!t.pagamentoFatura
     };
+  }
+
+  /** Número em reais ou texto "R$ 12,90" → centavos; null se não for um valor em reais. */
+  function _centavosDoValor(valor) {
+    if (typeof valor === 'number') return Number.isFinite(valor) ? toCentavos(valor) : null;
+    const texto = String(valor == null ? '' : valor).replace(/r\$/i, '').trim();
+    return /^[\d.,\s]+$/.test(texto) && /\d/.test(texto) ? Utils.brlToCentavos(texto) : null;
+  }
+
+  function _linhaCompra(t) {
+    return `${brl(t.valorCentavos)} · ${t.descricao} → ${nomeCategoria(t.categoriaId) || SEM_CATEGORIA}`;
+  }
+
+  /** Valida todos os itens antes de mexer em qualquer um: { lista: [{ id, categoriaId }] } ou { erro }. */
+  function _resolverTrocas(itens) {
+    const pendentes = new Set(AutoLancamentoService.listAConferir().map(t => t.id));
+    const lista = [];
+    for (const item of itens) {
+      if (!item || !pendentes.has(item.id)) {
+        return { erro: `Lançamento "${item && item.id}" não encontrado entre os pendentes (veja list_pending_review).` };
+      }
+      if (!item.categoria) continue;
+      const r = resolveCategoria(item.categoria, 'despesa');
+      if (r.erro) return r;
+      lista.push({ id: item.id, categoriaId: r.cat.id });
+    }
+    return { lista };
   }
 
   function _cartaoResumo(c) {
@@ -182,6 +210,27 @@
         }).filter(t => !cc.cartao || t.cartaoId === cc.cartao.id)
           .filter(t => !busca || Utils.normalizeText(t.descricao).includes(Utils.normalizeText(busca)));
         return { total: ts.length, transacoes: ts.slice(0, LISTA_MAX).map(_transacaoResumo) };
+      }
+    },
+
+    list_pending_review: {
+      write: false,
+      schema: {
+        name: 'list_pending_review',
+        description: 'Lista as compras automáticas da Carteira ainda "a conferir". Use à noite para mostrar ao André as compras automáticas do dia e pedir a conferência; depois da aprovação, confirm_reviewed_transactions.',
+        input_schema: { type: 'object', properties: {} }
+      },
+      run() {
+        const pendentes = AutoLancamentoService.listAConferir();
+        const total = pendentes.reduce((soma, t) => soma + t.valorCentavos, 0);
+        return {
+          quantidade: pendentes.length, total: brl(total),
+          lancamentos: pendentes.map(t => ({
+            id: t.id, data: t.data, descricao: t.descricao, valor: brl(t.valorCentavos),
+            meio: nomeCartao(t.cartaoId) || nomeConta(t.contaId) || null,
+            categoriaSugerida: nomeCategoria(t.categoriaId) || SEM_CATEGORIA
+          }))
+        };
       }
     },
 
@@ -396,6 +445,70 @@
           parcelas: Math.max(1, parseInt(parcelas, 10) || 1), dataCompra: data || Utils.today()
         });
         return { ok: true, lancamento: _transacaoResumo(t), fatura: CartaoService.competenciaDaCompra(rc.cartao, t.data) };
+      }
+    },
+
+    register_wallet_purchase: {
+      write: true,
+      schema: {
+        name: 'register_wallet_purchase',
+        description: 'Uso do Atalho da Carteira do iPhone (Apple Pay): registra a compra recém-feita, com categoria sugerida, marcada "a conferir". Para lançar compra à mão use add_card_purchase. Ignora repetição idêntica em poucos minutos. Retorna `mensagem` curta para o Atalho exibir.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            valor: { type: 'string', description: 'Valor em reais: número (12.9) ou texto ("R$ 12,90", "12,90")' },
+            estabelecimento: { type: 'string', description: 'Nome do estabelecimento' },
+            cartao: { type: 'string', description: 'Nome do cartão como está na Carteira' },
+            data: dataISO
+          },
+          required: ['valor', 'estabelecimento', 'cartao']
+        }
+      },
+      run({ valor, estabelecimento, cartao, data }) {
+        const valorCentavos = _centavosDoValor(valor);
+        if (valorCentavos === null) return { erro: 'Valor não reconhecido: informe em reais (ex.: 12,90). Moeda estrangeira não é aceita.' };
+        const r = AutoLancamentoService.registrarCompraCarteira({
+          valorCentavos, estabelecimento, nomeCartao: cartao, data
+        });
+        if (r.erro) return r;
+        const resumo = _transacaoResumo(r.transacao);
+        return {
+          ok: true, duplicada: r.duplicada, lancamento: resumo,
+          mensagem: `${r.duplicada ? 'Já registrada: ' : ''}${_linhaCompra(r.transacao)}`
+        };
+      }
+    },
+
+    confirm_reviewed_transactions: {
+      write: true,
+      schema: {
+        name: 'confirm_reviewed_transactions',
+        description: 'Confirma lançamentos automáticos da Carteira (tira de "a conferir"), opcionalmente trocando a categoria. Só chamar depois que o André aprovar a conferência. Use itens para confirmar/recategorizar específicos e/ou todos=true para confirmar todos os pendentes (veja list_pending_review).',
+        input_schema: {
+          type: 'object',
+          properties: {
+            itens: {
+              type: 'array',
+              description: 'Lançamentos a confirmar; categoria (nome ou id de despesa) é opcional e troca a sugerida',
+              items: {
+                type: 'object',
+                properties: { id: { type: 'string' }, categoria: { type: 'string' } },
+                required: ['id']
+              }
+            },
+            todos: { type: 'boolean', description: 'true = confirma todos os pendentes' }
+          }
+        }
+      },
+      run({ itens, todos }) {
+        const lista = Array.isArray(itens) ? itens : [];
+        if (!lista.length && !todos) return { erro: 'Informe itens ([{ id, categoria? }]) e/ou todos=true.' };
+        const trocas = _resolverTrocas(lista);
+        if (trocas.erro) return trocas;
+        trocas.lista.forEach(({ id, categoriaId }) => FinanceService.updateTransaction(id, { categoriaId }));
+        const ids = todos ? AutoLancamentoService.listAConferir().map(t => t.id) : [];
+        const confirmados = AutoLancamentoService.confirmar([...ids, ...lista.map(i => i.id)]);
+        return { ok: true, confirmados, categoriasTrocadas: trocas.lista.length };
       }
     },
 

@@ -24,7 +24,9 @@ const INSTRUCTIONS = 'Conector do Life OS do André: tarefas, agenda, projetos e
   + 'recorrências, metas, relatórios). Valores sempre em reais (o app converte para centavos). '
   + 'Datas em YYYY-MM-DD no horário de Brasília. Use as ferramentas de leitura antes de afirmar '
   + 'números ou ids e antes de editar; nomes de conta, categoria, cartão, área, projeto e hábito '
-  + 'podem ir no lugar do id. Compra no crédito vai em add_card_purchase. Depois de alterar, '
+  + 'podem ir no lugar do id. Compra no crédito vai em add_card_purchase. Compras automáticas da '
+  + 'Carteira do iPhone caem "a conferir": à noite, list_pending_review, mostre ao André e só '
+  + 'confirm_reviewed_transactions depois que ele aprovar. Depois de alterar, '
   + 'confirme ao usuário o que foi gravado. Se algo saiu errado, undo_last_change desfaz a última '
   + 'alteração feita por aqui.';
 
