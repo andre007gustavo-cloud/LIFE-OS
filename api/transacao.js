@@ -54,6 +54,7 @@ export default async function handler(req, res) {
   }
   if (!segredoConfere(_bearer(req))) return res.status(401).json({ erro: 'Não autorizado.' });
   const corpo = _corpo(req);
+  if (corpo && typeof corpo === 'object' && corpo.tipo === null) delete corpo.tipo;
   const invalido = _validar(corpo);
   if (invalido) return res.status(400).json({ erro: invalido });
   if (!isConfigured()) {
