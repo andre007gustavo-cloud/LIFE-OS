@@ -15,7 +15,10 @@
       "Bash(node C:\\Users\\FAMA EMBALAGENS\\Documents\\CENTRAL/scripts/*)",
       "Bash(node \"C:\\Users\\FAMA EMBALAGENS\\Documents\\CENTRAL/scripts/*)",
       "Bash(node C:/Users/FAMA EMBALAGENS/Documents/CENTRAL/scripts/*)",
-      "Bash(node \"C:/Users/FAMA EMBALAGENS/Documents/CENTRAL/scripts/*)"
+      "Bash(node \"C:/Users/FAMA EMBALAGENS/Documents/CENTRAL/scripts/*)",
+      "Bash(git push origin fase/*)",
+      "Bash(git push -u origin fase/*)",
+      "Read(//c/Users/FAMA EMBALAGENS/Documents/CENTRAL/**)"
     ],
     "deny": [
       "Bash(git push --force *)",
@@ -23,10 +26,84 @@
       "Bash(git reset --hard *)",
       "Bash(rm -rf *)",
       "Bash(rm -fr *)",
-      "Edit(**/.git/**)"
+      "Edit(**/.git/**)",
+      "Bash(git push origin main*)",
+      "Bash(git push -u origin main*)",
+      "Bash(git push *:main*)"
     ]
   },
   "worktree": {
     "bgIsolation": "none"
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "C:/Users/FAMA EMBALAGENS/Documents/CENTRAL/scripts/evento.js"
+            ],
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "C:/Users/FAMA EMBALAGENS/Documents/CENTRAL/scripts/evento.js"
+            ],
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "C:/Users/FAMA EMBALAGENS/Documents/CENTRAL/scripts/evento.js"
+            ],
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "C:/Users/FAMA EMBALAGENS/Documents/CENTRAL/scripts/evento.js"
+            ],
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "C:/Users/FAMA EMBALAGENS/Documents/CENTRAL/scripts/evento.js"
+            ]
+          }
+        ]
+      }
+    ]
   }
 }

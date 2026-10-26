@@ -73,7 +73,7 @@ Valem sempre, abaixo das convenções específicas deste projeto, que ganham em 
 
 ### Git
 
-Commits pequenos na branch `fase/<id>`, com mensagem no imperativo, em português. Nunca merge no branch principal, push forçado ou reescrita de histórico.
+Commits pequenos na branch `fase/<id>`, com mensagem no imperativo, em português. No fim da fase, o líder faz push dessa branch (`git push -u origin fase/<id>`) para gerar a prévia. O branch principal é reservado ao `integrar-fase.js`: nunca merge nem push nele por aqui. Nunca push forçado ou reescrita de histórico.
 
 ### Escopo
 
