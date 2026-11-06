@@ -351,6 +351,11 @@ const VehicleService = (() => {
     return kept;
   }
 
+  /** Checado antes da normalização, para a mensagem certa (senão apareceria a de resolução). */
+  function _assertNotBecomingSymptom(current, patch) {
+    if (patch.type === CARD_TYPE.SYMPTOM && isDone(current) && !isSymptom(current)) _fail('Registro concluído não pode virar sintoma');
+  }
+
   function _assertTransition(current, next) {
     if (isDone(current) && !isDone(next)) _fail('Registro concluído não volta para o quadro: edite ou exclua');
     const switchesSymptom = isSymptom(current) !== isSymptom(next);
@@ -375,6 +380,7 @@ const VehicleService = (() => {
     return _guard(() => {
       const vehicle = _requireVehicle(vehicleId);
       const current = _findMaintenance(vehicle, id);
+      _assertNotBecomingSymptom(current, patch);
       const next = _normalizeMaintenance({ ...current, ..._withoutNullLists(patch), id: current.id });
       _assertTransition(current, next);
       _assertResolution(vehicle, next);
