@@ -1,0 +1,48 @@
+/* ===================== VEÍCULO: Garagem e modal de manutenção ===================== */
+
+.veh-hero{text-align:center}
+.veh-nickname{font-size:26px;font-weight:700;color:var(--accent2)}
+.veh-details{font-size:13px;color:var(--text2);margin-top:2px;min-height:18px}
+.veh-car{display:block;width:100%;max-width:340px;height:auto;margin:14px auto 10px;color:var(--accent)}
+.veh-zone-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+
+.veh-stats{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+  gap:12px;margin-bottom:16px;
+}
+.veh-stat-val{font-size:20px;overflow-wrap:anywhere}
+.veh-stat-hint{font-size:11px;color:var(--text3);margin-top:4px}
+.veh-km-row{display:flex;gap:6px;margin-top:8px}
+.veh-km-row .form-input{padding:5px 8px;font-size:13px;min-width:0}
+
+.veh-recent-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.veh-recent-item{
+  display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  background:transparent;border:none;border-bottom:1px solid var(--border);
+  color:var(--text);padding:9px 4px;cursor:pointer;font:inherit;font-size:13px;
+}
+.veh-recent-item:last-child{border-bottom:none}
+.veh-recent-item:hover,.veh-recent-item:focus-visible{background:var(--bg3);outline:none}
+.veh-recent-date{color:var(--text3);font-size:12px;flex-shrink:0}
+.veh-recent-title{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.veh-recent-total{font-weight:600;flex-shrink:0}
+
+.veh-sheet summary{cursor:pointer;margin-bottom:0}
+.veh-sheet[open] summary{margin-bottom:12px}
+.veh-sheet-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+@media(max-width:600px){.veh-sheet-grid{grid-template-columns:1fr}}
+
+/* ----- Modal de manutenção ----- */
+#veh-maint-modal .modal{max-width:640px}
+.veh-zone-toggles{display:flex;flex-wrap:wrap;gap:6px}
+.veh-parts-head{display:flex;justify-content:space-between;align-items:center;margin:4px 0 8px}
+.veh-part-row{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:8px;margin-bottom:8px;
+}
+.veh-part-row .form-input{padding:6px 8px;font-size:13px;min-width:0}
+.veh-part-name{grid-column:1 / -1}
+.veh-part-remove{grid-column:1 / -1;justify-self:end}
+.veh-total-line{display:flex;justify-content:space-between;font-weight:700;margin:8px 0 14px}
+.veh-modal-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
