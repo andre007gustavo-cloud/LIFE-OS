@@ -66,7 +66,7 @@ const VehicleView = (() => {
 
   /** Reexibe a aba depois de uma gravação. */
   function refresh() {
-    if (window.AreasView?.renderWorkspace) AreasView.renderWorkspace();
+    AreasView.renderWorkspace();
   }
 
   function saveResult(result) {
@@ -325,7 +325,7 @@ const VehicleView = (() => {
   }
 
   return {
-    renderGarage, renderBoard, renderMaintenances, renderParts,
+    renderGarage, renderBoard, renderMaintenances, renderParts, refresh,
     saveSheet, setFinanceCategory, updateKm, removeReading
   };
 })();

@@ -2,8 +2,9 @@
  * ===================== VEHICLE MAINTENANCE MODAL =====================
  * Cria, edita e exclui uma manutenção do veículo (dados, zonas e peças em
  * linhas) e conclui um card do quadro (modo "concluir"). Card aberto nunca é
- * editado aqui: vai para o VehicleCardModal. O pagamento ligado às Finanças fica no VehiclePayment, que este
- * modal inicia, alimenta com data e valores e aplica ao salvar.
+ * editado aqui: vai para o VehicleCardModal. O pagamento ligado às Finanças
+ * fica no VehiclePayment, que este modal inicia, alimenta com data e valores
+ * e aplica ao salvar.
  * Markup estático em #veh-maint-modal (index.html).
  */
 
@@ -23,7 +24,6 @@ const VehicleMaintenanceModal = (() => {
 
   // ===== Conversões de campo =====
 
-  const centavosToInput = centavos => (centavos ? Utils.centavosToReais(centavos).toFixed(2).replace('.', ',') : '');
   const numberOrUndefined = text => (text.trim() === '' ? undefined : Number(text));
 
   /** Vazio vira undefined; texto que não é dinheiro vira NaN (o service recusa com mensagem). */
@@ -80,7 +80,7 @@ const VehicleMaintenanceModal = (() => {
       ${partInputHtml('veh-p-code', 'Código', part.code)}
       ${partInputHtml('veh-p-store', 'Loja', part.store, 'list="veh-dl-stores"')}
       ${partInputHtml('veh-p-qty', 'Quantidade', part.qty ?? 1, 'type="number" min="1" step="1"')}
-      ${partInputHtml('veh-p-price', 'Preço da linha (R$)', centavosToInput(part.priceCentavos),
+      ${partInputHtml('veh-p-price', 'Preço da linha (R$)', Utils.centavosToInput(part.priceCentavos),
         'inputmode="decimal" oninput="VehicleMaintenanceModal.updateTotal()"')}
       ${partInputHtml('veh-p-warranty', 'Garantia até', part.warrantyUntil, 'type="date" title="Garantia até"')}
       <button type="button" class="btn btn-ghost btn-sm veh-part-remove" onclick="VehicleMaintenanceModal.removePartRow(this)">
@@ -164,7 +164,7 @@ const VehicleMaintenanceModal = (() => {
     el('veh-m-title').value = m.title || '';
     el('veh-m-category').value = m.category || 'other';
     el('veh-m-shop').value = m.shop || '';
-    el('veh-m-labor').value = centavosToInput(m.laborCentavos);
+    el('veh-m-labor').value = Utils.centavosToInput(m.laborCentavos);
     el('veh-m-notes').value = m.notes || '';
     selectedZones.clear();
     (m.zones || []).forEach(z => selectedZones.add(z));
@@ -236,15 +236,11 @@ const VehicleMaintenanceModal = (() => {
     };
   }
 
-  function refresh() {
-    if (window.AreasView?.renderWorkspace) AreasView.renderWorkspace();
-  }
-
   /** Se o pagamento falhar, a manutenção já está salva: o modal reabre em edição para nova tentativa. */
   function finishSave(maintenanceId) {
     const savedLabel = completing ? 'Manutenção concluída' : 'Manutenção salva';
     const payment = VehiclePayment.apply(vehicleId, maintenanceId);
-    refresh();
+    VehicleView.refresh();
     if (!payment.erro) {
       Modal.close(MODAL_ID);
       return Feedback.toast(savedLabel, 'success');
@@ -279,7 +275,7 @@ const VehicleMaintenanceModal = (() => {
     if (result.erro) return Feedback.toast(result.erro, 'error');
     Modal.close(MODAL_ID);
     Feedback.toast('Manutenção excluída', 'success');
-    refresh();
+    VehicleView.refresh();
   }
 
   return {

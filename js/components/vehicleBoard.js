@@ -9,18 +9,12 @@
 
 const VehicleBoard = (() => {
 
-  const { CARD_STATUS, CARD_STATUSES, CARD_TYPES, ZONES } = Constants.VEHICLE;
-  const MOVE_DONE_LABEL = 'Feito (concluir)';
-  const SYMPTOMS_LABEL = 'Sintomas';
+  const { CARD_STATUS, CARD_STATUSES, CARD_TYPES, BOARD_SYMPTOMS_LABEL, BOARD_MOVE_DONE_LABEL } = Constants.VEHICLE;
+  const { labelOf, zoneBadgesHtml } = VehicleLabels;
   const esc = Utils.escapeHtml;
   const attr = Utils.escapeAttr;
-  const labelOf = (list, id) => (list.find(x => x.id === id) || {}).label || id;
 
   // ===== Card =====
-
-  function zoneBadgesHtml(card) {
-    return card.zones.map(z => `<span class="badge area">${esc(labelOf(ZONES, z))}</span>`).join('');
-  }
 
   function cardMainHtml(vehicleId, card) {
     const estimate = card.estimateCentavos
@@ -28,7 +22,7 @@ const VehicleBoard = (() => {
     return `<button type="button" class="veh-card-main"
       onclick="VehicleCardModal.open('${attr(vehicleId)}','${attr(card.id)}')">
       <span class="veh-card-title">${esc(card.title)}</span>
-      <span class="veh-card-badges"><span class="badge time">${esc(labelOf(CARD_TYPES, VehicleService.typeOf(card)))}</span>${zoneBadgesHtml(card)}</span>
+      <span class="veh-card-badges"><span class="badge time">${esc(labelOf(CARD_TYPES, VehicleService.typeOf(card)))}</span>${zoneBadgesHtml(card.zones)}</span>
       ${estimate}
     </button>`;
   }
@@ -40,7 +34,7 @@ const VehicleBoard = (() => {
     return `<select class="form-select veh-card-move" aria-label="Mover ${attr(card.title)}"
       onchange="VehicleBoard.move('${attr(vehicleId)}','${attr(card.id)}',this)">
       <option value="">Mover para…</option>${targets}
-      <option value="${CARD_STATUS.DONE}">${MOVE_DONE_LABEL}</option></select>`;
+      <option value="${CARD_STATUS.DONE}">${BOARD_MOVE_DONE_LABEL}</option></select>`;
   }
 
   const cardHtml = (vehicleId, card) =>
@@ -65,7 +59,7 @@ const VehicleBoard = (() => {
     return `<div class="veh-card veh-card-alert"><button type="button" class="veh-card-main"
       onclick="VehicleCardModal.open('${attr(vehicleId)}','${attr(symptom.id)}')">
       <span class="veh-card-title"><i class="ti ti-alert-triangle" aria-hidden="true"></i> ${esc(symptom.title)}</span>
-      <span class="veh-card-badges">${zoneBadgesHtml(symptom)}</span>
+      <span class="veh-card-badges">${zoneBadgesHtml(symptom.zones)}</span>
     </button></div>`;
   }
 
@@ -74,12 +68,12 @@ const VehicleBoard = (() => {
       || '<div class="veh-col-empty">Nenhum sintoma aberto</div>';
     const add = `<button type="button" class="btn btn-ghost btn-sm veh-col-all"
       onclick="VehicleCardModal.openNewSymptom('${attr(vehicleId)}')"><i class="ti ti-plus"></i> Novo sintoma</button>`;
-    return columnHtml(SYMPTOMS_LABEL, board.symptoms.length, null, body, add, ' veh-col-symptoms');
+    return columnHtml(BOARD_SYMPTOMS_LABEL, board.symptoms.length, null, body, add, ' veh-col-symptoms');
   }
 
   function doneItemHtml(vehicleId, m) {
     return `<button type="button" class="veh-recent-item" onclick="VehicleMaintenanceModal.open('${attr(vehicleId)}','${attr(m.id)}')">
-      <span class="veh-recent-date">${Utils.fmtDate(m.date)}</span>
+      <span class="veh-recent-date">${esc(Utils.fmtDate(m.date))}</span>
       <span class="veh-recent-title">${esc(m.title)}</span>
     </button>`;
   }
@@ -111,10 +105,6 @@ const VehicleBoard = (() => {
 
   // ===== Ações =====
 
-  function refresh() {
-    if (window.AreasView?.renderWorkspace) AreasView.renderWorkspace();
-  }
-
   /** "Feito (concluir)" abre o modal e o select volta a "Mover para…" (se o André cancelar, nada mudou). */
   function move(vehicleId, cardId, select) {
     const target = select.value;
@@ -123,7 +113,7 @@ const VehicleBoard = (() => {
     if (!target) return;
     const result = VehicleService.updateMaintenance(vehicleId, cardId, { status: target });
     if (result.erro) return Feedback.toast(result.erro, 'error');
-    refresh();
+    VehicleView.refresh();
   }
 
   return { render, move };

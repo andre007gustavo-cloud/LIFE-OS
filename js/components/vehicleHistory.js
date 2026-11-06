@@ -18,7 +18,7 @@ const VehicleHistory = (() => {
   const RESULTS_ID = 'veh-hist-results';
   const esc = Utils.escapeHtml;
   const attr = Utils.escapeAttr;
-  const labelOf = (list, id) => (list.find(x => x.id === id) || {}).label || id;
+  const { labelOf, zoneBadgesHtml } = VehicleLabels;
 
   let debounceTimer = null;
 
@@ -92,24 +92,28 @@ const VehicleHistory = (() => {
       <span>${esc(labelOf(CATEGORIES, m.category))}</span>${shop}${km}</span>`;
   }
 
-  function zoneBadgesHtml(m) {
-    return m.zones.map(z => `<span class="badge area">${esc(labelOf(ZONES, z))}</span>`).join('');
-  }
-
   const modBadgeHtml = m => (VehicleService.typeOf(m) === CARD_TYPE.MOD
     ? `<span class="badge time">${esc(labelOf(CARD_TYPES, CARD_TYPE.MOD))}</span>` : '');
 
-  function resolvedHtml(vehicleId, m) {
-    const titles = VehicleBoardService.listResolvedSymptoms(vehicleId, { maintenanceId: m.id }).map(s => s.title);
-    if (!titles.length) return '';
+  /** Títulos dos sintomas resolvidos, indexados pela manutenção que os resolveu (uma consulta por render). */
+  function resolvedTitlesByMaintenance(vehicleId) {
+    const byMaintenance = new Map();
+    VehicleBoardService.listResolvedSymptoms(vehicleId).forEach(s => {
+      byMaintenance.set(s.resolvedById, [...(byMaintenance.get(s.resolvedById) || []), s.title]);
+    });
+    return byMaintenance;
+  }
+
+  function resolvedHtml(titles) {
+    if (!titles) return '';
     return `<span class="veh-hist-resolved"><i class="ti ti-circle-check" aria-hidden="true"></i> Resolveu: ${esc(titles.join(', '))}</span>`;
   }
 
-  function itemHtml(vehicleId, m) {
+  function itemHtml(vehicleId, m, resolved) {
     const total = Utils.formatBRL(VehicleService.maintenanceTotal(m));
     return `<button type="button" class="veh-hist-item" onclick="VehicleMaintenanceModal.open('${attr(vehicleId)}','${attr(m.id)}')">
-      <span class="veh-hist-main"><span class="veh-hist-title">${esc(m.title)}</span>${itemMetaHtml(m)}${resolvedHtml(vehicleId, m)}
-        <span class="veh-hist-zones">${modBadgeHtml(m)}${zoneBadgesHtml(m)}</span></span>
+      <span class="veh-hist-main"><span class="veh-hist-title">${esc(m.title)}</span>${itemMetaHtml(m)}${resolvedHtml(resolved.get(m.id))}
+        <span class="veh-hist-zones">${modBadgeHtml(m)}${zoneBadgesHtml(m.zones)}</span></span>
       <span class="veh-hist-side"><strong>${total}</strong>${financeBadgeHtml(financeStateOf(vehicleId, m.id))}</span>
     </button>`;
   }
@@ -153,7 +157,8 @@ const VehicleHistory = (() => {
   function resultsHtml(vehicle) {
     const list = queryFor(vehicle.id, filters());
     if (!list.length) return emptyHtml(vehicle.id, VehicleService.listMaintenances(vehicle.id).length > 0);
-    return `<div class="card">${list.map(m => itemHtml(vehicle.id, m)).join('')}</div>${totalsHtml(list)}`;
+    const resolved = resolvedTitlesByMaintenance(vehicle.id);
+    return `<div class="card">${list.map(m => itemHtml(vehicle.id, m, resolved)).join('')}</div>${totalsHtml(list)}`;
   }
 
   function headHtml(vehicle) {

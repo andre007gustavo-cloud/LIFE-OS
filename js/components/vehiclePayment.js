@@ -18,7 +18,6 @@ const VehiclePayment = (() => {
   const el = id => document.getElementById(id);
   const esc = Utils.escapeHtml;
   const attr = Utils.escapeAttr;
-  const toInput = centavos => Utils.centavosToReais(centavos).toFixed(2).replace('.', ',');
 
   let state = null;
   let suggestions = [];
@@ -63,7 +62,7 @@ const VehiclePayment = (() => {
   function update(snapshot) {
     if (!state) return;
     state.snapshot = snapshot;
-    if (!state.valueTouched) state.valueText = hasTotal() ? toInput(snapshot.totalCentavos) : '';
+    if (!state.valueTouched) state.valueText = hasTotal() ? Utils.centavosToInput(snapshot.totalCentavos) : '';
     loadSuggestions();
     render();
   }

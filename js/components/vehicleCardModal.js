@@ -23,8 +23,6 @@ const VehicleCardModal = (() => {
   let symptomMode = false;
   const selectedZones = new Set();
 
-  const centavosToInput = centavos => (centavos ? Utils.centavosToReais(centavos).toFixed(2).replace('.', ',') : '');
-
   // ===== Pedido de diagnóstico =====
 
   /** Texto puro (vai para a área de transferência, nunca para innerHTML). */
@@ -35,7 +33,7 @@ const VehicleCardModal = (() => {
 
   function diagnosisFor(card) {
     const vehicle = VehicleService.getById(vehicleId);
-    const zoneLabels = card.zones.map(z => (ZONES.find(x => x.id === z) || {}).label || z).join(', ');
+    const zoneLabels = card.zones.map(z => VehicleLabels.labelOf(ZONES, z)).join(', ');
     return buildDiagnosisRequest({
       nickname: vehicle.nickname || vehicle.model, vehicleId, cardId: card.id, zoneLabel: zoneLabels, description: card.title
     });
@@ -110,7 +108,7 @@ const VehicleCardModal = (() => {
     el('veh-c-type').value = card.type || CARD_TYPE.SERVICE;
     el('veh-c-status').value = card.status || CARD_STATUS.TODO;
     el('veh-c-category').value = card.category || 'other';
-    el('veh-c-estimate').value = centavosToInput(card.estimateCentavos);
+    el('veh-c-estimate').value = Utils.centavosToInput(card.estimateCentavos);
     el('veh-c-notes').value = card.notes || '';
     selectedZones.clear();
     (card.zones || []).forEach(z => selectedZones.add(z));
@@ -176,18 +174,14 @@ const VehicleCardModal = (() => {
     notes: el('veh-c-notes').value
   });
 
-  function refresh() {
-    if (window.AreasView?.renderWorkspace) AreasView.renderWorkspace();
-  }
-
   function validate(dto) {
     if (Number.isNaN(dto.estimateCentavos)) return 'Estimativa inválida: use um valor como 800,00';
     if (symptomMode && !dto.zones.length) return 'Escolha ao menos uma zona do carro para o sintoma';
     return '';
   }
 
-  /** Grava o formulário. Devolve o card salvo, ou null depois de mostrar o motivo. */
-  function persist() {
+  /** Grava o formulário sem fechar o modal. Devolve o card salvo, ou null depois de mostrar o motivo. */
+  function saveForm() {
     const dto = symptomMode ? readSymptomForm() : readCardForm();
     const invalid = validate(dto);
     if (invalid) return Feedback.toast(invalid, 'error') || null;
@@ -195,9 +189,16 @@ const VehicleCardModal = (() => {
       ? VehicleService.updateMaintenance(vehicleId, editId, dto)
       : VehicleService.addMaintenance(vehicleId, dto);
     if (result.erro) return Feedback.toast(result.erro, 'error') || null;
-    Modal.close(MODAL_ID);
-    refresh();
     return result;
+  }
+
+  function persist() {
+    const card = saveForm();
+    if (card) {
+      Modal.close(MODAL_ID);
+      VehicleView.refresh();
+    }
+    return card;
   }
 
   function save() {
@@ -215,30 +216,33 @@ const VehicleCardModal = (() => {
     if (result.erro) return Feedback.toast(result.erro, 'error');
     Modal.close(MODAL_ID);
     Feedback.toast(symptomMode ? 'Sintoma excluído' : 'Card excluído', 'success');
-    refresh();
+    VehicleView.refresh();
   }
 
   // ===== Ações do sintoma =====
 
+  /** A edição do formulário já foi gravada antes da ação; se a ação falhar, o modal continua aberto. */
   function finishSymptomAction(result, message) {
+    VehicleView.refresh();
     if (result.erro) return Feedback.toast(result.erro, 'error');
     Modal.close(MODAL_ID);
     Feedback.toast(message, 'success');
-    refresh();
   }
 
   function convertToService() {
+    if (!saveForm()) return;
     finishSymptomAction(VehicleBoardService.convertSymptom(vehicleId, editId), 'Sintoma virou serviço em A fazer');
   }
 
   function resolve() {
     const maintenanceId = el('veh-c-resolver').value;
     if (!maintenanceId) return Feedback.toast('Escolha a manutenção que resolveu o sintoma', 'error');
+    if (!saveForm()) return;
     finishSymptomAction(VehicleBoardService.resolveSymptom(vehicleId, editId, maintenanceId), 'Sintoma resolvido');
   }
 
   return {
     openNew, openNewSymptom, open, save, saveAndDiagnose, remove, toggleZone,
-    convertToService, resolve, buildDiagnosisRequest
+    convertToService, resolve
   };
 })();
