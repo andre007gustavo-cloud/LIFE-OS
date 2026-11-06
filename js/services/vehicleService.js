@@ -97,7 +97,7 @@ const VehicleService = (() => {
   }
 
   function _normalizeZones(zones) {
-    if (_isBlank(zones)) return [];
+    if (zones == null) return [];
     if (!Array.isArray(zones)) _fail('zonas deve ser uma lista');
     return [...new Set(zones.map(z => _oneOf(z, Constants.VEHICLE.ZONES, 'Zona')))];
   }
@@ -186,25 +186,45 @@ const VehicleService = (() => {
 
   // ===== Odômetro =====
 
-  /** Km já conhecidos antes (ou na) da data: manutenções com km e a compra, se tiver data. */
-  function _earlierKmSources(vehicle, date) {
-    const sources = vehicle.maintenances
-      .filter(m => Number.isInteger(m.km) && m.date <= date)
-      .map(m => ({ km: m.km, text: `há uma manutenção de ${m.km.toLocaleString('pt-BR')} km em ${Utils.fmtDateFull(m.date)}` }));
-    if (vehicle.purchaseDate && vehicle.purchaseDate <= date && Number.isInteger(vehicle.purchaseKm)) {
-      sources.push({ km: vehicle.purchaseKm, text: `a compra registrou ${vehicle.purchaseKm.toLocaleString('pt-BR')} km em ${Utils.fmtDateFull(vehicle.purchaseDate)}` });
+  const KM_HINT = 'Se o km daquele registro estiver errado, corrija-o primeiro.';
+  const _fmtKm = km => km.toLocaleString('pt-BR');
+
+  /** Todos os km conhecidos do veículo (leituras, manutenções com km, compra), com a descrição para a mensagem de erro. */
+  function _kmPoints(vehicle, readings, exceptMaintenanceId) {
+    const points = readings.map(r => ({ type: 'reading', km: r.km, date: r.date,
+      text: `em ${Utils.fmtDateFull(r.date)} o odômetro marcava ${_fmtKm(r.km)} km` }));
+    vehicle.maintenances.filter(m => Number.isInteger(m.km) && m.id !== exceptMaintenanceId).forEach(m => points.push({
+      type: 'maintenance', km: m.km, date: m.date, text: `há uma manutenção de ${_fmtKm(m.km)} km em ${Utils.fmtDateFull(m.date)}` }));
+    if (vehicle.purchaseDate && Number.isInteger(vehicle.purchaseKm)) {
+      points.push({ type: 'purchase', km: vehicle.purchaseKm, date: vehicle.purchaseDate,
+        text: `a compra registrou ${_fmtKm(vehicle.purchaseKm)} km em ${Utils.fmtDateFull(vehicle.purchaseDate)}` });
     }
-    return sources;
+    return points;
+  }
+
+  /** `before` e `after` dizem quais pontos limitam o km por baixo e por cima; o violador mais próximo vira o erro. */
+  function _assertKmFits(points, { before, after }, km) {
+    const tooHigh = points.filter(p => before(p) && p.km > km).sort((a, b) => b.km - a.km)[0];
+    const tooLow = points.filter(p => after(p) && p.km < km).sort((a, b) => a.date.localeCompare(b.date))[0];
+    const violated = tooHigh || tooLow;
+    if (violated) _fail(`Km incoerente: ${violated.text}. ${KM_HINT}`);
   }
 
   function _assertOdometerOrder(vehicle, readings, date, km) {
-    const earlier = readings.filter(r => r.date < date)
-      .map(r => ({ km: r.km, text: `em ${Utils.fmtDateFull(r.date)} o odômetro marcava ${r.km.toLocaleString('pt-BR')} km` }));
-    const tooHigh = [...earlier, ..._earlierKmSources(vehicle, date)].filter(s => s.km > km)
-      .sort((a, b) => b.km - a.km)[0];
-    if (tooHigh) _fail(`Km incoerente: ${tooHigh.text}`);
-    const later = readings.find(r => r.date > date && r.km < km);
-    if (later) _fail(`Km incoerente: em ${Utils.fmtDateFull(later.date)} o odômetro marcava ${later.km.toLocaleString('pt-BR')} km`);
+    _assertKmFits(_kmPoints(vehicle, readings), {
+      before: p => (p.type === 'reading' ? p.date < date : p.date <= date),
+      after: p => p.type === 'reading' && p.date > date
+    }, km);
+  }
+
+  /** Km da manutenção precisa caber entre o que veio antes e o que veio depois; no mesmo dia, manutenções não se restringem. */
+  function _assertMaintenanceKm(vehicle, maintenance) {
+    if (!Number.isInteger(maintenance.km)) return;
+    const { date } = maintenance;
+    _assertKmFits(_kmPoints(vehicle, vehicle.odometer, maintenance.id), {
+      before: p => (p.type === 'purchase' ? p.date <= date : p.date < date),
+      after: p => p.type !== 'purchase' && (p.type === 'reading' ? p.date >= date : p.date > date)
+    }, maintenance.km);
   }
 
   /** Registra a leitura do odômetro; a mesma data substitui a anterior. */
@@ -243,6 +263,7 @@ const VehicleService = (() => {
       const vehicle = _requireVehicle(vehicleId);
       const now = Date.now();
       const maintenance = { ..._normalizeMaintenance(dto), createdAt: now, updatedAt: now };
+      _assertMaintenanceKm(vehicle, maintenance);
       vehicle.maintenances.push(maintenance);
       _touch(vehicle);
       return maintenance;
@@ -253,11 +274,19 @@ const VehicleService = (() => {
     return vehicle.maintenances.find(m => m.id === id) || _fail('Manutenção não encontrada');
   }
 
+  /** No patch, `null` em peças/zonas significa "não mexer" (diferente de `[]`, que limpa). */
+  function _withoutNullLists(patch) {
+    const kept = { ...patch };
+    ['parts', 'zones'].forEach(k => { if (kept[k] === null) delete kept[k]; });
+    return kept;
+  }
+
   function updateMaintenance(vehicleId, id, patch = {}) {
     return _guard(() => {
       const vehicle = _requireVehicle(vehicleId);
       const current = _findMaintenance(vehicle, id);
-      const next = _normalizeMaintenance({ ...current, ...patch, id: current.id });
+      const next = _normalizeMaintenance({ ...current, ..._withoutNullLists(patch), id: current.id });
+      _assertMaintenanceKm(vehicle, next);
       const { createdAt } = current;
       Object.keys(current).forEach(k => delete current[k]);
       Object.assign(current, next, { createdAt, updatedAt: Date.now() });
@@ -404,13 +433,12 @@ const VehicleService = (() => {
 
   function _notebookItem(key, uses, currentKm) {
     const last = uses[uses.length - 1];
-    const lastPriced = [...uses].reverse().find(_hasPrice);
     return {
       key,
       name: last.part.name,
       code: last.part.code,
       lastUse: { maintenanceId: last.maintenance.id, date: last.maintenance.date, km: last.maintenance.km ?? null,
-        store: last.part.store, brand: last.part.brand, qty: last.part.qty, unitPriceCentavos: lastPriced ? _unitPrice(lastPriced.part) : null },
+        store: last.part.store, brand: last.part.brand, qty: last.part.qty, unitPriceCentavos: _hasPrice(last) ? _unitPrice(last.part) : null },
       priceHistory: uses.filter(_hasPrice).map(u => ({ date: u.maintenance.date, unitPriceCentavos: _unitPrice(u.part), store: u.part.store })),
       timesReplaced: uses.length,
       warranty: _warranty(last, currentKm),
