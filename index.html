@@ -1083,7 +1083,7 @@
     <div class="form-row">
       <div class="form-group">
         <label class="form-label" for="veh-m-date">Data</label>
-        <input class="form-input" type="date" id="veh-m-date">
+        <input class="form-input" type="date" id="veh-m-date" onchange="VehicleMaintenanceModal.updateTotal()">
       </div>
       <div class="form-group">
         <label class="form-label" for="veh-m-km">Km</label>
@@ -1120,6 +1120,7 @@
       <input class="form-input" id="veh-m-labor" inputmode="decimal" oninput="VehicleMaintenanceModal.updateTotal()">
     </div>
     <div class="veh-total-line"><span>Total</span><span id="veh-m-total">R$ 0,00</span></div>
+    <div class="form-group veh-payment" id="veh-m-payment" hidden></div>
     <div class="form-group">
       <label class="form-label" for="veh-m-notes">Observações</label>
       <textarea class="form-textarea" id="veh-m-notes"></textarea>
@@ -1332,6 +1333,7 @@
 <script src="js/components/areaModal.js"></script>
 <script src="js/components/financeModal.js"></script>
 <script src="js/components/projectModal.js"></script>
+<script src="js/components/vehiclePayment.js"></script>
 <script src="js/components/vehicleMaintenanceModal.js"></script>
 <script src="js/components/imageResize.js"></script>
 <script src="js/components/noteEditor.js"></script>

@@ -46,3 +46,18 @@
 .veh-part-remove{grid-column:1 / -1;justify-self:end}
 .veh-total-line{display:flex;justify-content:space-between;font-weight:700;margin:8px 0 14px}
 .veh-modal-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+
+/* ----- Pagamento no modal de manutenção ----- */
+.veh-payment{margin-bottom:14px}
+.veh-pay-modes{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+.veh-pay-modes .filter-chip{cursor:pointer}
+.veh-pay-modes input{accent-color:var(--accent)}
+.veh-pay-item{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:8px;margin-bottom:6px;font-size:13px;overflow-wrap:anywhere;
+}
+.veh-pay-suggestion{justify-content:flex-start;cursor:pointer}
+.veh-pay-reason{display:block;color:var(--text3);font-size:11px;margin-top:2px}
+.veh-pay-missing{color:var(--text3);font-style:italic}
+.veh-pay-empty{font-size:13px;color:var(--text3);margin:4px 0 8px}

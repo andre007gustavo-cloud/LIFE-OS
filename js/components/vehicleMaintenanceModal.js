@@ -1,7 +1,8 @@
 /**
  * ===================== VEHICLE MAINTENANCE MODAL =====================
  * Cria, edita e exclui uma manutenção do veículo (dados, zonas e peças em
- * linhas). O pagamento ligado às Finanças vem em outro componente.
+ * linhas). O pagamento ligado às Finanças fica no VehiclePayment, que este
+ * modal inicia, alimenta com data e valores e aplica ao salvar.
  * Markup estático em #veh-maint-modal (index.html).
  */
 
@@ -19,7 +20,7 @@ const VehicleMaintenanceModal = (() => {
 
   // ===== Conversões de campo =====
 
-  const centavosToInput = centavos => (centavos ? (centavos / 100).toFixed(2).replace('.', ',') : '');
+  const centavosToInput = centavos => (centavos ? Utils.centavosToReais(centavos).toFixed(2).replace('.', ',') : '');
   const numberOrUndefined = text => (text.trim() === '' ? undefined : Number(text));
 
   /** Vazio vira undefined; texto que não é dinheiro vira NaN (o service recusa com mensagem). */
@@ -111,8 +112,11 @@ const VehicleMaintenanceModal = (() => {
     };
   }
 
+  const hasInvalidPrice = part => Number.isNaN(part.priceCentavos);
+
+  /** Linha vazia de verdade: um preço digitado e inválido não conta como vazio. */
   const isBlankPart = part => !part.name.trim() && !part.brand.trim() && !part.code.trim()
-    && !part.store.trim() && !part.priceCentavos && !part.warrantyUntil;
+    && !part.store.trim() && !part.priceCentavos && !hasInvalidPrice(part) && !part.warrantyUntil;
 
   /** Completa marca, código e loja vazios com o que o caderno sabe da peça. */
   function fillPartFromNotebook(nameInput) {
@@ -134,9 +138,18 @@ const VehicleMaintenanceModal = (() => {
   const moneyOrZero = value => (Number.isFinite(value) ? value : 0);
 
   function updateTotal() {
-    const parts = partRows().map(readPart).reduce((sum, p) => sum + moneyOrZero(p.priceCentavos), 0);
-    const labor = moneyOrZero(parseMoney(el('veh-m-labor').value));
-    el('veh-m-total').textContent = Utils.formatBRL(parts + labor);
+    const snapshot = paymentSnapshot();
+    el('veh-m-total').textContent = Utils.formatBRL(snapshot.totalCentavos);
+    VehiclePayment.update(snapshot);
+  }
+
+  /** Data e valores do formulário (ainda não salvo) que orientam as sugestões de pagamento. */
+  function paymentSnapshot() {
+    const parts = partRows().map(readPart).map(p => ({ priceCentavos: moneyOrZero(p.priceCentavos) }));
+    const laborCentavos = moneyOrZero(parseMoney(el('veh-m-labor').value));
+    const amounts = VehicleFinanceService.defaultMaintenanceAmounts({ parts, laborCentavos });
+    const totalCentavos = parts.reduce((sum, p) => sum + p.priceCentavos, 0) + laborCentavos;
+    return { date: el('veh-m-date').value, totalCentavos, amounts };
   }
 
   // ===== Abrir =====
@@ -158,12 +171,13 @@ const VehicleMaintenanceModal = (() => {
     updateTotal();
   }
 
-  function show(vehicle, maintenance) {
+  function show(vehicle, maintenance, { retryPayment = false } = {}) {
     vehicleId = vehicle;
     editId = maintenance ? maintenance.id : null;
     notebook = VehicleService.getPartsNotebook(vehicle);
     fillCategoryOptions();
     fillDatalists();
+    VehiclePayment.start(vehicle, editId, retryPayment ? { adding: true } : undefined);
     fillForm(maintenance);
     el('veh-m-heading').textContent = maintenance ? 'Editar manutenção' : 'Nova manutenção';
     el('veh-m-remove').style.display = maintenance ? '' : 'none';
@@ -201,15 +215,29 @@ const VehicleMaintenanceModal = (() => {
     if (window.AreasView?.renderWorkspace) AreasView.renderWorkspace();
   }
 
+  /** Se o pagamento falhar, a manutenção já está salva: o modal reabre em edição para nova tentativa. */
+  function finishSave(maintenanceId) {
+    const payment = VehiclePayment.apply(vehicleId, maintenanceId);
+    refresh();
+    if (!payment.erro) {
+      Modal.close(MODAL_ID);
+      return Feedback.toast('Manutenção salva', 'success');
+    }
+    Feedback.toast(`Manutenção salva, mas o pagamento falhou: ${payment.erro}`, 'error');
+    const saved = VehicleService.getById(vehicleId).maintenances.find(m => m.id === maintenanceId);
+    show(vehicleId, saved, { retryPayment: true });
+  }
+
   function save() {
+    const paymentCheck = VehiclePayment.validate();
+    if (paymentCheck.erro) return Feedback.toast(paymentCheck.erro, 'error');
     const dto = readForm();
+    if (dto.parts.some(hasInvalidPrice)) return Feedback.toast('Preço inválido na peça', 'error');
     const result = editId
       ? VehicleService.updateMaintenance(vehicleId, editId, dto)
       : VehicleService.addMaintenance(vehicleId, dto);
     if (result.erro) return Feedback.toast(result.erro, 'error');
-    Modal.close(MODAL_ID);
-    Feedback.toast('Manutenção salva', 'success');
-    refresh();
+    finishSave(result.id);
   }
 
   function remove() {
@@ -225,7 +253,6 @@ const VehicleMaintenanceModal = (() => {
 
   return {
     openNew, open, save, remove,
-    addPartRow, removePartRow, updateTotal, toggleZone, fillPartFromNotebook,
-    partRowHtml
+    addPartRow, removePartRow, updateTotal, toggleZone, fillPartFromNotebook
   };
 })();
