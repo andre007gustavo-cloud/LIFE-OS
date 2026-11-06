@@ -16,6 +16,8 @@
   const STATUS_TAREFA = ['afazer', 'emprogresso', 'concluida', 'descartada'];
   const RECORRENCIAS = ['', 'daily', 'weekly', 'monthly'];
   const STATUS_PROJETO = ['ativo', 'pausado', 'concluido'];
+  const MODELOS_PROJETO = Object.keys(Constants.PROJECT_TEMPLATES);
+  const modeloProjeto = { type: 'string', enum: MODELOS_PROJETO, description: 'Modelo do projeto: generic (padrão) ou vehicle (garagem e manutenções de um veículo)' };
   const STATUS_HABITO = { feito: 'done', minimo: 'minimal' };
   const FREQUENCIAS = { diaria: 'daily', dias_uteis: 'weekdays', personalizada: 'custom' };
 
@@ -356,7 +358,7 @@
       run({ incluirInativos }) {
         const projetos = ProjectService.getAll()
           .filter(p => incluirInativos || p.status === 'ativo')
-          .map(p => ({ id: p.id, nome: p.name, area: nomeArea(p.area), status: p.status, prazo: p.deadline || null }));
+          .map(p => ({ id: p.id, nome: p.name, area: nomeArea(p.area), status: p.status, prazo: p.deadline || null, template: ProjectService.getTemplate(p) }));
         return { total: projetos.length, projetos };
       }
     },
@@ -376,7 +378,7 @@
         const r = resolveProjeto(projeto); if (r.erro) return r;
         const p = r.proj;
         return {
-          id: p.id, nome: p.name, icone: p.icon, area: nomeArea(p.area), status: p.status,
+          id: p.id, nome: p.name, icone: p.icon, area: nomeArea(p.area), status: p.status, template: ProjectService.getTemplate(p),
           prazo: p.deadline || null, descricao: p.desc || '',
           notas: (p.notes || []).map(n => ({ id: n.id, titulo: n.title, atualizadaEm: n.updatedAt })),
           tarefasEmAberto: TaskService.forProject(p.id).filter(Utils.isTaskOpen).map(tarefaResumo)
@@ -414,20 +416,22 @@
             areaId: { type: 'string', description: 'Id ou nome da área' },
             descricao: { type: 'string' },
             prazo: { type: 'string', description: 'Deadline ISO YYYY-MM-DD' },
-            icone: { type: 'string', description: 'Emoji (default 📁)' }
+            icone: { type: 'string', description: 'Emoji (default 📁)' },
+            template: modeloProjeto
           },
           required: ['nome', 'areaId']
         }
       },
-      run({ nome, areaId, descricao, prazo, icone }) {
+      run({ nome, areaId, descricao, prazo, icone, template }) {
         const r = resolveArea(areaId); if (r.erro) return r;
+        if (template !== undefined && !MODELOS_PROJETO.includes(template)) return { erro: `template deve ser: ${MODELOS_PROJETO.join(', ')}.` };
         // ProjectService.save não dá default a color: herda a cor da área (com
         // fallback) para não gravar undefined, que o Firestore rejeita.
         const p = ProjectService.save({
           name: nome, area: r.area.id, desc: descricao || '', deadline: prazo || '',
-          color: r.area.color || Constants.COLORS[0], icon: icone || '📁'
+          color: r.area.color || Constants.COLORS[0], icon: icone || '📁', template
         });
-        return { ok: true, id: p.id, nome: p.name, area: r.area.name };
+        return { ok: true, id: p.id, nome: p.name, area: r.area.name, template: ProjectService.getTemplate(p) };
       }
     },
 
@@ -445,13 +449,15 @@
             descricao: { type: 'string' },
             prazo: { type: 'string', description: 'ISO YYYY-MM-DD ("" remove)' },
             areaId: { type: 'string', description: 'Id ou nome da nova área' },
-            icone: { type: 'string' }
+            icone: { type: 'string' },
+            template: modeloProjeto
           },
           required: ['projeto']
         }
       },
-      run({ projeto, nome, status, descricao, prazo, areaId, icone }) {
+      run({ projeto, nome, status, descricao, prazo, areaId, icone, template }) {
         const r = resolveProjeto(projeto); if (r.erro) return r;
+        if (template !== undefined && !MODELOS_PROJETO.includes(template)) return { erro: `template deve ser: ${MODELOS_PROJETO.join(', ')}.` };
         if (status !== undefined && !STATUS_PROJETO.includes(status)) return { erro: `status deve ser: ${STATUS_PROJETO.join(', ')}.` };
         let area = r.proj.area;
         if (areaId) { const ra = resolveArea(areaId); if (ra.erro) return ra; area = ra.area.id; }
@@ -461,9 +467,10 @@
           status: status || r.proj.status,
           desc: descricao !== undefined ? descricao : r.proj.desc,
           deadline: prazo !== undefined ? prazo : r.proj.deadline,
-          icon: icone || r.proj.icon
+          icon: icone || r.proj.icon,
+          template: template || ProjectService.getTemplate(r.proj)
         }, true);
-        return { ok: true, id: p.id, nome: p.name, status: p.status, area: nomeArea(p.area), prazo: p.deadline || null };
+        return { ok: true, id: p.id, nome: p.name, status: p.status, template: ProjectService.getTemplate(p), area: nomeArea(p.area), prazo: p.deadline || null };
       }
     },
 
@@ -471,7 +478,7 @@
       write: true,
       schema: {
         name: 'delete_project',
-        description: 'Exclui um projeto e TODAS as notas dele. As tarefas continuam, sem projeto. Confirme com o usuário antes.',
+        description: 'Exclui um projeto e TODAS as notas dele (num projeto de veículo, também a ficha e o histórico de manutenções; os lançamentos vinculados continuam nas Finanças). As tarefas continuam, sem projeto. Confirme com o usuário antes.',
         input_schema: {
           type: 'object',
           properties: { projeto: { type: 'string', description: 'Id ou nome do projeto' } },
@@ -481,8 +488,10 @@
       run({ projeto }) {
         const r = resolveProjeto(projeto); if (r.erro) return r;
         const notas = (r.proj.notes || []).length;
+        const veiculo = VehicleService.getByProject(r.proj.id);
+        const manutencoes = veiculo ? veiculo.maintenances.length : 0;
         ProjectService.remove(r.proj.id);
-        return { ok: true, excluido: r.proj.name, notasExcluidas: notas };
+        return { ok: true, excluido: r.proj.name, notasExcluidas: notas, ...(veiculo && { veiculoExcluido: true, manutencoesExcluidas: manutencoes }) };
       }
     },
 
