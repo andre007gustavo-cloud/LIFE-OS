@@ -115,7 +115,7 @@ const VehicleFinanceService = (() => {
 
   function _saveIds(vehicleId, maintenanceId, transactionIds) {
     const updated = VehicleService.updateMaintenance(vehicleId, maintenanceId, { transactionIds });
-    return updated.erro ? updated : updated.transactionIds;
+    return updated.erro ? updated : { transactionIds: updated.transactionIds };
   }
 
   function link(vehicleId, maintenanceId, transactionId) {
@@ -125,7 +125,7 @@ const VehicleFinanceService = (() => {
     const owner = _linkedIdsByMaintenance().get(transactionId);
     if (owner && owner !== maintenanceId) return { erro: 'Esse lançamento já está vinculado a outra manutenção' };
     const ids = found.maintenance.transactionIds;
-    return ids.includes(transactionId) ? ids : _saveIds(vehicleId, maintenanceId, [...ids, transactionId]);
+    return ids.includes(transactionId) ? { transactionIds: ids } : _saveIds(vehicleId, maintenanceId, [...ids, transactionId]);
   }
 
   function unlink(vehicleId, maintenanceId, transactionId) {
@@ -165,6 +165,7 @@ const VehicleFinanceService = (() => {
   function launchPayment(vehicleId, maintenanceId, { meio, valorCentavos, parcelas, categoriaId, data } = {}) {
     const found = _findMaintenance(vehicleId, maintenanceId);
     if (found.erro) return found;
+    if (!meio || meio === CARD_PREFIX) return { erro: 'Escolha uma conta ou um cartão' };
     const expense = FinanceService.addExpense({
       ..._splitMeans(meio),
       valorCentavos,

@@ -267,8 +267,11 @@ const FinanceService = (() => {
   function addExpense({ contaId, cartaoId, valorCentavos, parcelas, descricao, categoriaId, data, fonte } = {}) {
     if (!Number.isInteger(valorCentavos) || valorCentavos <= 0) return { erro: 'Informe um valor maior que zero' };
     if (!contaId && !cartaoId) return { erro: 'Escolha uma conta ou um cartão' };
-    if (!cartaoId) return addTransaction({ tipo: 'saida', contaId, valorCentavos, descricao, categoriaId, data, fonte });
-    if (typeof CartaoService === 'undefined') return { erro: 'Cartões indisponíveis' };
+    if (!cartaoId) {
+      if (!getContaById(contaId)) return { erro: 'Conta não encontrada' };
+      return addTransaction({ tipo: 'saida', contaId, valorCentavos, descricao, categoriaId, data, fonte });
+    }
+    if (typeof CartaoService === 'undefined' || !CartaoService.getCartaoById(cartaoId)) return { erro: 'Cartão não encontrado' };
     return CartaoService.addCompraCartao({
       cartaoId, descricao, categoriaId, valorTotalCentavos: valorCentavos, parcelas, dataCompra: data, fonte
     });
