@@ -115,7 +115,8 @@ const VehicleService = (() => {
     if (_isBlank(raw.status)) return { type, status: type === CARD_TYPE.SYMPTOM ? CARD_STATUS.TODO : CARD_STATUS.DONE };
     const status = _oneOf(raw.status, Constants.VEHICLE.CARD_STATUSES, 'Coluna');
     const openSymptom = type === CARD_TYPE.SYMPTOM && status !== CARD_STATUS.DONE;
-    return { type, status: openSymptom ? CARD_STATUS.TODO : status };
+    if (openSymptom && status !== CARD_STATUS.TODO) _fail('Sintoma aberto fica sempre em A fazer: não use Ideias nem Fazendo');
+    return { type, status };
   }
 
   function _normalizeZonesFor(raw, type) {
@@ -327,11 +328,14 @@ const VehicleService = (() => {
     AppState.persist();
   }
 
+  /** O sintoma guarda quando começou. Fora do histórico, essa data não entra em custo nem na regra de km. */
+  const _withStartDate = m => (isSymptom(m) && !m.date ? { ...m, date: Utils.today() } : m);
+
   function addMaintenance(vehicleId, dto = {}) {
     return _guard(() => {
       const vehicle = _requireVehicle(vehicleId);
       const now = Date.now();
-      const maintenance = { ..._normalizeMaintenance(dto), createdAt: now, updatedAt: now };
+      const maintenance = _withStartDate({ ..._normalizeMaintenance(dto), createdAt: now, updatedAt: now });
       if (isSymptom(maintenance) && isDone(maintenance)) _fail('Um sintoma novo nasce aberto');
       if (isHistory(maintenance)) _assertMaintenanceKm(vehicle, maintenance);
       vehicle.maintenances.push(maintenance);
