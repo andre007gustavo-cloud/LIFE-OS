@@ -22,6 +22,7 @@ const ProjectModal = (() => {
     if (projectId && project.color) AppState.ui.npColorSel = project.color;
 
     populateAreaSelect(project.area || '');
+    populateTemplateSelect(ProjectService.getTemplate(project));
     renderColorPicker();
 
     Modal.open('new-proj-modal');
@@ -37,6 +38,7 @@ const ProjectModal = (() => {
       icon: document.getElementById('np-icon').value || '📁',
       color: AppState.ui.npColorSel,
       area: document.getElementById('np-area').value,
+      template: document.getElementById('np-template').value,
       status: document.getElementById('np-status').value,
       deadline: document.getElementById('np-deadline').value,
       desc: document.getElementById('np-desc').value
@@ -89,6 +91,22 @@ const ProjectModal = (() => {
         .join('');
   }
 
+  function populateTemplateSelect(selected) {
+    document.getElementById('np-template').innerHTML = Object.entries(Constants.PROJECT_TEMPLATES)
+      .map(([key, t]) => `<option value="${key}"${key === selected ? ' selected' : ''}>${Utils.escapeHtml(t.icon)} ${Utils.escapeHtml(t.label)}</option>`)
+      .join('');
+  }
+
+  /** Sugere o ícone do modelo escolhido, mas só se o atual ainda é o padrão de algum modelo. */
+  function onTemplateChange() {
+    const iconInput = document.getElementById('np-icon');
+    const templates = Object.values(Constants.PROJECT_TEMPLATES);
+    const isDefaultIcon = !iconInput.value || templates.some(t => t.icon === iconInput.value);
+    if (isDefaultIcon) {
+      iconInput.value = Constants.PROJECT_TEMPLATES[document.getElementById('np-template').value].icon;
+    }
+  }
+
   function renderColorPicker() {
     document.getElementById('np-color-picker').innerHTML = Constants.COLORS
       .map(c => `<div onclick="npSelectColor('${c}')" id="npc-${c.replace('#', '')}" data-color="${c}" style="width:28px;height:28px;border-radius:50%;background:${c};cursor:pointer;border:3px solid ${c === AppState.ui.npColorSel ? '#fff' : 'transparent'};transition:border .15s"></div>`)
@@ -101,5 +119,5 @@ const ProjectModal = (() => {
     if (window.TasksView?.renderSidebar) TasksView.renderSidebar();
   }
 
-  return { open, save, remove, selectColor };
+  return { open, save, remove, selectColor, onTemplateChange };
 })();
