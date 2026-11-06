@@ -1137,6 +1137,53 @@
   </div>
 </div>
 
+<!-- ========== MODAL: CARD DO QUADRO DO VEÍCULO ========== -->
+<div class="overlay" id="veh-card-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="veh-c-heading">
+    <div class="modal-title">
+      <span id="veh-c-heading">Novo card</span>
+      <button class="modal-close" aria-label="Fechar" onclick="closeModal('veh-card-modal')">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="veh-c-title">Título</label>
+      <input class="form-input" id="veh-c-title" placeholder="Ex: Trocar o escapamento">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="veh-c-type">Tipo</label>
+        <select class="form-select" id="veh-c-type"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="veh-c-status">Coluna</label>
+        <select class="form-select" id="veh-c-status"></select>
+      </div>
+    </div>
+    <div class="form-group">
+      <span class="form-label" id="veh-c-zones-label">Zonas do carro</span>
+      <div class="veh-zone-toggles" id="veh-c-zones" role="group" aria-labelledby="veh-c-zones-label"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="veh-c-category">Categoria</label>
+        <select class="form-select" id="veh-c-category"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="veh-c-estimate">Estimativa (R$)</label>
+        <input class="form-input" id="veh-c-estimate" inputmode="decimal" placeholder="Ex: 800,00">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="veh-c-notes">Observações</label>
+      <textarea class="form-textarea" id="veh-c-notes"></textarea>
+    </div>
+    <div class="veh-modal-actions">
+      <button class="btn btn-ghost" id="veh-c-remove" style="color:var(--red)" onclick="VehicleCardModal.remove()">Excluir</button>
+      <button class="btn btn-ghost" onclick="closeModal('veh-card-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="VehicleCardModal.save()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ========== MODAL: NEW/EDIT PROJECT ========== -->
 <div class="overlay" id="new-proj-modal">
   <div class="modal">
@@ -1337,6 +1384,7 @@
 <script src="js/components/projectModal.js"></script>
 <script src="js/components/vehiclePayment.js"></script>
 <script src="js/components/vehicleMaintenanceModal.js"></script>
+<script src="js/components/vehicleCardModal.js"></script>
 <script src="js/components/vehicleHistory.js"></script>
 <script src="js/components/vehicleParts.js"></script>
 <script src="js/components/imageResize.js"></script>

@@ -34,6 +34,7 @@
 
 /* ----- Modal de manutenção ----- */
 #veh-maint-modal .modal{max-width:640px}
+#veh-card-modal .modal{max-width:560px}
 .veh-zone-toggles{display:flex;flex-wrap:wrap;gap:6px}
 .veh-parts-head{display:flex;justify-content:space-between;align-items:center;margin:4px 0 8px}
 .veh-part-row{

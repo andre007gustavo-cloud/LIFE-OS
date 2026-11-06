@@ -79,6 +79,7 @@ const PRECACHE = [
   '/js/components/projectModal.js',
   '/js/components/vehiclePayment.js',
   '/js/components/vehicleMaintenanceModal.js',
+  '/js/components/vehicleCardModal.js',
   '/js/components/vehicleHistory.js',
   '/js/components/vehicleParts.js',
   '/js/components/imageResize.js',
