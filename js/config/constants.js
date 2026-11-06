@@ -214,6 +214,7 @@ const Constants = (() => {
     DEFAULT_FINANCE_CATEGORY: 'Transporte',
     RECENT_MAINTENANCES: 3,
     TOP_ZONES: 5,
+    FULL_BAR_PERCENT: 100,
     SEARCH_DEBOUNCE_MS: 250,
     MIN_COST_PER_KM_CENTAVOS: 1,
     CARD_PREFIX: 'card:',

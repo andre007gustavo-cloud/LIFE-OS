@@ -45,14 +45,14 @@ const VehicleMaintenanceModal = (() => {
 
   function fillCategoryOptions() {
     el('veh-m-category').innerHTML = Constants.VEHICLE.CATEGORIES
-      .map(c => `<option value="${c.id}">${c.label}</option>`).join('');
+      .map(c => `<option value="${attr(c.id)}">${Utils.escapeHtml(c.label)}</option>`).join('');
   }
 
   function renderZoneToggles() {
     el('veh-m-zones').innerHTML = Constants.VEHICLE.ZONES.map(z => {
       const on = selectedZones.has(z.id);
       return `<button type="button" class="filter-chip${on ? ' active' : ''}" aria-pressed="${on}"
-        onclick="VehicleMaintenanceModal.toggleZone('${z.id}')">${z.label}</button>`;
+        onclick="VehicleMaintenanceModal.toggleZone('${attr(z.id)}')">${Utils.escapeHtml(z.label)}</button>`;
     }).join('');
   }
 

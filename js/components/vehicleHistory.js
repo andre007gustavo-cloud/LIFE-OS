@@ -8,8 +8,7 @@
 
 const VehicleHistory = (() => {
 
-  const { CATEGORIES, ZONES, SEARCH_DEBOUNCE_MS } = Constants.VEHICLE;
-  const FULL_BAR_PERCENT = 100;
+  const { CATEGORIES, ZONES, SEARCH_DEBOUNCE_MS, FULL_BAR_PERCENT } = Constants.VEHICLE;
   const FINANCE_STATES = {
     linked: { icon: 'link', label: 'Vinculado' },
     missing: { icon: 'link-off', label: 'Lançamento removido' },
@@ -187,6 +186,7 @@ const VehicleHistory = (() => {
   }
 
   function clearFilters() {
+    clearTimeout(debounceTimer);
     AppState.ui.vehicleFilters = { text: '', category: '', zone: '', year: '' };
     const vehicle = currentVehicle();
     if (vehicle) render(vehicle);

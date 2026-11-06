@@ -79,7 +79,9 @@ const VehicleView = (() => {
   }
 
   function setFinanceCategory(projectId, categoryId) {
-    saveResult(VehicleService.saveSheet(projectId, { financeCategoryId: categoryId }));
+    const result = VehicleService.saveSheet(projectId, { financeCategoryId: categoryId });
+    if (result.erro) return Feedback.toast(result.erro, 'error');
+    Feedback.toast('Categoria salva', 'success');
   }
 
   function updateKm(projectId) {
@@ -135,7 +137,8 @@ const VehicleView = (() => {
       return { value: `${Utils.formatBRL(summary.costPerKmCentavos)}/km` };
     }
     if (summary.costPer1000KmCentavos) {
-      return { value: `${Utils.formatBRL(summary.costPer1000KmCentavos)} a cada 1.000 km` };
+      const base = Constants.VEHICLE.KM_PER_COST_BASE.toLocaleString('pt-BR');
+      return { value: `${Utils.formatBRL(summary.costPer1000KmCentavos)} a cada ${base} km` };
     }
     return { value: '—', hint: 'registre o km da compra' };
   }
@@ -238,7 +241,7 @@ const VehicleView = (() => {
     document.getElementById('proj-tab-content').innerHTML = `
       <div class="proj-empty-state">
         <i class="ti ti-${icon}" style="font-size:48px;color:var(--text3);display:block;margin-bottom:12px"></i>
-        <div style="font-size:16px;font-weight:600;color:var(--text2)">${message}</div>
+        <div style="font-size:16px;font-weight:600;color:var(--text2)">${esc(message)}</div>
       </div>`;
   }
 
