@@ -176,6 +176,15 @@ const ProjectService = (() => {
     (project.notes || []).forEach(_cleanupNoteImages);
   }
 
+  function isValidTemplate(key) {
+    return Object.prototype.hasOwnProperty.call(Constants.PROJECT_TEMPLATES, key);
+  }
+
+  /** Modelo do projeto; projetos antigos, sem o campo, são 'generic'. */
+  function getTemplate(project) {
+    return isValidTemplate(project?.template) ? project.template : 'generic';
+  }
+
   function buildProject(data, existing) {
     return {
       id: data.id || Utils.uid(),
@@ -186,6 +195,7 @@ const ProjectService = (() => {
       status: data.status || 'ativo',
       deadline: data.deadline || '',
       desc: data.desc || '',
+      template: isValidTemplate(data.template) ? data.template : getTemplate(existing),
       notes: existing?.notes || [],
       files: existing?.files || [],
       createdAt: existing?.createdAt || Utils.today()
@@ -212,7 +222,7 @@ const ProjectService = (() => {
 
   return {
     ensureMigrated,
-    getAll, getById, search, save, remove, updateField,
+    getAll, getById, search, save, remove, updateField, getTemplate,
     addNote, updateNote, removeNote, getNote,
     addFile, removeFile, getFile
   };
