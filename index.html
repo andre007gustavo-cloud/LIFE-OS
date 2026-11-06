@@ -1145,10 +1145,10 @@
       <button class="modal-close" aria-label="Fechar" onclick="closeModal('veh-card-modal')">×</button>
     </div>
     <div class="form-group">
-      <label class="form-label" for="veh-c-title">Título</label>
+      <label class="form-label" for="veh-c-title" id="veh-c-title-label">Título</label>
       <input class="form-input" id="veh-c-title" placeholder="Ex: Trocar o escapamento">
     </div>
-    <div class="form-row">
+    <div class="form-row" id="veh-c-row-kind">
       <div class="form-group">
         <label class="form-label" for="veh-c-type">Tipo</label>
         <select class="form-select" id="veh-c-type"></select>
@@ -1162,7 +1162,7 @@
       <span class="form-label" id="veh-c-zones-label">Zonas do carro</span>
       <div class="veh-zone-toggles" id="veh-c-zones" role="group" aria-labelledby="veh-c-zones-label"></div>
     </div>
-    <div class="form-row">
+    <div class="form-row" id="veh-c-row-meta">
       <div class="form-group">
         <label class="form-label" for="veh-c-category">Categoria</label>
         <select class="form-select" id="veh-c-category"></select>
@@ -1176,9 +1176,18 @@
       <label class="form-label" for="veh-c-notes">Observações</label>
       <textarea class="form-textarea" id="veh-c-notes"></textarea>
     </div>
+    <div class="form-group veh-symptom-edit" id="veh-c-symptom-edit" hidden>
+      <label class="form-label" for="veh-c-resolver">Resolvido por…</label>
+      <div class="veh-resolve-row">
+        <select class="form-select" id="veh-c-resolver"></select>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="VehicleCardModal.resolve()">Marcar como resolvido</button>
+      </div>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="VehicleCardModal.convertToService()">Virar serviço</button>
+    </div>
     <div class="veh-modal-actions">
       <button class="btn btn-ghost" id="veh-c-remove" style="color:var(--red)" onclick="VehicleCardModal.remove()">Excluir</button>
       <button class="btn btn-ghost" onclick="closeModal('veh-card-modal')">Cancelar</button>
+      <button class="btn btn-ghost" id="veh-c-diagnose" onclick="VehicleCardModal.saveAndDiagnose()" hidden>Salvar e pedir diagnóstico</button>
       <button class="btn btn-primary" onclick="VehicleCardModal.save()">Salvar</button>
     </div>
   </div>

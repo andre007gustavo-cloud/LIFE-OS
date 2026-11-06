@@ -123,15 +123,41 @@ const VehicleView = (() => {
     VehicleService.listMaintenances(vehicle.id).forEach(m => m.zones.forEach(z => counts.set(z, (counts.get(z) || 0) + 1)));
     return Constants.VEHICLE.ZONES
       .filter(z => counts.has(z.id))
-      .map(z => ({ label: z.label, count: counts.get(z.id) }))
+      .map(z => ({ id: z.id, label: z.label, count: counts.get(z.id) }))
       .sort((a, b) => b.count - a.count)
       .slice(0, TOP_ZONES);
   }
 
+  function openSymptomCounts(vehicle) {
+    const counts = new Map();
+    VehicleBoardService.listOpenCards(vehicle.id, { type: Constants.VEHICLE.CARD_TYPE.SYMPTOM })
+      .forEach(s => s.zones.forEach(z => counts.set(z, (counts.get(z) || 0) + 1)));
+    return counts;
+  }
+
+  /** Zonas com sintoma aberto vêm primeiro e sempre aparecem, mesmo sem histórico. */
+  function chipZones(vehicle, symptoms) {
+    const top = topZones(vehicle);
+    const onlySymptom = Constants.VEHICLE.ZONES
+      .filter(z => symptoms.has(z.id) && !top.some(t => t.id === z.id))
+      .map(z => ({ id: z.id, label: z.label, count: 0 }));
+    const alerting = zone => (symptoms.has(zone.id) ? 0 : 1);
+    return [...onlySymptom, ...top].sort((a, b) => alerting(a) - alerting(b));
+  }
+
+  function zoneChipHtml(zone, symptomCount) {
+    const history = zone.count ? ` · ${zone.count}` : '';
+    if (!symptomCount) return `<span class="proj-meta-chip">${esc(zone.label)}${history}</span>`;
+    const noun = symptomCount === 1 ? 'sintoma aberto' : 'sintomas abertos';
+    return `<span class="proj-meta-chip veh-chip-alert"><i class="ti ti-alert-triangle" aria-hidden="true"></i>
+      ${esc(zone.label)}${history} · ${symptomCount} ${noun}</span>`;
+  }
+
   function zoneChipsHtml(vehicle) {
-    const zones = topZones(vehicle);
+    const symptoms = openSymptomCounts(vehicle);
+    const zones = chipZones(vehicle, symptoms);
     if (!zones.length) return '<div class="text-muted">As zonas mais mexidas aparecem conforme você registra manutenções.</div>';
-    return zones.map(z => `<span class="proj-meta-chip">${esc(z.label)} · ${z.count}</span>`).join('');
+    return zones.map(z => zoneChipHtml(z, symptoms.get(z.id))).join('');
   }
 
   function garageHeaderHtml(vehicle) {
@@ -141,6 +167,9 @@ const VehicleView = (() => {
       <div class="veh-details">${esc(details)}</div>
       ${CAR_SILHOUETTE}
       <div class="veh-zone-chips">${zoneChipsHtml(vehicle)}</div>
+      <button class="btn btn-ghost btn-sm veh-symptom-btn" onclick="VehicleCardModal.openNewSymptom('${vehicle.id}')">
+        <i class="ti ti-alert-triangle"></i> Descrever um sintoma
+      </button>
     </div>`;
   }
 

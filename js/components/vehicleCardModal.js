@@ -2,23 +2,58 @@
  * ===================== VEHICLE CARD MODAL =====================
  * Cria, edita e exclui um card aberto do quadro do veículo (Ideias, A fazer,
  * Fazendo): título, tipo, coluna, zonas, categoria, estimativa e observações.
- * Concluir um card é com o VehicleMaintenanceModal.openComplete.
+ * No modo sintoma (descrição, zonas obrigatórias e observações) também pede
+ * o diagnóstico ao Jarvis, vira serviço ou fecha ligado à manutenção que o
+ * resolveu. Concluir um card é com o VehicleMaintenanceModal.openComplete.
  * Markup estático em #veh-card-modal (index.html).
  */
 
 const VehicleCardModal = (() => {
 
   const MODAL_ID = 'veh-card-modal';
-  const { CARD_STATUS, CARD_STATUSES, CARD_TYPE, CARD_TYPES, CATEGORIES, ZONES } = Constants.VEHICLE;
+  const { CARD_STATUS, CARD_STATUSES, CARD_TYPE, CARD_TYPES, CATEGORIES, ZONES, DIAGNOSIS_TEMPLATE } = Constants.VEHICLE;
   const el = id => document.getElementById(id);
   const esc = Utils.escapeHtml;
   const attr = Utils.escapeAttr;
+  const SYMPTOM_ONLY = ['veh-c-diagnose'];
+  const NOT_SYMPTOM = ['veh-c-row-kind', 'veh-c-row-meta'];
 
   let vehicleId = null;
   let editId = null;
+  let symptomMode = false;
   const selectedZones = new Set();
 
   const centavosToInput = centavos => (centavos ? Utils.centavosToReais(centavos).toFixed(2).replace('.', ',') : '');
+
+  // ===== Pedido de diagnóstico =====
+
+  /** Texto puro (vai para a área de transferência, nunca para innerHTML). */
+  function buildDiagnosisRequest({ nickname, vehicleId: vId, cardId, zoneLabel, description }) {
+    const values = { nickname, vehicleId: vId, cardId, zone: zoneLabel, description };
+    return DIAGNOSIS_TEMPLATE.replace(/\{(\w+)\}/g, (match, key) => (key in values ? values[key] : match));
+  }
+
+  function diagnosisFor(card) {
+    const vehicle = VehicleService.getById(vehicleId);
+    const zoneLabels = card.zones.map(z => (ZONES.find(x => x.id === z) || {}).label || z).join(', ');
+    return buildDiagnosisRequest({
+      nickname: vehicle.nickname || vehicle.model, vehicleId, cardId: card.id, zoneLabel: zoneLabels, description: card.title
+    });
+  }
+
+  /** Copia e abre o Jarvis no mesmo toque (sem await antes: o iOS bloqueia a abertura depois). */
+  function copyAndOpenJarvis(text) {
+    let copying;
+    try {
+      copying = navigator.clipboard.writeText(text);
+    } catch (error) {
+      copying = Promise.reject(error);
+    }
+    AiChatView.openJarvis();
+    copying
+      .then(() => Feedback.toast('Pedido copiado: cole no Jarvis', 'success'))
+      .catch(() => Feedback.toast(`Não consegui copiar. Copie à mão e cole no Jarvis: ${text}`, 'error'));
+  }
 
   // ===== Campos =====
 
@@ -26,7 +61,7 @@ const VehicleCardModal = (() => {
     return items.map(item => `<option value="${attr(item.id)}">${esc(item.label)}</option>`).join('');
   }
 
-  /** Sintoma só aparece quando o card já é um (o modo sintoma completo vem em outra tela). */
+  /** Sintoma só aparece quando o card já é um (o modo sintoma esconde este campo). */
   function fillTypeOptions(currentType) {
     const types = CARD_TYPES.filter(t => t.id !== CARD_TYPE.SYMPTOM || currentType === CARD_TYPE.SYMPTOM);
     el('veh-c-type').innerHTML = optionsHtml(types);
@@ -51,6 +86,22 @@ const VehicleCardModal = (() => {
     renderZoneToggles();
   }
 
+  // ===== Resolvido por… =====
+
+  /** Manutenções concluídas, as da mesma zona do sintoma primeiro (cada grupo do mais novo ao mais antigo). */
+  function resolverCandidates(card) {
+    const all = VehicleService.listMaintenances(vehicleId);
+    const sameZone = m => m.zones.some(z => card.zones.includes(z));
+    return [...all.filter(sameZone), ...all.filter(m => !sameZone(m))];
+  }
+
+  function fillResolverOptions(card) {
+    const candidates = resolverCandidates(card);
+    const placeholder = candidates.length ? 'Resolvido por…' : 'Nenhuma manutenção concluída ainda';
+    el('veh-c-resolver').innerHTML = `<option value="">${placeholder}</option>` + candidates
+      .map(m => `<option value="${attr(m.id)}">${esc(Utils.fmtDate(m.date))} · ${esc(m.title)}</option>`).join('');
+  }
+
   // ===== Abrir =====
 
   function fillForm(card) {
@@ -66,13 +117,24 @@ const VehicleCardModal = (() => {
     renderZoneToggles();
   }
 
+  function applyMode(isEdit, card) {
+    const noun = symptomMode ? 'sintoma' : 'card';
+    el('veh-c-heading').textContent = `${isEdit ? 'Editar' : 'Novo'} ${noun}`;
+    el('veh-c-title-label').textContent = symptomMode ? 'Descrição do sintoma' : 'Título';
+    el('veh-c-remove').style.display = isEdit ? '' : 'none';
+    SYMPTOM_ONLY.forEach(id => { el(id).hidden = !symptomMode; });
+    NOT_SYMPTOM.forEach(id => { el(id).hidden = symptomMode; });
+    el('veh-c-symptom-edit').hidden = !(symptomMode && isEdit);
+    if (symptomMode && isEdit) fillResolverOptions(card);
+  }
+
   function show(vehicle, card, isEdit) {
     vehicleId = vehicle;
     editId = isEdit ? card.id : null;
+    symptomMode = (card.type || CARD_TYPE.SERVICE) === CARD_TYPE.SYMPTOM;
     fillStaticOptions();
     fillForm(card);
-    el('veh-c-heading').textContent = isEdit ? 'Editar card' : 'Novo card';
-    el('veh-c-remove').style.display = isEdit ? '' : 'none';
+    applyMode(isEdit, card);
     Modal.open(MODAL_ID);
     el('veh-c-title').focus();
   }
@@ -80,6 +142,8 @@ const VehicleCardModal = (() => {
   function openNew(id, { status = CARD_STATUS.TODO, type = CARD_TYPE.SERVICE } = {}) {
     if (VehicleService.getById(id)) show(id, { status, type }, false);
   }
+
+  const openNewSymptom = id => openNew(id, { type: CARD_TYPE.SYMPTOM });
 
   function open(id, cardId) {
     const card = VehicleService.getMaintenance(id, cardId);
@@ -90,7 +154,7 @@ const VehicleCardModal = (() => {
 
   // ===== Salvar e excluir =====
 
-  function readForm() {
+  function readCardForm() {
     const estimate = el('veh-c-estimate').value;
     return {
       title: el('veh-c-title').value,
@@ -103,30 +167,78 @@ const VehicleCardModal = (() => {
     };
   }
 
+  /** Sintoma não tem coluna, categoria nem estimativa: abre sempre em A fazer. */
+  const readSymptomForm = () => ({
+    title: el('veh-c-title').value,
+    type: CARD_TYPE.SYMPTOM,
+    status: CARD_STATUS.TODO,
+    zones: [...selectedZones],
+    notes: el('veh-c-notes').value
+  });
+
   function refresh() {
     if (window.AreasView?.renderWorkspace) AreasView.renderWorkspace();
   }
 
-  function save() {
-    const dto = readForm();
-    if (Number.isNaN(dto.estimateCentavos)) return Feedback.toast('Estimativa inválida: use um valor como 800,00', 'error');
+  function validate(dto) {
+    if (Number.isNaN(dto.estimateCentavos)) return 'Estimativa inválida: use um valor como 800,00';
+    if (symptomMode && !dto.zones.length) return 'Escolha ao menos uma zona do carro para o sintoma';
+    return '';
+  }
+
+  /** Grava o formulário. Devolve o card salvo, ou null depois de mostrar o motivo. */
+  function persist() {
+    const dto = symptomMode ? readSymptomForm() : readCardForm();
+    const invalid = validate(dto);
+    if (invalid) return Feedback.toast(invalid, 'error') || null;
     const result = editId
       ? VehicleService.updateMaintenance(vehicleId, editId, dto)
       : VehicleService.addMaintenance(vehicleId, dto);
-    if (result.erro) return Feedback.toast(result.erro, 'error');
+    if (result.erro) return Feedback.toast(result.erro, 'error') || null;
     Modal.close(MODAL_ID);
-    Feedback.toast('Card salvo', 'success');
     refresh();
+    return result;
+  }
+
+  function save() {
+    if (persist()) Feedback.toast(symptomMode ? 'Sintoma salvo' : 'Card salvo', 'success');
+  }
+
+  function saveAndDiagnose() {
+    const card = persist();
+    if (card) copyAndOpenJarvis(diagnosisFor(card));
   }
 
   function remove() {
-    if (!editId || !confirm('Excluir este card?')) return;
+    if (!editId || !confirm(symptomMode ? 'Excluir este sintoma?' : 'Excluir este card?')) return;
     const result = VehicleService.removeMaintenance(vehicleId, editId);
     if (result.erro) return Feedback.toast(result.erro, 'error');
     Modal.close(MODAL_ID);
-    Feedback.toast('Card excluído', 'success');
+    Feedback.toast(symptomMode ? 'Sintoma excluído' : 'Card excluído', 'success');
     refresh();
   }
 
-  return { openNew, open, save, remove, toggleZone };
+  // ===== Ações do sintoma =====
+
+  function finishSymptomAction(result, message) {
+    if (result.erro) return Feedback.toast(result.erro, 'error');
+    Modal.close(MODAL_ID);
+    Feedback.toast(message, 'success');
+    refresh();
+  }
+
+  function convertToService() {
+    finishSymptomAction(VehicleBoardService.convertSymptom(vehicleId, editId), 'Sintoma virou serviço em A fazer');
+  }
+
+  function resolve() {
+    const maintenanceId = el('veh-c-resolver').value;
+    if (!maintenanceId) return Feedback.toast('Escolha a manutenção que resolveu o sintoma', 'error');
+    finishSymptomAction(VehicleBoardService.resolveSymptom(vehicleId, editId, maintenanceId), 'Sintoma resolvido');
+  }
+
+  return {
+    openNew, openNewSymptom, open, save, saveAndDiagnose, remove, toggleZone,
+    convertToService, resolve, buildDiagnosisRequest
+  };
 })();

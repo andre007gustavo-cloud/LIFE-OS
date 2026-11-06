@@ -232,6 +232,7 @@ const Constants = (() => {
     ],
     CARD_TYPE: { SERVICE: 'service', MOD: 'mod', SYMPTOM: 'symptom' },
     BOARD_DONE_LIMIT: 5,
+    DIAGNOSIS_TEMPLATE: 'Jarvis, meu carro {nickname} (veículo {vehicleId}) está com um sintoma: {description} — zona {zone}. Card {cardId}. Consulte get_zone_context dessa zona, cruze com o histórico, as peças, o km e a garantia, me diga as causas prováveis e atualize o card.',
     CARD_PREFIX: 'card:',
     LINK: { WINDOW_DAYS: 10, WIDE_WINDOW_DAYS: 45, MAX_SUGGESTIONS: 5 }
   };

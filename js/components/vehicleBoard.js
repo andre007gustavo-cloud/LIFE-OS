@@ -1,7 +1,7 @@
 /**
  * ===================== VEHICLE BOARD =====================
- * Aba Quadro do veículo: colunas Ideias, A fazer, Fazendo e Feito (a coluna
- * Sintomas entra antes de Ideias, com board.symptoms). Cada card abre o
+ * Aba Quadro do veículo: colunas Sintomas, Ideias, A fazer, Fazendo e Feito.
+ * Sintoma não tem "Mover para…" (fecha pelo card). Cada card abre o
  * VehicleCardModal; o select "Mover para…" troca de coluna ou abre o
  * VehicleMaintenanceModal.openComplete (Feito). Só lê dos services; qualquer
  * gravação vem de uma ação do usuário.
@@ -11,6 +11,7 @@ const VehicleBoard = (() => {
 
   const { CARD_STATUS, CARD_STATUSES, CARD_TYPES, ZONES } = Constants.VEHICLE;
   const MOVE_DONE_LABEL = 'Feito (concluir)';
+  const SYMPTOMS_LABEL = 'Sintomas';
   const esc = Utils.escapeHtml;
   const attr = Utils.escapeAttr;
   const labelOf = (list, id) => (list.find(x => x.id === id) || {}).label || id;
@@ -47,9 +48,9 @@ const VehicleBoard = (() => {
 
   // ===== Colunas =====
 
-  function columnHtml(label, count, subtotal, bodyHtml, extraHtml = '') {
+  function columnHtml(label, count, subtotal, bodyHtml, extraHtml = '', modifier = '') {
     const sub = subtotal == null ? '' : `<div class="veh-col-sub">${Utils.formatBRL(subtotal)} estimado</div>`;
-    return `<section class="veh-col" aria-label="${attr(label)}">
+    return `<section class="veh-col${modifier}" aria-label="${attr(label)}">
       <header class="veh-col-head"><span>${esc(label)}</span><span class="veh-col-count">${count}</span></header>
       ${sub}${bodyHtml || '<div class="veh-col-empty">Nenhum card</div>'}${extraHtml}
     </section>`;
@@ -58,6 +59,22 @@ const VehicleBoard = (() => {
   function openColumnHtml(vehicleId, column) {
     const body = column.cards.map(card => cardHtml(vehicleId, card)).join('');
     return columnHtml(labelOf(CARD_STATUSES, column.status), column.cards.length, column.estimateCentavos, body);
+  }
+
+  function symptomCardHtml(vehicleId, symptom) {
+    return `<div class="veh-card veh-card-alert"><button type="button" class="veh-card-main"
+      onclick="VehicleCardModal.open('${attr(vehicleId)}','${attr(symptom.id)}')">
+      <span class="veh-card-title"><i class="ti ti-alert-triangle" aria-hidden="true"></i> ${esc(symptom.title)}</span>
+      <span class="veh-card-badges">${zoneBadgesHtml(symptom)}</span>
+    </button></div>`;
+  }
+
+  function symptomColumnHtml(vehicleId, board) {
+    const body = board.symptoms.map(s => symptomCardHtml(vehicleId, s)).join('')
+      || '<div class="veh-col-empty">Nenhum sintoma aberto</div>';
+    const add = `<button type="button" class="btn btn-ghost btn-sm veh-col-all"
+      onclick="VehicleCardModal.openNewSymptom('${attr(vehicleId)}')"><i class="ti ti-plus"></i> Novo sintoma</button>`;
+    return columnHtml(SYMPTOMS_LABEL, board.symptoms.length, null, body, add, ' veh-col-symptoms');
   }
 
   function doneItemHtml(vehicleId, m) {
@@ -89,7 +106,7 @@ const VehicleBoard = (() => {
   function render(vehicle) {
     const board = VehicleBoardService.getBoard(vehicle.id);
     document.getElementById('proj-tab-content').innerHTML = `${headHtml(vehicle.id, board)}
-      <div class="veh-board">${board.columns.map(c => openColumnHtml(vehicle.id, c)).join('')}${doneColumnHtml(vehicle.id, board)}</div>`;
+      <div class="veh-board">${symptomColumnHtml(vehicle.id, board)}${board.columns.map(c => openColumnHtml(vehicle.id, c)).join('')}${doneColumnHtml(vehicle.id, board)}</div>`;
   }
 
   // ===== Ações =====
