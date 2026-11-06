@@ -94,12 +94,16 @@ const VehicleView = (() => {
     refresh();
   }
 
+  /** Estado só de tela: a ficha continua aberta no redesenho que vem depois de remover uma leitura. */
+  let keepSheetOpen = false;
+
   function removeReading(projectId, readingId) {
     const vehicle = VehicleService.getByProject(projectId);
     if (!vehicle || !confirm('Remover esta leitura de km?')) return;
     const result = VehicleService.removeOdometer(vehicle.id, readingId);
     if (result.erro) return Feedback.toast(result.erro, 'error');
     Feedback.toast('Leitura removida', 'success');
+    keepSheetOpen = true;
     refresh();
   }
 
@@ -240,7 +244,9 @@ const VehicleView = (() => {
   }
 
   function garageSheetHtml(vehicle, projectId) {
-    return `<details class="card veh-sheet">
+    const open = keepSheetOpen ? ' open' : '';
+    keepSheetOpen = false;
+    return `<details class="card veh-sheet"${open}>
       <summary class="card-title">Ficha do veículo</summary>
       ${sheetFormHtml(vehicle, projectId)}
       ${financeCategoryHtml(vehicle, projectId)}

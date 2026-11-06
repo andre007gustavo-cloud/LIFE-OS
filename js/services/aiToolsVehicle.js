@@ -331,8 +331,7 @@
         description: 'Registra a leitura do odômetro (km atual). Recusa km incoerente com leituras, manutenções e a compra; na mesma data, substitui a anterior. Com remover: true, apaga a leitura da data informada (use para corrigir uma leitura digitada errada que bloqueia outros registros); nesse caso o km é dispensável.',
         input_schema: {
           type: 'object',
-          properties: { veiculo: veiculoParam, km: { type: 'integer' }, data: { type: 'string', description: 'YYYY-MM-DD. Default: hoje.' }, remover: { type: 'boolean', description: 'true: remove a leitura dessa data em vez de registrar.' } },
-          required: []
+          properties: { veiculo: veiculoParam, km: { type: 'integer' }, data: { type: 'string', description: 'YYYY-MM-DD. Default: hoje.' }, remover: { type: 'boolean', description: 'true: remove a leitura dessa data em vez de registrar.' } }
         }
       },
       run({ veiculo, km, data, remover }) {
