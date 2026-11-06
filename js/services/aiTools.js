@@ -29,7 +29,7 @@ const AiTools = (() => {
   const brl = c => Utils.formatBRL(c);
   const norm = s => Utils.normalizeText(s);
   const toCentavos = reais => Math.round((Number(reais) || 0) * 100);
-  const toReais = centavos => (centavos == null ? null : centavos / 100);
+  const toReais = Utils.centavosToReais;
 
   // ===== Resolução por nome/id =====
 
