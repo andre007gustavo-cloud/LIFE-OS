@@ -57,7 +57,7 @@ const VehicleService = (() => {
   }
 
   const _km = (value, label = 'Km') => _int(value, label, 0, Constants.VEHICLE.KM_MAX);
-  const _centavos = (value, label) => _int(value, label, 0, Number.MAX_SAFE_INTEGER) ?? 0;
+  const _centavos = (value, label) => _int(value, label, 0, Constants.VEHICLE.CENTAVOS_MAX) ?? 0;
 
   function _oneOf(value, list, label) {
     if (!list.some(item => item.id === value)) _fail(`${label} inválida: ${value}`);
@@ -90,7 +90,7 @@ const VehicleService = (() => {
       brand: _text(raw.brand),
       code: _text(raw.code),
       store: _text(raw.store),
-      qty: _int(raw.qty, 'Quantidade', 1, Number.MAX_SAFE_INTEGER) ?? 1,
+      qty: _int(raw.qty, 'Quantidade', Constants.VEHICLE.QTY_MIN, Constants.VEHICLE.QTY_MAX) ?? 1,
       priceCentavos: _centavos(raw.priceCentavos, 'Preço da peça'),
       warrantyUntil: _date(raw.warrantyUntil, 'Garantia')
     });
@@ -150,19 +150,22 @@ const VehicleService = (() => {
     return vehicle;
   }
 
+  const SHEET_KEYS = [...SHEET_TEXT_FIELDS, 'yearMade', 'yearModel', 'purchaseDate', 'purchaseKm'];
+
+  function _updateSheet(existing, fields) {
+    SHEET_KEYS.forEach(k => delete existing[k]);
+    Object.assign(existing, fields, { updatedAt: Date.now() });
+  }
+
   /** Cria o veículo do projeto no primeiro save e atualiza nos seguintes. */
   function saveSheet(projectId, patch) {
     return _guard(() => {
       if (!projectId) _fail('Projeto não informado');
       const existing = getByProject(projectId);
-      const sheetKeys = [...SHEET_TEXT_FIELDS, 'yearMade', 'yearModel', 'purchaseDate', 'purchaseKm'];
-      const current = existing ? Object.fromEntries(sheetKeys.map(k => [k, existing[k]])) : {};
+      const current = existing ? Object.fromEntries(SHEET_KEYS.map(k => [k, existing[k]])) : {};
       const fields = _normalizeSheet({ ...current, ...patch });
-      if (!existing) _createVehicle(projectId, fields);
-      else {
-        sheetKeys.forEach(k => delete existing[k]);
-        Object.assign(existing, fields, { updatedAt: Date.now() });
-      }
+      if (existing) _updateSheet(existing, fields);
+      else _createVehicle(projectId, fields);
       AppState.persist();
       return getByProject(projectId);
     });
@@ -319,11 +322,15 @@ const VehicleService = (() => {
     return first ? first.km : null;
   }
 
-  /** Centavos por km rodado, arredondado ao centavo mais próximo; null sem km rodados. */
+  /** Custo por km e por 1.000 km (centavos inteiros); nulos sem km rodados. */
   function _costPerKm(vehicle, totalCentavos, currentKm) {
     const startKm = _startKm(vehicle);
     const driven = startKm == null || currentKm == null ? 0 : currentKm - startKm;
-    return driven > 0 ? Math.round(totalCentavos / driven) : null;
+    if (driven <= 0) return { costPerKmCentavos: null, costPer1000KmCentavos: null };
+    return {
+      costPerKmCentavos: Math.round(totalCentavos / driven),
+      costPer1000KmCentavos: Math.round(totalCentavos * Constants.VEHICLE.KM_PER_COST_BASE / driven)
+    };
   }
 
   function getSummary(vehicleId) {
@@ -340,7 +347,7 @@ const VehicleService = (() => {
         count: history.length,
         lastService: _lastService(history, currentKm),
         currentKm,
-        costPerKmCentavos: _costPerKm(vehicle, totalCentavos, currentKm)
+        ..._costPerKm(vehicle, totalCentavos, currentKm)
       };
     });
   }
