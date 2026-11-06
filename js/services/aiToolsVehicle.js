@@ -98,7 +98,7 @@
   }
 
   function _resolveZonas(zonas) {
-    if (!Array.isArray(zonas)) return { ids: zonas };
+    if (!Array.isArray(zonas)) return { erro: 'zonas deve ser uma lista' };
     const resolvidas = zonas.map(z => _resolveOpcao(z, ZONES, 'Zona'));
     return resolvidas.find(r => r.erro) || { ids: resolvidas.map(r => r.id) };
   }
@@ -175,7 +175,7 @@
       if (r.erro) return r;
       dto.category = r.id;
     }
-    if (_definido(input.zonas)) {
+    if (input.zonas != null) {
       const r = _resolveZonas(input.zonas);
       if (r.erro) return r;
       dto.zones = r.ids;
@@ -365,7 +365,7 @@
       write: true,
       schema: {
         name: 'update_maintenance',
-        description: 'Edita uma manutenção. Envie em patch só o que muda; "pecas" SUBSTITUI a lista inteira (reenvie as que continuam). Não mexe nos lançamentos vinculados.',
+        description: 'Edita uma manutenção. Envie em patch só o que muda; "pecas" SUBSTITUI a lista inteira (reenvie as que continuam). Em "pecas" e "zonas": omitido ou null = não mexer; lista vazia [] = limpar a lista. Não mexe nos lançamentos vinculados.',
         input_schema: {
           type: 'object',
           properties: { veiculo: veiculoParam, manutencaoId: { type: 'string' }, patch: { type: 'object', properties: manutencaoProps } },
@@ -415,7 +415,10 @@
     return { erro: 'Informe a conta ou o cartão em que o pagamento foi feito.' };
   }
 
+  const PAGAMENTO_DUPLICADO = 'Esta manutenção já tem pagamento vinculado. Para lançar outro pagamento, confirme com o André e chame de novo com adicional: true.';
+
   function _lancarPagamento(r, input) {
+    if (r.manutencao.transactionIds.length && input.adicional !== true) return { erro: PAGAMENTO_DUPLICADO };
     const meio = _resolveMeio(input); if (meio.erro) return meio;
     const valorCentavos = _definido(input.valorReais) ? toCentavos(input.valorReais) : VehicleService.maintenanceTotal(r.manutencao);
     let categoriaId;
