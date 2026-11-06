@@ -154,6 +154,59 @@ const Constants = (() => {
     ]
   };
 
+  /** Modelos de projeto: definem quais abas o projeto mostra. */
+  const PROJECT_TEMPLATES = {
+    generic: { label: 'Genérico', icon: '📁', tabs: ['overview', 'tasks', 'notes', 'files'] },
+    vehicle: { label: 'Veículo', icon: '🚗', tabs: ['garage', 'maintenances', 'parts', 'tasks', 'notes', 'files'] }
+  };
+
+  /** Rótulo (pt-BR) e ícone Tabler de cada aba de projeto. */
+  const PROJECT_TABS = {
+    overview: { label: 'Visão Geral', icon: 'layout-dashboard' },
+    tasks: { label: 'Tarefas', icon: 'checklist' },
+    notes: { label: 'Notas', icon: 'notes' },
+    files: { label: 'Arquivos', icon: 'file' },
+    garage: { label: 'Garagem', icon: 'car' },
+    maintenances: { label: 'Manutenções', icon: 'tool' },
+    parts: { label: 'Peças e oficinas', icon: 'package' }
+  };
+
+  /** Modelo Veículo: categorias de manutenção, zonas do carro e vínculo com Finanças. */
+  const VEHICLE = {
+    CATEGORIES: [
+      { id: 'oil-filters', label: 'Óleo e filtros' },
+      { id: 'brakes', label: 'Freios' },
+      { id: 'suspension-steering', label: 'Suspensão e direção' },
+      { id: 'tires-wheels', label: 'Pneus e rodas' },
+      { id: 'engine', label: 'Motor' },
+      { id: 'timing-belt', label: 'Correia e sincronismo' },
+      { id: 'cooling', label: 'Arrefecimento' },
+      { id: 'transmission', label: 'Transmissão' },
+      { id: 'electrical-battery', label: 'Elétrica e bateria' },
+      { id: 'air-conditioning', label: 'Ar-condicionado' },
+      { id: 'body-paint', label: 'Funilaria e pintura' },
+      { id: 'cosmetic', label: 'Estética' },
+      { id: 'accessories-mods', label: 'Acessórios e modificações' },
+      { id: 'service', label: 'Revisão' },
+      { id: 'other', label: 'Outros' }
+    ],
+    ZONES: [
+      { id: 'engine', label: 'Motor' },
+      { id: 'front', label: 'Dianteira' },
+      { id: 'rear', label: 'Traseira' },
+      { id: 'front-axle', label: 'Eixo dianteiro' },
+      { id: 'rear-axle', label: 'Eixo traseiro' },
+      { id: 'left-side', label: 'Lateral esquerda' },
+      { id: 'right-side', label: 'Lateral direita' },
+      { id: 'roof-glass', label: 'Teto e vidros' },
+      { id: 'interior', label: 'Interior' },
+      { id: 'underbody', label: 'Embaixo' }
+    ],
+    KM_MAX: 2000000,
+    DEFAULT_FINANCE_CATEGORY: 'Transporte',
+    LINK: { WINDOW_DAYS: 10, WIDE_WINDOW_DAYS: 45, MAX_SUGGESTIONS: 5 }
+  };
+
   /** Default storage key */
   const STORAGE_KEY = 'lifeos';
   const THEME_KEY = 'lifeos-theme';
@@ -202,7 +255,9 @@ const Constants = (() => {
     cartoes: [],
     faturaPagamentos: [],
     // Finanças Fase 7e: histórico das revisões financeiras mensais
-    revisoesFinanceiras: []
+    revisoesFinanceiras: [],
+    // Modelo Veículo: fichas, odômetro e manutenções (um item por projeto Veículo)
+    vehicles: []
   };
 
   /**
@@ -228,6 +283,9 @@ const Constants = (() => {
     REVIEW,
     FEEDBACK,
     FINANCE,
+    PROJECT_TEMPLATES,
+    PROJECT_TABS,
+    VEHICLE,
     STORAGE_KEY,
     THEME_KEY,
     JARVIS_URL,
