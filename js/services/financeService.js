@@ -259,6 +259,21 @@ const FinanceService = (() => {
     return t;
   }
 
+  /**
+   * Lança uma despesa numa conta ou, com cartaoId, uma compra no cartão
+   * (valorCentavos = total; parcelas só valem no cartão). Devolve a transação
+   * criada ou { erro }. CartaoService carrega depois: resolvido na chamada.
+   */
+  function addExpense({ contaId, cartaoId, valorCentavos, parcelas, descricao, categoriaId, data, fonte } = {}) {
+    if (!Number.isInteger(valorCentavos) || valorCentavos <= 0) return { erro: 'Informe um valor maior que zero' };
+    if (!contaId && !cartaoId) return { erro: 'Escolha uma conta ou um cartão' };
+    if (!cartaoId) return addTransaction({ tipo: 'saida', contaId, valorCentavos, descricao, categoriaId, data, fonte });
+    if (typeof CartaoService === 'undefined') return { erro: 'Cartões indisponíveis' };
+    return CartaoService.addCompraCartao({
+      cartaoId, descricao, categoriaId, valorTotalCentavos: valorCentavos, parcelas, dataCompra: data, fonte
+    });
+  }
+
   function updateTransaction(id, fields) {
     const t = getTransacaoById(id);
     if (!t) return null;
@@ -1680,7 +1695,7 @@ const FinanceService = (() => {
     listContas, getContaById, addConta, updateConta, arquivarConta,
     listCategorias, getCategoriaById, addCategoria, updateCategoria, arquivarCategoria, setGrupoCategoria,
     get503020,
-    addTransaction, updateTransaction, deleteTransaction,
+    addTransaction, addExpense, updateTransaction, deleteTransaction,
     getTransacaoById, listTransactions,
     getSaldo, getSaldoAte, getResumoMes, currentMonthPrefix, addMonths: _addMonths, entryDates,
     getGastosPorCategoria, getEvolucaoMensal, getMaioresGastos, getComparativoMes, getTaxaPoupanca,
