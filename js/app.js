@@ -341,6 +341,8 @@
     window.npTemplateChange    = ProjectModal.onTemplateChange;
     window.VehicleView             = VehicleView;
     window.VehiclePayment = VehiclePayment;
+    window.VehicleHistory = VehicleHistory;
+    window.VehicleParts = VehicleParts;
     window.VehicleMaintenanceModal = VehicleMaintenanceModal;
     window.openProject         = AreasView.openProject;
     window.setProjTab          = AreasView.setProjTab;

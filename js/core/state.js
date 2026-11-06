@@ -41,6 +41,10 @@ const AppState = (() => {
     activeProjectId: null,
     activeProjTab: 'overview',
 
+    // Veículo: filtros da aba Manutenções e busca do caderno de peças (nunca vão para o DB)
+    vehicleFilters: { text: '', category: '', zone: '', year: '' },
+    vehiclePartsText: '',
+
     // Habits
     habitEditId: null,
 

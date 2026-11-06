@@ -61,3 +61,43 @@
 .veh-pay-reason{display:block;color:var(--text3);font-size:11px;margin-top:2px}
 .veh-pay-missing{color:var(--text3);font-style:italic}
 .veh-pay-empty{font-size:13px;color:var(--text3);margin:4px 0 8px}
+
+/* ----- Aba Manutenções ----- */
+.veh-hist-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}
+.veh-hist-head .card-title{margin-bottom:0}
+.veh-hist-filters{display:grid;grid-template-columns:2fr repeat(3,1fr);gap:8px;margin-bottom:12px}
+@media(max-width:700px){.veh-hist-filters{grid-template-columns:1fr 1fr}.veh-hist-search{grid-column:1 / -1}}
+.veh-hist-item{
+  display:flex;justify-content:space-between;align-items:flex-start;gap:10px;width:100%;text-align:left;
+  background:transparent;border:none;border-bottom:1px solid var(--border);
+  color:var(--text);padding:10px 4px;cursor:pointer;font:inherit;font-size:13px;
+}
+.veh-hist-item:last-child{border-bottom:none}
+.veh-hist-item:hover,.veh-hist-item:focus-visible{background:var(--bg3);outline:none}
+.veh-hist-main{display:flex;flex-direction:column;gap:4px;min-width:0}
+.veh-hist-title{font-weight:600;overflow-wrap:anywhere}
+.veh-hist-meta{display:flex;flex-wrap:wrap;gap:4px 10px;color:var(--text3);font-size:12px}
+.veh-hist-zones{display:flex;flex-wrap:wrap;gap:4px}
+.veh-hist-side{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.veh-fin-state{font-size:11px;color:var(--text3)}
+.veh-fin-linked{color:var(--green)}
+.veh-fin-missing{color:var(--amber)}
+.veh-hist-empty{text-align:center}
+.veh-totals-note{font-size:12px;color:var(--text3);margin-bottom:10px}
+.veh-bars{margin-bottom:14px}
+.veh-bar-row{margin-bottom:8px;font-size:13px}
+.veh-bar-label{display:flex;justify-content:space-between;gap:8px}
+.veh-bar-fill{background:var(--accent)}
+
+/* ----- Aba Peças e oficinas ----- */
+.veh-part-card{border-bottom:1px solid var(--border);padding:8px 0}
+.veh-part-card:last-child{border-bottom:none}
+.veh-part-card summary{cursor:pointer;display:flex;flex-direction:column;gap:3px}
+.veh-part-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px;overflow-wrap:anywhere}
+.veh-part-sub{font-size:12px;color:var(--text3);overflow-wrap:anywhere}
+.veh-price-history{list-style:none;margin:8px 0;padding:0;font-size:13px}
+.veh-price-history li,.veh-shop-row{display:flex;justify-content:space-between;gap:10px;padding:4px 0}
+.veh-shop-list{list-style:none;margin:0;padding:0}
+.veh-shop-row{flex-wrap:wrap;border-bottom:1px solid var(--border);font-size:13px}
+.veh-shop-row:last-child{border-bottom:none}
+.veh-shop-row span:nth-child(2){color:var(--text3)}

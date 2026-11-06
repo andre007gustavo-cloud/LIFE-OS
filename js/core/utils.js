@@ -54,6 +54,13 @@ const Utils = (() => {
     return `${dy}/${m}`;
   }
 
+  /** "05/03/2025" — data completa a partir de ISO */
+  function fmtDateFull(dateStr) {
+    if (!dateStr) return '';
+    const [y, m, dy] = dateStr.split('-');
+    return `${dy}/${m}/${y}`;
+  }
+
   /** "12 jun" — dia + mês abreviado (pt-BR) a partir de ISO */
   function fmtDayMonth(dateStr) {
     return parseISO(dateStr).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' });
@@ -306,6 +313,7 @@ const Utils = (() => {
     diffDays,
     startOfWeek,
     fmtDate,
+    fmtDateFull,
     fmtDayMonth,
     fmtSchedule,
     timeToMins,
