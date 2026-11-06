@@ -127,6 +127,9 @@ const Utils = (() => {
   /** Centavos inteiros → reais (número). Para ferramentas de IA e campos de formulário; exibição usa formatBRL. */
   const centavosToReais = centavos => (centavos == null ? null : centavos / 100);
 
+  /** Centavos inteiros → texto de campo de formulário ("85,50"); zero ou nulo vira vazio. */
+  const centavosToInput = centavos => (centavos ? centavosToReais(centavos).toFixed(2).replace('.', ',') : '');
+
   /** Centavos inteiros → "R$ 85,50". Toda exibição de dinheiro passa por aqui. */
   function formatBRL(centavos) {
     return 'R$ ' + ((Number(centavos) || 0) / 100).toLocaleString('pt-BR', {
@@ -329,6 +332,7 @@ const Utils = (() => {
     isMobile,
     formatPomodoroTime,
     centavosToReais,
+    centavosToInput,
     formatBRL,
     brlToCentavos,
     normalizeText,
