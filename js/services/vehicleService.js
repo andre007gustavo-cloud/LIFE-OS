@@ -163,6 +163,15 @@ const VehicleService = (() => {
     Object.assign(existing, fields, { updatedAt: Date.now() });
   }
 
+  /** O km da compra não pode passar de nenhum km registrado a partir da data da compra; só checa quando km ou data mudam. */
+  function _assertPurchaseKm(vehicle, fields) {
+    const { purchaseKm, purchaseDate } = fields;
+    if (!Number.isInteger(purchaseKm) || !purchaseDate) return;
+    if (purchaseKm === vehicle.purchaseKm && purchaseDate === vehicle.purchaseDate) return;
+    const points = _kmPoints(vehicle, vehicle.odometer).filter(p => p.type !== 'purchase');
+    _assertKmFits(points, { before: () => false, after: p => p.date >= purchaseDate }, purchaseKm, true);
+  }
+
   /** Cria o veículo do projeto no primeiro save e atualiza nos seguintes. */
   function saveSheet(projectId, patch) {
     return _guard(() => {
@@ -170,6 +179,7 @@ const VehicleService = (() => {
       const existing = getByProject(projectId);
       const current = existing ? Object.fromEntries(SHEET_KEYS.map(k => [k, existing[k]])) : {};
       const fields = _normalizeSheet({ ...current, ...patch });
+      if (existing) _assertPurchaseKm(existing, fields);
       if (existing) _updateSheet(existing, fields);
       else _createVehicle(projectId, fields);
       AppState.persist();
@@ -186,7 +196,14 @@ const VehicleService = (() => {
 
   // ===== Odômetro =====
 
-  const KM_HINT = 'Se o km daquele registro estiver errado, corrija-o primeiro.';
+  const KM_HINTS = {
+    maintenance: { plain: 'Corrija o km dessa manutenção.', blank: 'Corrija o km dessa manutenção ou deixe o km deste registro em branco.' },
+    reading: {
+      plain: 'Remova essa leitura na ficha (Leituras de km) se ela estiver errada.',
+      blank: 'Remova essa leitura na ficha (Leituras de km) se ela estiver errada, ou deixe o km deste registro em branco.'
+    },
+    purchase: { plain: 'Corrija o km da compra na ficha.', blank: 'Corrija o km da compra na ficha.' }
+  };
   const _fmtKm = km => km.toLocaleString('pt-BR');
 
   /** Todos os km conhecidos do veículo (leituras, manutenções com km, compra), com a descrição para a mensagem de erro. */
@@ -202,19 +219,22 @@ const VehicleService = (() => {
     return points;
   }
 
-  /** `before` e `after` dizem quais pontos limitam o km por baixo e por cima; o violador mais próximo vira o erro. */
-  function _assertKmFits(points, { before, after }, km) {
+  /**
+   * `before` e `after` dizem quais pontos limitam o km por baixo e por cima; o violador mais próximo vira o erro.
+   * `canBlank`: o registro que está sendo salvo aceita ficar sem km (a dica sugere isso).
+   */
+  function _assertKmFits(points, { before, after }, km, canBlank) {
     const tooHigh = points.filter(p => before(p) && p.km > km).sort((a, b) => b.km - a.km)[0];
     const tooLow = points.filter(p => after(p) && p.km < km).sort((a, b) => a.date.localeCompare(b.date))[0];
     const violated = tooHigh || tooLow;
-    if (violated) _fail(`Km incoerente: ${violated.text}. ${KM_HINT}`);
+    if (violated) _fail(`Km incoerente: ${violated.text}. ${KM_HINTS[violated.type][canBlank ? 'blank' : 'plain']}`);
   }
 
   function _assertOdometerOrder(vehicle, readings, date, km) {
     _assertKmFits(_kmPoints(vehicle, readings), {
       before: p => (p.type === 'reading' ? p.date < date : p.date <= date),
-      after: p => p.type === 'reading' && p.date > date
-    }, km);
+      after: p => p.type !== 'purchase' && p.date > date
+    }, km, false);
   }
 
   /** Km da manutenção precisa caber entre o que veio antes e o que veio depois; no mesmo dia, manutenções não se restringem. */
@@ -224,7 +244,7 @@ const VehicleService = (() => {
     _assertKmFits(_kmPoints(vehicle, vehicle.odometer, maintenance.id), {
       before: p => (p.type === 'purchase' ? p.date <= date : p.date < date),
       after: p => p.type !== 'purchase' && (p.type === 'reading' ? p.date >= date : p.date > date)
-    }, maintenance.km);
+    }, maintenance.km, true);
   }
 
   /** Registra a leitura do odômetro; a mesma data substitui a anterior. */
@@ -238,6 +258,16 @@ const VehicleService = (() => {
       vehicle.updatedAt = Date.now();
       AppState.persist();
       return reading;
+    });
+  }
+
+  function removeOdometer(vehicleId, readingId) {
+    return _guard(() => {
+      const vehicle = _requireVehicle(vehicleId);
+      if (!vehicle.odometer.some(r => r.id === readingId)) _fail('Leitura não encontrada');
+      vehicle.odometer = vehicle.odometer.filter(r => r.id !== readingId);
+      _touch(vehicle);
+      return true;
     });
   }
 
@@ -286,7 +316,7 @@ const VehicleService = (() => {
       const vehicle = _requireVehicle(vehicleId);
       const current = _findMaintenance(vehicle, id);
       const next = _normalizeMaintenance({ ...current, ..._withoutNullLists(patch), id: current.id });
-      _assertMaintenanceKm(vehicle, next);
+      if (next.km !== current.km || next.date !== current.date) _assertMaintenanceKm(vehicle, next);
       const { createdAt } = current;
       Object.keys(current).forEach(k => delete current[k]);
       Object.assign(current, next, { createdAt, updatedAt: Date.now() });
@@ -480,6 +510,7 @@ const VehicleService = (() => {
     saveSheet,
     removeByProject,
     addOdometer,
+    removeOdometer,
     getCurrentKm,
     addMaintenance,
     updateMaintenance,
