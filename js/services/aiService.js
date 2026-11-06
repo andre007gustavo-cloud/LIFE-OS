@@ -133,7 +133,10 @@ REGRAS:
     create_task: 'Criar tarefa', plan_day: 'Planejar o dia', create_project: 'Criar projeto',
     create_note: 'Criar nota', add_transaction: 'Lançar no financeiro', capture_inbox: 'Capturar na inbox',
     update_task: 'Editar tarefa', delete_task: 'Excluir tarefa',
-    update_transaction: 'Editar lançamento', delete_transaction: 'Excluir lançamento'
+    update_transaction: 'Editar lançamento', delete_transaction: 'Excluir lançamento',
+    update_vehicle_sheet: 'Atualizar ficha do veículo', register_maintenance: 'Registrar manutenção',
+    update_maintenance: 'Editar manutenção', delete_maintenance: 'Excluir manutenção',
+    link_maintenance_payment: 'Ligar manutenção ao pagamento', update_odometer: 'Atualizar km do veículo'
   };
 
   function actionPreview(block) {

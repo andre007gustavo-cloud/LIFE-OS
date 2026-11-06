@@ -115,6 +115,7 @@ const PRECACHE = [
   '/js/services/aiTools.js',
   '/js/services/aiToolsPlanner.js',
   '/js/services/aiToolsFinance.js',
+  '/js/services/aiToolsVehicle.js',
   '/js/services/aiService.js',
   '/js/services/voiceService.js',
   '/js/ui/aiChatView.js',

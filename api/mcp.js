@@ -21,7 +21,9 @@ const SUPPORTED_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-0
 const SERVER_INFO = { name: 'life-os', title: 'Life OS', version: '2.0.0' };
 const INSTRUCTIONS = 'Conector do Life OS do André: tarefas, agenda, projetos e notas, áreas, '
   + 'hábitos, inbox, revisão semanal e finanças completas (contas, cartões e faturas, orçamentos, '
-  + 'recorrências, metas, relatórios). Valores sempre em reais (o app converte para centavos). '
+  + 'recorrências, metas, relatórios) e o veículo (ficha, manutenções, caderno de peças, garantias, '
+  + 'km e vínculo do pagamento com as Finanças; ao registrar manutenção, pergunte ao André se alguma '
+  + 'sugestão de vínculo é o pagamento antes de lançar algo). Valores sempre em reais (o app converte para centavos). '
   + 'Datas em YYYY-MM-DD no horário de Brasília. Use as ferramentas de leitura antes de afirmar '
   + 'números ou ids e antes de editar; nomes de conta, categoria, cartão, área, projeto e hábito '
   + 'podem ir no lugar do id. Compra no crédito vai em add_card_purchase. Compras automáticas da '
