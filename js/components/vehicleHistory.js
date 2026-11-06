@@ -99,10 +99,16 @@ const VehicleHistory = (() => {
   const modBadgeHtml = m => (VehicleService.typeOf(m) === CARD_TYPE.MOD
     ? `<span class="badge time">${esc(labelOf(CARD_TYPES, CARD_TYPE.MOD))}</span>` : '');
 
+  function resolvedHtml(vehicleId, m) {
+    const titles = VehicleBoardService.listResolvedSymptoms(vehicleId, { maintenanceId: m.id }).map(s => s.title);
+    if (!titles.length) return '';
+    return `<span class="veh-hist-resolved"><i class="ti ti-circle-check" aria-hidden="true"></i> Resolveu: ${esc(titles.join(', '))}</span>`;
+  }
+
   function itemHtml(vehicleId, m) {
     const total = Utils.formatBRL(VehicleService.maintenanceTotal(m));
     return `<button type="button" class="veh-hist-item" onclick="VehicleMaintenanceModal.open('${attr(vehicleId)}','${attr(m.id)}')">
-      <span class="veh-hist-main"><span class="veh-hist-title">${esc(m.title)}</span>${itemMetaHtml(m)}
+      <span class="veh-hist-main"><span class="veh-hist-title">${esc(m.title)}</span>${itemMetaHtml(m)}${resolvedHtml(vehicleId, m)}
         <span class="veh-hist-zones">${modBadgeHtml(m)}${zoneBadgesHtml(m)}</span></span>
       <span class="veh-hist-side"><strong>${total}</strong>${financeBadgeHtml(financeStateOf(vehicleId, m.id))}</span>
     </button>`;
