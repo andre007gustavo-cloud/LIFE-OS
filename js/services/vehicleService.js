@@ -71,7 +71,7 @@ const VehicleService = (() => {
   function _normalizeSheet(raw) {
     const { YEAR_MIN, YEAR_MAX } = Constants.VEHICLE;
     const texts = Object.fromEntries(SHEET_TEXT_FIELDS.map(f => [f, _text(raw[f])]));
-    if (!texts.nickname) _fail('O apelido do veículo é obrigatório');
+    if (!texts.nickname && !texts.model) _fail('Informe o apelido ou o modelo do veículo');
     return _compact({
       ...texts,
       yearMade: _int(raw.yearMade, 'Ano de fabricação', YEAR_MIN, YEAR_MAX),
