@@ -267,7 +267,7 @@ const FinanceService = (() => {
   function addExpense({ contaId, cartaoId, valorCentavos, parcelas, descricao, categoriaId, data, fonte } = {}) {
     if (!Number.isInteger(valorCentavos) || valorCentavos <= 0) return { erro: 'Informe um valor maior que zero' };
     if (!contaId && !cartaoId) return { erro: 'Escolha uma conta ou um cartão' };
-    if (cartaoId && parcelas !== undefined && !(Number.isInteger(parcelas) && parcelas >= 1)) {
+    if (cartaoId && parcelas != null && !(Number.isInteger(parcelas) && parcelas >= 1)) {
       return { erro: 'As parcelas devem ser um número inteiro a partir de 1' };
     }
     if (!cartaoId) {
