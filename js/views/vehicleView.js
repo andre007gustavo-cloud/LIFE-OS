@@ -94,6 +94,15 @@ const VehicleView = (() => {
     refresh();
   }
 
+  function removeReading(projectId, readingId) {
+    const vehicle = VehicleService.getByProject(projectId);
+    if (!vehicle || !confirm('Remover esta leitura de km?')) return;
+    const result = VehicleService.removeOdometer(vehicle.id, readingId);
+    if (result.erro) return Feedback.toast(result.erro, 'error');
+    Feedback.toast('Leitura removida', 'success');
+    refresh();
+  }
+
   // ===== Garagem: topo =====
 
   const vehicleTitle = vehicle => vehicle.nickname || vehicle.model;
@@ -217,11 +226,25 @@ const VehicleView = (() => {
     </div>`;
   }
 
+  function readingRowHtml(reading, projectId) {
+    return `<li class="veh-reading">
+      <span>${esc(Utils.fmtDateFull(reading.date))} · <strong>${esc(reading.km.toLocaleString('pt-BR'))} km</strong></span>
+      <button class="btn btn-sm" onclick="VehicleView.removeReading('${attr(projectId)}','${attr(reading.id)}')" aria-label="Remover leitura de ${esc(Utils.fmtDateFull(reading.date))}">Remover</button>
+    </li>`;
+  }
+
+  function readingsHtml(vehicle, projectId) {
+    if (!vehicle.odometer.length) return '';
+    const rows = [...vehicle.odometer].reverse().map(r => readingRowHtml(r, projectId)).join('');
+    return `<div class="form-group"><div class="form-label">Leituras de km</div><ul class="veh-readings">${rows}</ul></div>`;
+  }
+
   function garageSheetHtml(vehicle, projectId) {
     return `<details class="card veh-sheet">
       <summary class="card-title">Ficha do veículo</summary>
       ${sheetFormHtml(vehicle, projectId)}
       ${financeCategoryHtml(vehicle, projectId)}
+      ${readingsHtml(vehicle, projectId)}
     </details>`;
   }
 
@@ -261,6 +284,6 @@ const VehicleView = (() => {
 
   return {
     renderGarage, renderMaintenances, renderParts,
-    saveSheet, setFinanceCategory, updateKm
+    saveSheet, setFinanceCategory, updateKm, removeReading
   };
 })();
