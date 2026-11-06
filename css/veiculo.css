@@ -105,3 +105,33 @@
 .veh-shop-row span:nth-child(2){color:var(--text3)}
 .veh-readings{list-style:none;margin:0;padding:0}
 .veh-reading{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+
+/* ----- Aba Quadro ----- */
+.veh-planned{font-size:13px;color:var(--text2);margin-top:2px}
+.veh-board{
+  display:flex;gap:12px;align-items:flex-start;margin-bottom:16px;padding-bottom:6px;
+  overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;
+}
+.veh-col{
+  flex:0 0 85%;min-width:0;scroll-snap-align:start;
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px;
+}
+.veh-col-head{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:14px}
+.veh-col-count{background:var(--bg4);color:var(--text2);border-radius:20px;padding:1px 8px;font-size:12px}
+.veh-col-sub{font-size:12px;color:var(--text3);margin:2px 0 8px}
+.veh-col-empty{font-size:12px;color:var(--text3);padding:8px 0}
+.veh-col-all{margin-top:8px;width:100%}
+.veh-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;margin-top:8px}
+.veh-card-main{
+  display:flex;flex-direction:column;gap:6px;width:100%;text-align:left;
+  background:transparent;border:none;color:var(--text);font:inherit;font-size:13px;cursor:pointer;padding:0;
+}
+.veh-card-main:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.veh-card-title{font-weight:600;overflow-wrap:anywhere}
+.veh-card-badges{display:flex;flex-wrap:wrap;gap:4px}
+.veh-card-estimate{font-size:12px;color:var(--text2)}
+.veh-card-move{margin-top:8px;padding:4px 8px;font-size:12px}
+@media(min-width:900px){
+  .veh-board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible;scroll-snap-type:none}
+  .veh-col{flex:none}
+}

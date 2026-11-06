@@ -141,6 +141,7 @@ const AreasView = (() => {
     notes: renderNotes,
     files: renderFiles,
     garage: p => VehicleView.renderGarage(p),
+    board: p => VehicleView.renderBoard(p),
     maintenances: p => VehicleView.renderMaintenances(p),
     parts: p => VehicleView.renderParts(p)
   };

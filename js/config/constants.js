@@ -157,7 +157,7 @@ const Constants = (() => {
   /** Modelos de projeto: definem quais abas o projeto mostra. */
   const PROJECT_TEMPLATES = {
     generic: { label: 'Genérico', icon: '📁', tabs: ['overview', 'tasks', 'notes', 'files'] },
-    vehicle: { label: 'Veículo', icon: '🚗', tabs: ['garage', 'maintenances', 'parts', 'tasks', 'notes', 'files'] }
+    vehicle: { label: 'Veículo', icon: '🚗', tabs: ['garage', 'board', 'maintenances', 'parts', 'tasks', 'notes', 'files'] }
   };
 
   /** Rótulo (pt-BR) e ícone Tabler de cada aba de projeto. */
@@ -167,6 +167,7 @@ const Constants = (() => {
     notes: { label: 'Notas', icon: 'notes' },
     files: { label: 'Arquivos', icon: 'file' },
     garage: { label: 'Garagem', icon: 'car' },
+    board: { label: 'Quadro', icon: 'layout-kanban' },
     maintenances: { label: 'Manutenções', icon: 'tool' },
     parts: { label: 'Peças e oficinas', icon: 'package' }
   };

@@ -1,7 +1,8 @@
 /**
  * ===================== VEHICLE VIEW =====================
  * Abas do modelo de projeto Veículo. A Garagem mostra a ficha, os números e
- * as últimas manutenções; Manutenções e Peças delegam a VehicleHistory e VehicleParts.
+ * as últimas manutenções; Quadro, Manutenções e Peças delegam a VehicleBoard,
+ * VehicleHistory e VehicleParts.
  * Só lê dos services; qualquer gravação vem de um clique do usuário.
  */
 
@@ -276,6 +277,12 @@ const VehicleView = (() => {
 
   const NO_SHEET_MESSAGE = 'Preencha a ficha na aba Garagem para começar.';
 
+  function renderBoard(project) {
+    const vehicle = VehicleService.getByProject(project.id);
+    if (vehicle) VehicleBoard.render(vehicle);
+    else renderEmptyTab(Constants.PROJECT_TABS.board.icon, NO_SHEET_MESSAGE);
+  }
+
   function renderMaintenances(project) {
     const vehicle = VehicleService.getByProject(project.id);
     if (vehicle) VehicleHistory.render(vehicle);
@@ -289,7 +296,7 @@ const VehicleView = (() => {
   }
 
   return {
-    renderGarage, renderMaintenances, renderParts,
+    renderGarage, renderBoard, renderMaintenances, renderParts,
     saveSheet, setFinanceCategory, updateKm, removeReading
   };
 })();
