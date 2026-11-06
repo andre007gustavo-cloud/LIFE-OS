@@ -198,6 +198,13 @@
 
   // ===== Leitura =====
 
+  function _removerLeitura(veiculo, data) {
+    const leitura = veiculo.odometer.find(l => l.date === data);
+    if (!leitura) return { erro: `Não há leitura do odômetro em ${data}.` };
+    const removida = VehicleService.removeOdometer(veiculo.id, leitura.id);
+    return removida.erro ? removida : { ok: true, removida: { data: leitura.date, km: leitura.km }, kmAtual: VehicleService.getCurrentKm(veiculo) };
+  }
+
   const LEITURA = {
 
     get_vehicle: {
@@ -321,15 +328,17 @@
       write: true,
       schema: {
         name: 'update_odometer',
-        description: 'Registra a leitura do odômetro (km atual). Recusa km incoerente com leituras de outras datas; na mesma data, substitui a anterior.',
+        description: 'Registra a leitura do odômetro (km atual). Recusa km incoerente com leituras, manutenções e a compra; na mesma data, substitui a anterior. Com remover: true, apaga a leitura da data informada (use para corrigir uma leitura digitada errada que bloqueia outros registros); nesse caso o km é dispensável.',
         input_schema: {
           type: 'object',
-          properties: { veiculo: veiculoParam, km: { type: 'integer' }, data: { type: 'string', description: 'YYYY-MM-DD. Default: hoje.' } },
-          required: ['km']
+          properties: { veiculo: veiculoParam, km: { type: 'integer' }, data: { type: 'string', description: 'YYYY-MM-DD. Default: hoje.' }, remover: { type: 'boolean', description: 'true: remove a leitura dessa data em vez de registrar.' } },
+          required: []
         }
       },
-      run({ veiculo, km, data }) {
+      run({ veiculo, km, data, remover }) {
         const r = _resolveVeiculo(veiculo); if (r.erro) return r;
+        if (remover === true) return _removerLeitura(r.veiculo, data || Utils.today());
+        if (km === undefined) return { erro: 'Informe o km.' };
         const leitura = VehicleService.addOdometer(r.veiculo.id, { date: data || Utils.today(), km });
         if (leitura.erro) return leitura;
         return { ok: true, leitura: { data: leitura.date, km: leitura.km }, kmAtual: VehicleService.getCurrentKm(r.veiculo) };
