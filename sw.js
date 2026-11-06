@@ -105,6 +105,7 @@ const PRECACHE = [
   '/js/views/calendarView.js',
   '/js/views/financeView.js',
   '/js/views/areasView.js',
+  '/js/views/vehicleView.js',
   '/js/views/habitsView.js',
   '/js/views/reviewView.js',
   '/js/views/comebackView.js',

@@ -63,9 +63,14 @@ const AreasView = (() => {
 
   // ===== Workspace =====
 
+  /** Abas do projeto, na ordem definida pelo modelo dele. */
+  function tabsFor(project) {
+    return Constants.PROJECT_TEMPLATES[ProjectService.getTemplate(project)].tabs;
+  }
+
   function openProject(id) {
     AppState.ui.activeProjectId = id;
-    AppState.ui.activeProjTab = 'overview';
+    AppState.ui.activeProjTab = tabsFor(ProjectService.getById(id))[0];
     renderProjectList();
     renderWorkspace();
   }
@@ -73,6 +78,9 @@ const AreasView = (() => {
   function renderWorkspace() {
     const project = ProjectService.getById(AppState.ui.activeProjectId);
     if (!project) return;
+
+    const tabs = tabsFor(project);
+    if (!tabs.includes(AppState.ui.activeProjTab)) AppState.ui.activeProjTab = tabs[0];
 
     const area = AreaService.getById(project.area);
     const tasks = TaskService.forProject(project.id);
@@ -108,9 +116,9 @@ const AreasView = (() => {
         </div>
 
         <div class="proj-tabs seg">
-          ${['overview', 'tasks', 'notes', 'files'].map(tab => `
+          ${tabs.map(tab => `
             <button class="proj-tab seg-btn${AppState.ui.activeProjTab === tab ? ' active' : ''}" onclick="setProjTab('${tab}')">
-              <i class="ti ti-${tabIcon(tab)}"></i> ${tabLabel(tab)}
+              <i class="ti ti-${Constants.PROJECT_TABS[tab].icon}"></i> ${Constants.PROJECT_TABS[tab].label}
             </button>
           `).join('')}
         </div>
@@ -126,15 +134,22 @@ const AreasView = (() => {
     renderWorkspace();
   }
 
+  // VehicleView carrega depois deste arquivo: os wrappers resolvem na hora do clique.
+  const TAB_RENDERERS = {
+    overview: renderOverview,
+    tasks: renderTasks,
+    notes: renderNotes,
+    files: renderFiles,
+    garage: p => VehicleView.renderGarage(p),
+    maintenances: p => VehicleView.renderMaintenances(p),
+    parts: p => VehicleView.renderParts(p)
+  };
+
   function renderTabContent() {
-    const tab = AppState.ui.activeProjTab;
     const project = ProjectService.getById(AppState.ui.activeProjectId);
     if (!project) return;
 
-    if (tab === 'overview') renderOverview(project);
-    if (tab === 'tasks') renderTasks(project);
-    if (tab === 'notes') renderNotes(project);
-    if (tab === 'files') renderFiles(project);
+    TAB_RENDERERS[AppState.ui.activeProjTab]?.(project);
   }
 
   // ===== Tab renderers =====
@@ -285,14 +300,6 @@ const AreasView = (() => {
       text: '📃', video: '🎥', audio: '🎵', other: '📎'
     };
     return icons[type];
-  }
-
-  function tabIcon(tab) {
-    return { overview: 'layout-dashboard', tasks: 'checklist', notes: 'notes', files: 'file' }[tab];
-  }
-
-  function tabLabel(tab) {
-    return { overview: 'Visão Geral', tasks: 'Tarefas', notes: 'Notas', files: 'Arquivos' }[tab];
   }
 
   return {
