@@ -224,9 +224,10 @@ const VehiclePayment = (() => {
     return {
       meio: state.meio,
       valorCentavos: Utils.brlToCentavos(state.valueText),
-      parcelas: state.meio.startsWith(CARD_PREFIX) ? Math.max(1, parseInt(state.parcelas, 10) || 1) : 1,
+      parcelas: state.meio.startsWith(CARD_PREFIX) ? Number(state.parcelas) : 1,
       categoriaId: state.categoriaId || undefined,
-      data: state.snapshot.date
+      data: state.snapshot.date,
+      allowAdditional: Boolean(state.maintenanceId)
     };
   }
 
@@ -238,6 +239,8 @@ const VehiclePayment = (() => {
     }
     if (state.mode !== 'launch') return {};
     if (!state.meio) return { erro: 'Escolha a conta ou o cartão do pagamento' };
+    const { parcelas } = launchDto();
+    if (!Number.isInteger(parcelas) || parcelas < 1) return { erro: 'As parcelas devem ser um número inteiro a partir de 1' };
     return launchDto().valorCentavos > 0 ? {} : { erro: 'Informe um valor de pagamento maior que zero' };
   }
 

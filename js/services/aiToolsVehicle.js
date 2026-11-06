@@ -98,7 +98,8 @@
   }
 
   function _resolveZonas(zonas) {
-    const resolvidas = (zonas || []).map(z => _resolveOpcao(z, ZONES, 'Zona'));
+    if (!Array.isArray(zonas)) return { ids: zonas };
+    const resolvidas = zonas.map(z => _resolveOpcao(z, ZONES, 'Zona'));
     return resolvidas.find(r => r.erro) || { ids: resolvidas.map(r => r.id) };
   }
 
@@ -189,7 +190,7 @@
     const dto = {
       date: input.data, km: input.km, title: input.titulo, shop: input.oficina, notes: input.obs,
       ...extras,
-      parts: _definido(input.pecas) ? input.pecas.map(_pecaEntrada) : undefined,
+      parts: Array.isArray(input.pecas) ? input.pecas.map(_pecaEntrada) : input.pecas,
       laborCentavos: _definido(input.maoDeObraReais) ? toCentavos(input.maoDeObraReais) : undefined
     };
     return Object.fromEntries(Object.entries(dto).filter(([, v]) => v !== undefined));
@@ -420,7 +421,8 @@
     let categoriaId;
     if (input.categoria) { const c = resolveCategoria(input.categoria, 'despesa'); if (c.erro) return c; categoriaId = c.cat.id; }
     return VehicleFinanceService.launchPayment(r.veiculo.id, r.manutencao.id, {
-      meio: meio.meio, valorCentavos, parcelas: input.parcelas, categoriaId, data: input.data
+      meio: meio.meio, valorCentavos, parcelas: input.parcelas, categoriaId, data: input.data,
+      allowAdditional: input.adicional === true
     });
   }
 
@@ -449,6 +451,7 @@
             conta: { type: 'string', description: 'Nome ou id da conta (lancar)' },
             cartao: { type: 'string', description: 'Nome ou id do cartão (lancar); vale sobre conta' },
             parcelas: { type: 'integer', description: 'Parcelas no cartão (default 1)' },
+            adicional: { type: 'boolean', description: 'lancar: true só quando o André confirmou que este é um pagamento ADICIONAL numa manutenção que já tem pagamento vinculado. Sem isso, o lançamento é recusado para não duplicar.' },
             valorReais: { type: 'number', description: 'lancar: default = total da manutenção' },
             categoria: { type: 'string', description: 'lancar: categoria de despesa. Default: a do veículo ou "Transporte".' },
             data: { type: 'string', description: 'lancar: data do pagamento YYYY-MM-DD. Default: hoje.' }

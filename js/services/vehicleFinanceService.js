@@ -161,10 +161,17 @@ const VehicleFinanceService = (() => {
     return byName ? byName.id : null;
   }
 
-  /** Cria a despesa (conta ou cartão) e já a vincula à manutenção. */
-  function launchPayment(vehicleId, maintenanceId, { meio, valorCentavos, parcelas, categoriaId, data } = {}) {
+  const ALREADY_PAID_ERROR = 'Esta manutenção já tem pagamento vinculado; para lançar outro, confirme que é um pagamento adicional';
+
+  /**
+   * Cria a despesa (conta ou cartão) e já a vincula à manutenção. Sem
+   * `allowAdditional`, recusa quando a manutenção já tem pagamento (evita lançar em dobro).
+   * Se o vínculo falhar, a despesa recém-criada é desfeita.
+   */
+  function launchPayment(vehicleId, maintenanceId, { meio, valorCentavos, parcelas, categoriaId, data, allowAdditional = false } = {}) {
     const found = _findMaintenance(vehicleId, maintenanceId);
     if (found.erro) return found;
+    if (found.maintenance.transactionIds.length && !allowAdditional) return { erro: ALREADY_PAID_ERROR };
     if (!meio || meio === CARD_PREFIX) return { erro: 'Escolha uma conta ou um cartão' };
     const expense = FinanceService.addExpense({
       ..._splitMeans(meio),
@@ -177,7 +184,9 @@ const VehicleFinanceService = (() => {
     });
     if (expense.erro) return expense;
     const linked = link(vehicleId, maintenanceId, expense.id);
-    return linked.erro ? linked : expense;
+    if (!linked.erro) return expense;
+    FinanceService.deleteTransaction(expense.id);
+    return linked;
   }
 
   return {
