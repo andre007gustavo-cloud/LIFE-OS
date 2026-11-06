@@ -118,9 +118,12 @@ const VehicleFinanceService = (() => {
     return updated.erro ? updated : { transactionIds: updated.transactionIds };
   }
 
+  const NOT_PAYABLE_ERROR = 'Pagamento só em manutenção concluída (Feito)';
+
   function link(vehicleId, maintenanceId, transactionId) {
     const found = _findMaintenance(vehicleId, maintenanceId);
     if (found.erro) return found;
+    if (!VehicleService.isHistory(found.maintenance)) return { erro: NOT_PAYABLE_ERROR };
     if (!FinanceService.getTransacaoById(transactionId)) return { erro: 'Lançamento não encontrado' };
     const owner = _linkedIdsByMaintenance().get(transactionId);
     if (owner && owner !== maintenanceId) return { erro: 'Esse lançamento já está vinculado a outra manutenção' };
@@ -171,6 +174,7 @@ const VehicleFinanceService = (() => {
   function launchPayment(vehicleId, maintenanceId, { meio, valorCentavos, parcelas, categoriaId, data, allowAdditional = false } = {}) {
     const found = _findMaintenance(vehicleId, maintenanceId);
     if (found.erro) return found;
+    if (!VehicleService.isHistory(found.maintenance)) return { erro: NOT_PAYABLE_ERROR };
     if (found.maintenance.transactionIds.length && !allowAdditional) return { erro: ALREADY_PAID_ERROR };
     if (!meio || meio === CARD_PREFIX) return { erro: 'Escolha uma conta ou um cartão' };
     const expense = FinanceService.addExpense({

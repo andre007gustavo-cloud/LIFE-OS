@@ -10,6 +10,7 @@
 
 const VehicleService = (() => {
 
+  const { CARD_STATUS, CARD_TYPE } = Constants.VEHICLE;
   const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
   const SHEET_TEXT_FIELDS = ['nickname', 'make', 'model', 'trim', 'color', 'plate', 'financeCategoryId'];
 
@@ -59,8 +60,8 @@ const VehicleService = (() => {
   const _km = (value, label = 'Km') => _int(value, label, 0, Constants.VEHICLE.KM_MAX);
   const _centavos = (value, label) => _int(value, label, 0, Constants.VEHICLE.CENTAVOS_MAX) ?? 0;
 
-  function _oneOf(value, list, label) {
-    if (!list.some(item => item.id === value)) _fail(`${label} inválida: ${value}`);
+  function _oneOf(value, list, label, adjective = 'inválida') {
+    if (!list.some(item => item.id === value)) _fail(`${label} ${adjective}: ${value}`);
     return value;
   }
 
@@ -108,28 +109,66 @@ const VehicleService = (() => {
     return parts.map(_normalizePart);
   }
 
+  /** Sem status o registro é 'done'; sem tipo, 'service'. Sintoma nasce (e fica) em 'todo' enquanto aberto. */
+  function _normalizeKind(raw) {
+    const type = _isBlank(raw.type) ? CARD_TYPE.SERVICE : _oneOf(raw.type, Constants.VEHICLE.CARD_TYPES, 'Tipo', 'inválido');
+    if (_isBlank(raw.status)) return { type, status: type === CARD_TYPE.SYMPTOM ? CARD_STATUS.TODO : CARD_STATUS.DONE };
+    const status = _oneOf(raw.status, Constants.VEHICLE.CARD_STATUSES, 'Coluna');
+    const openSymptom = type === CARD_TYPE.SYMPTOM && status !== CARD_STATUS.DONE;
+    return { type, status: openSymptom ? CARD_STATUS.TODO : status };
+  }
+
+  function _normalizeZonesFor(raw, type) {
+    const zones = _normalizeZones(raw.zones);
+    if (type === CARD_TYPE.SYMPTOM && !zones.length) _fail('Sintoma precisa de ao menos uma zona');
+    return zones;
+  }
+
+  /** Só sintoma concluído guarda a manutenção que o resolveu. */
+  function _resolvedById({ resolvedById }, { type, status }) {
+    if (type !== CARD_TYPE.SYMPTOM || status !== CARD_STATUS.DONE) return undefined;
+    return _text(resolvedById) || _fail('Sintoma só é concluído indicando a manutenção que o resolveu');
+  }
+
   function _normalizeMaintenance(raw) {
     const title = _text(raw.title);
     if (!title) _fail('O título da manutenção é obrigatório');
     const category = _isBlank(raw.category) ? 'other' : _oneOf(raw.category, Constants.VEHICLE.CATEGORIES, 'Categoria');
+    const kind = _normalizeKind(raw);
+    const open = kind.status !== CARD_STATUS.DONE;
     return _compact({
       id: raw.id || Utils.uid(),
-      date: _requiredDate(raw.date, 'Data'),
+      date: open ? _date(raw.date, 'Data') : _requiredDate(raw.date, 'Data'),
       km: _km(raw.km),
       title,
+      ...kind,
       category,
-      zones: _normalizeZones(raw.zones),
+      zones: _normalizeZonesFor(raw, kind.type),
       shop: _text(raw.shop),
       parts: _normalizeParts(raw.parts),
       laborCentavos: _centavos(raw.laborCentavos, 'Mão de obra'),
+      estimateCentavos: _int(raw.estimateCentavos, 'Estimativa', 0, Constants.VEHICLE.CENTAVOS_MAX),
+      resolvedById: _resolvedById(raw, kind),
       notes: _text(raw.notes, Constants.VEHICLE.NOTES_MAX),
-      transactionIds: [...(raw.transactionIds || [])]
+      transactionIds: open ? [] : [...(raw.transactionIds || [])]
     });
   }
 
   // ===== Acesso =====
 
   const _vehicles = () => AppState.getDB().vehicles;
+
+  // Registro antigo não tem status nem tipo: vale 'done' e 'service' (sem migração).
+  const statusOf = m => m.status || CARD_STATUS.DONE;
+  const typeOf = m => m.type || CARD_TYPE.SERVICE;
+  const isDone = m => statusOf(m) === CARD_STATUS.DONE;
+  const isSymptom = m => typeOf(m) === CARD_TYPE.SYMPTOM;
+
+  /** Conta como histórico (custos, km, caderno, oficinas): concluído e que não seja sintoma. */
+  const isHistory = m => isDone(m) && !isSymptom(m);
+
+  /** Manutenções que contam como histórico; todas as consultas de custo e km passam por aqui. */
+  const _history = vehicle => vehicle.maintenances.filter(isHistory);
 
   function list() {
     return _vehicles();
@@ -210,7 +249,7 @@ const VehicleService = (() => {
   function _kmPoints(vehicle, readings, exceptMaintenanceId) {
     const points = readings.map(r => ({ type: 'reading', km: r.km, date: r.date,
       text: `em ${Utils.fmtDateFull(r.date)} o odômetro marcava ${_fmtKm(r.km)} km` }));
-    vehicle.maintenances.filter(m => Number.isInteger(m.km) && m.id !== exceptMaintenanceId).forEach(m => points.push({
+    _history(vehicle).filter(m => Number.isInteger(m.km) && m.id !== exceptMaintenanceId).forEach(m => points.push({
       type: 'maintenance', km: m.km, date: m.date, text: `há uma manutenção de ${_fmtKm(m.km)} km em ${Utils.fmtDateFull(m.date)}` }));
     if (vehicle.purchaseDate && Number.isInteger(vehicle.purchaseKm)) {
       points.push({ type: 'purchase', km: vehicle.purchaseKm, date: vehicle.purchaseDate,
@@ -275,7 +314,7 @@ const VehicleService = (() => {
   function getCurrentKm(vehicle) {
     const kms = [
       ...vehicle.odometer.map(r => r.km),
-      ...vehicle.maintenances.map(m => m.km),
+      ..._history(vehicle).map(m => m.km),
       vehicle.purchaseKm
     ].filter(Number.isInteger);
     return kms.length ? Math.max(...kms) : null;
@@ -293,7 +332,8 @@ const VehicleService = (() => {
       const vehicle = _requireVehicle(vehicleId);
       const now = Date.now();
       const maintenance = { ..._normalizeMaintenance(dto), createdAt: now, updatedAt: now };
-      _assertMaintenanceKm(vehicle, maintenance);
+      if (isSymptom(maintenance) && isDone(maintenance)) _fail('Um sintoma novo nasce aberto');
+      if (isHistory(maintenance)) _assertMaintenanceKm(vehicle, maintenance);
       vehicle.maintenances.push(maintenance);
       _touch(vehicle);
       return maintenance;
@@ -311,12 +351,34 @@ const VehicleService = (() => {
     return kept;
   }
 
+  function _assertTransition(current, next) {
+    if (isDone(current) && !isDone(next)) _fail('Registro concluído não volta para o quadro: edite ou exclua');
+    const switchesSymptom = isSymptom(current) !== isSymptom(next);
+    if (switchesSymptom && (isDone(current) || isDone(next))) _fail('Só dá para trocar o tipo de/para Sintoma enquanto o card está aberto');
+  }
+
+  /** O sintoma concluído aponta para uma manutenção do histórico do mesmo veículo. */
+  function _assertResolution(vehicle, next) {
+    if (!isSymptom(next) || !isDone(next)) return;
+    const target = vehicle.maintenances.find(m => m.id === next.resolvedById);
+    if (!target) _fail('A manutenção que resolveu o sintoma não foi encontrada neste veículo');
+    if (!isHistory(target)) _fail('Só uma manutenção concluída (Feito) resolve um sintoma');
+  }
+
+  /** A regra de km vale para quem é histórico: ao concluir (sempre) e, depois, quando km ou data mudam. */
+  function _needsKmCheck(current, next) {
+    if (!isHistory(next)) return false;
+    return !isDone(current) || next.km !== current.km || next.date !== current.date;
+  }
+
   function updateMaintenance(vehicleId, id, patch = {}) {
     return _guard(() => {
       const vehicle = _requireVehicle(vehicleId);
       const current = _findMaintenance(vehicle, id);
       const next = _normalizeMaintenance({ ...current, ..._withoutNullLists(patch), id: current.id });
-      if (next.km !== current.km || next.date !== current.date) _assertMaintenanceKm(vehicle, next);
+      _assertTransition(current, next);
+      _assertResolution(vehicle, next);
+      if (_needsKmCheck(current, next)) _assertMaintenanceKm(vehicle, next);
       const { createdAt } = current;
       Object.keys(current).forEach(k => delete current[k]);
       Object.assign(current, next, { createdAt, updatedAt: Date.now() });
@@ -325,23 +387,40 @@ const VehicleService = (() => {
     });
   }
 
+  /** Sintomas que a manutenção removida resolvia voltam para 'A fazer'. */
+  function _reopenSymptomsResolvedBy(vehicle, maintenanceId) {
+    vehicle.maintenances.filter(m => isSymptom(m) && m.resolvedById === maintenanceId).forEach(symptom => {
+      delete symptom.resolvedById;
+      Object.assign(symptom, { status: CARD_STATUS.TODO, updatedAt: Date.now() });
+    });
+  }
+
   function removeMaintenance(vehicleId, id) {
     return _guard(() => {
       const vehicle = _requireVehicle(vehicleId);
       _findMaintenance(vehicle, id);
+      _reopenSymptomsResolvedBy(vehicle, id);
       vehicle.maintenances = vehicle.maintenances.filter(m => m.id !== id);
       _touch(vehicle);
       return true;
     });
   }
 
-  // ===== Consultas derivadas (nada é guardado) =====
+  /** Qualquer registro do veículo (aberto, concluído ou sintoma). */
+  function getMaintenance(vehicleId, id) {
+    return _guard(() => _findMaintenance(_requireVehicle(vehicleId), id));
+  }
 
-  /**
-   * Manutenções que contam como histórico; todas as consultas passam por aqui.
-   * Hoje é todas; é o ponto onde a fase 2 filtra por status (ideia, a fazer, feito).
-   */
-  const _history = vehicle => vehicle.maintenances;
+  const _recentlyUpdated = (a, b) => (b.updatedAt || 0) - (a.updatedAt || 0);
+
+  /** Todos os registros do veículo, inclusive cards abertos e sintomas, do mais recentemente alterado ao mais antigo. */
+  function listCards(vehicleId, { status, type, zone } = {}) {
+    return _guard(() => _requireVehicle(vehicleId).maintenances
+      .filter(m => (!status || statusOf(m) === status) && (!type || typeOf(m) === type) && (!zone || m.zones.includes(zone)))
+      .sort(_recentlyUpdated));
+  }
+
+  // ===== Consultas derivadas (nada é guardado) =====
 
   const _newestFirst = (a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0);
   const _oldestFirst = (a, b) => -_newestFirst(a, b);
@@ -461,14 +540,20 @@ const VehicleService = (() => {
   const _unitPrice = part => Math.round(part.priceCentavos / part.qty);
   const _hasPrice = use => use.part.priceCentavos > 0;
 
+  function _lastUse({ part, maintenance }, currentKm) {
+    return { maintenanceId: maintenance.id, date: maintenance.date, km: maintenance.km ?? null,
+      daysAgo: _daysSince(maintenance.date), kmAgo: _kmSince(maintenance.km, currentKm),
+      store: part.store, brand: part.brand, qty: part.qty,
+      unitPriceCentavos: part.priceCentavos > 0 ? _unitPrice(part) : null };
+  }
+
   function _notebookItem(key, uses, currentKm) {
     const last = uses[uses.length - 1];
     return {
       key,
       name: last.part.name,
       code: last.part.code,
-      lastUse: { maintenanceId: last.maintenance.id, date: last.maintenance.date, km: last.maintenance.km ?? null,
-        store: last.part.store, brand: last.part.brand, qty: last.part.qty, unitPriceCentavos: _hasPrice(last) ? _unitPrice(last.part) : null },
+      lastUse: _lastUse(last, currentKm),
       priceHistory: uses.filter(_hasPrice).map(u => ({ date: u.maintenance.date, unitPriceCentavos: _unitPrice(u.part), store: u.part.store })),
       timesReplaced: uses.length,
       warranty: _warranty(last, currentKm),
@@ -476,11 +561,12 @@ const VehicleService = (() => {
     };
   }
 
-  function getPartsNotebook(vehicleId, { text } = {}) {
+  function getPartsNotebook(vehicleId, { text, zone } = {}) {
     return _query(vehicleId, vehicle => {
       const currentKm = getCurrentKm(vehicle);
       const matchesText = _textMatcher(text);
-      return [..._groupPartUses(_history(vehicle))]
+      const inZone = _history(vehicle).filter(m => !zone || m.zones.includes(zone));
+      return [..._groupPartUses(inZone)]
         .map(([key, uses]) => _notebookItem(key, uses, currentKm))
         .filter(item => matchesText(item._haystack))
         .map(({ _haystack, ...item }) => item)
@@ -512,6 +598,12 @@ const VehicleService = (() => {
     addOdometer,
     removeOdometer,
     getCurrentKm,
+    statusOf,
+    typeOf,
+    isDone,
+    isHistory,
+    getMaintenance,
+    listCards,
     addMaintenance,
     updateMaintenance,
     removeMaintenance,

@@ -217,6 +217,20 @@ const Constants = (() => {
     FULL_BAR_PERCENT: 100,
     SEARCH_DEBOUNCE_MS: 250,
     MIN_COST_PER_KM_CENTAVOS: 1,
+    CARD_STATUSES: [
+      { id: 'idea', label: 'Ideias' },
+      { id: 'todo', label: 'A fazer' },
+      { id: 'doing', label: 'Fazendo' },
+      { id: 'done', label: 'Feito' }
+    ],
+    CARD_STATUS: { IDEA: 'idea', TODO: 'todo', DOING: 'doing', DONE: 'done' },
+    CARD_TYPES: [
+      { id: 'service', label: 'Serviço' },
+      { id: 'mod', label: 'Modificação' },
+      { id: 'symptom', label: 'Sintoma' }
+    ],
+    CARD_TYPE: { SERVICE: 'service', MOD: 'mod', SYMPTOM: 'symptom' },
+    BOARD_DONE_LIMIT: 5,
     CARD_PREFIX: 'card:',
     LINK: { WINDOW_DAYS: 10, WIDE_WINDOW_DAYS: 45, MAX_SUGGESTIONS: 5 }
   };
