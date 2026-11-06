@@ -45,6 +45,7 @@
 .veh-part-name{grid-column:1 / -1}
 .veh-part-remove{grid-column:1 / -1;justify-self:end}
 .veh-total-line{display:flex;justify-content:space-between;font-weight:700;margin:8px 0 14px}
+.veh-estimate-note{margin:0 0 12px;font-size:13px;font-weight:600;color:var(--accent2)}
 .veh-modal-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 
 /* ----- Pagamento no modal de manutenção ----- */

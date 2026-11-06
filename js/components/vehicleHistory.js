@@ -8,7 +8,7 @@
 
 const VehicleHistory = (() => {
 
-  const { CATEGORIES, ZONES, SEARCH_DEBOUNCE_MS, FULL_BAR_PERCENT } = Constants.VEHICLE;
+  const { CATEGORIES, ZONES, SEARCH_DEBOUNCE_MS, FULL_BAR_PERCENT, CARD_TYPE, CARD_TYPES } = Constants.VEHICLE;
   const FINANCE_STATES = {
     linked: { icon: 'link', label: 'Vinculado' },
     missing: { icon: 'link-off', label: 'Lançamento removido' },
@@ -96,11 +96,14 @@ const VehicleHistory = (() => {
     return m.zones.map(z => `<span class="badge area">${esc(labelOf(ZONES, z))}</span>`).join('');
   }
 
+  const modBadgeHtml = m => (VehicleService.typeOf(m) === CARD_TYPE.MOD
+    ? `<span class="badge time">${esc(labelOf(CARD_TYPES, CARD_TYPE.MOD))}</span>` : '');
+
   function itemHtml(vehicleId, m) {
     const total = Utils.formatBRL(VehicleService.maintenanceTotal(m));
     return `<button type="button" class="veh-hist-item" onclick="VehicleMaintenanceModal.open('${attr(vehicleId)}','${attr(m.id)}')">
       <span class="veh-hist-main"><span class="veh-hist-title">${esc(m.title)}</span>${itemMetaHtml(m)}
-        <span class="veh-hist-zones">${zoneBadgesHtml(m)}</span></span>
+        <span class="veh-hist-zones">${modBadgeHtml(m)}${zoneBadgesHtml(m)}</span></span>
       <span class="veh-hist-side"><strong>${total}</strong>${financeBadgeHtml(financeStateOf(vehicleId, m.id))}</span>
     </button>`;
   }

@@ -119,7 +119,7 @@ const VehicleView = (() => {
 
   function topZones(vehicle) {
     const counts = new Map();
-    vehicle.maintenances.forEach(m => m.zones.forEach(z => counts.set(z, (counts.get(z) || 0) + 1)));
+    VehicleService.listMaintenances(vehicle.id).forEach(m => m.zones.forEach(z => counts.set(z, (counts.get(z) || 0) + 1)));
     return Constants.VEHICLE.ZONES
       .filter(z => counts.has(z.id))
       .map(z => ({ label: z.label, count: counts.get(z.id) }))

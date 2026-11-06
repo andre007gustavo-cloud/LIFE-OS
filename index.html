@@ -1080,6 +1080,7 @@
       <span id="veh-m-heading">Nova manutenção</span>
       <button class="modal-close" aria-label="Fechar" onclick="closeModal('veh-maint-modal')">×</button>
     </div>
+    <p class="veh-estimate-note" id="veh-m-estimate" hidden></p>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label" for="veh-m-date">Data</label>
@@ -1128,7 +1129,7 @@
     <div class="veh-modal-actions">
       <button class="btn btn-ghost" id="veh-m-remove" style="color:var(--red)" onclick="VehicleMaintenanceModal.remove()">Excluir</button>
       <button class="btn btn-ghost" onclick="closeModal('veh-maint-modal')">Cancelar</button>
-      <button class="btn btn-primary" onclick="VehicleMaintenanceModal.save()">Salvar</button>
+      <button class="btn btn-primary" id="veh-m-save" onclick="VehicleMaintenanceModal.save()">Salvar</button>
     </div>
     <datalist id="veh-dl-shops"></datalist>
     <datalist id="veh-dl-stores"></datalist>

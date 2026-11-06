@@ -1,7 +1,8 @@
 /**
  * ===================== VEHICLE MAINTENANCE MODAL =====================
  * Cria, edita e exclui uma manutenção do veículo (dados, zonas e peças em
- * linhas). O pagamento ligado às Finanças fica no VehiclePayment, que este
+ * linhas) e conclui um card do quadro (modo "concluir"). Card aberto nunca é
+ * editado aqui: vai para o VehicleCardModal. O pagamento ligado às Finanças fica no VehiclePayment, que este
  * modal inicia, alimenta com data e valores e aplica ao salvar.
  * Markup estático em #veh-maint-modal (index.html).
  */
@@ -11,9 +12,11 @@ const VehicleMaintenanceModal = (() => {
   const MODAL_ID = 'veh-maint-modal';
   const el = id => document.getElementById(id);
   const attr = Utils.escapeAttr;
+  const { CARD_STATUS, CARD_TYPE } = Constants.VEHICLE;
 
   let vehicleId = null;
   let editId = null;
+  let completing = false;
   let notebook = [];
   let partSeq = 0;
   const selectedZones = new Set();
@@ -171,16 +174,26 @@ const VehicleMaintenanceModal = (() => {
     updateTotal();
   }
 
-  function show(vehicle, maintenance, { retryPayment = false } = {}) {
+  function applyMode(maintenance) {
+    const heading = completing ? `Concluir: ${maintenance.title}` : (maintenance ? 'Editar manutenção' : 'Nova manutenção');
+    el('veh-m-heading').textContent = heading;
+    el('veh-m-save').textContent = completing ? 'Concluir' : 'Salvar';
+    el('veh-m-remove').style.display = maintenance && !completing ? '' : 'none';
+    const estimate = el('veh-m-estimate');
+    estimate.hidden = !(completing && maintenance.estimateCentavos);
+    estimate.textContent = estimate.hidden ? '' : `Estimado no quadro: ${Utils.formatBRL(maintenance.estimateCentavos)}`;
+  }
+
+  function show(vehicle, maintenance, { retryPayment = false, complete = false } = {}) {
     vehicleId = vehicle;
+    completing = complete;
     editId = maintenance ? maintenance.id : null;
     notebook = VehicleService.getPartsNotebook(vehicle);
     fillCategoryOptions();
     fillDatalists();
-    VehiclePayment.start(vehicle, editId, retryPayment ? { adding: true } : undefined);
-    fillForm(maintenance);
-    el('veh-m-heading').textContent = maintenance ? 'Editar manutenção' : 'Nova manutenção';
-    el('veh-m-remove').style.display = maintenance ? '' : 'none';
+    VehiclePayment.start(vehicle, editId, retryPayment || complete ? { adding: true } : undefined);
+    fillForm(complete ? { ...maintenance, date: Utils.today() } : maintenance);
+    applyMode(maintenance);
     Modal.open(MODAL_ID);
     el('veh-m-title').focus();
   }
@@ -192,7 +205,19 @@ const VehicleMaintenanceModal = (() => {
   function open(id, maintenanceId) {
     const maintenance = VehicleService.getById(id)?.maintenances.find(m => m.id === maintenanceId);
     if (!maintenance) return Feedback.toast('Manutenção não encontrada', 'error');
+    if (!VehicleService.isDone(maintenance)) return VehicleCardModal.open(id, maintenanceId);
     show(id, maintenance);
+  }
+
+  /** Conclui um card aberto do quadro: o registro passa a Feito ao salvar, com a regra de km aplicada. */
+  function openComplete(id, cardId) {
+    const card = VehicleService.getMaintenance(id, cardId);
+    if (card.erro) return Feedback.toast(card.erro, 'error');
+    if (VehicleService.isDone(card)) return Feedback.toast('Esse card já está concluído', 'error');
+    if (VehicleService.typeOf(card) === CARD_TYPE.SYMPTOM) {
+      return Feedback.toast('Um sintoma se resolve pelo card, ligando-o à manutenção que o resolveu', 'error');
+    }
+    show(id, card, { complete: true });
   }
 
   // ===== Salvar e excluir =====
@@ -217,15 +242,23 @@ const VehicleMaintenanceModal = (() => {
 
   /** Se o pagamento falhar, a manutenção já está salva: o modal reabre em edição para nova tentativa. */
   function finishSave(maintenanceId) {
+    const savedLabel = completing ? 'Manutenção concluída' : 'Manutenção salva';
     const payment = VehiclePayment.apply(vehicleId, maintenanceId);
     refresh();
     if (!payment.erro) {
       Modal.close(MODAL_ID);
-      return Feedback.toast('Manutenção salva', 'success');
+      return Feedback.toast(savedLabel, 'success');
     }
-    Feedback.toast(`Manutenção salva, mas o pagamento falhou: ${payment.erro}`, 'error');
+    Feedback.toast(`${savedLabel}, mas o pagamento falhou: ${payment.erro}`, 'error');
     const saved = VehicleService.getById(vehicleId).maintenances.find(m => m.id === maintenanceId);
     show(vehicleId, saved, { retryPayment: true });
+  }
+
+  function persist(dto) {
+    if (completing) return VehicleService.updateMaintenance(vehicleId, editId, { ...dto, status: CARD_STATUS.DONE });
+    return editId
+      ? VehicleService.updateMaintenance(vehicleId, editId, dto)
+      : VehicleService.addMaintenance(vehicleId, dto);
   }
 
   function save() {
@@ -233,9 +266,7 @@ const VehicleMaintenanceModal = (() => {
     if (paymentCheck.erro) return Feedback.toast(paymentCheck.erro, 'error');
     const dto = readForm();
     if (dto.parts.some(hasInvalidPrice)) return Feedback.toast('Preço inválido na peça', 'error');
-    const result = editId
-      ? VehicleService.updateMaintenance(vehicleId, editId, dto)
-      : VehicleService.addMaintenance(vehicleId, dto);
+    const result = persist(dto);
     if (result.erro) return Feedback.toast(result.erro, 'error');
     finishSave(result.id);
   }
@@ -252,7 +283,7 @@ const VehicleMaintenanceModal = (() => {
   }
 
   return {
-    openNew, open, save, remove,
+    openNew, open, openComplete, save, remove,
     addPartRow, removePartRow, updateTotal, toggleZone, fillPartFromNotebook
   };
 })();
