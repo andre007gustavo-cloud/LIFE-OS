@@ -13,13 +13,18 @@
     norm, toCentavos, toReais, resolveCategoria, resolveConta, resolveCartao, resolveProjeto, nomeProjeto
   } = AiTools.helpers;
 
-  const { CATEGORIES, ZONES, RECENT_MAINTENANCES, CARD_PREFIX } = Constants.VEHICLE;
+  const { CATEGORIES, ZONES, RECENT_MAINTENANCES, CARD_PREFIX, CARD_STATUSES, CARD_STATUS, CARD_TYPES, CARD_TYPE } = Constants.VEHICLE;
   const AVISO_SEM_LANCAMENTO = 'Nenhum lançamento foi criado nas Finanças. Pergunte ao André se alguma sugestão de vínculo é o pagamento, ou se quer lançar agora (link_maintenance_payment).';
 
   const veiculoParam = { type: 'string', description: 'Id do veículo, id ou nome do projeto. Opcional se houver só um veículo.' };
   const dataISO = { type: 'string', description: 'Data YYYY-MM-DD' };
   const listaCategorias = CATEGORIES.map(c => c.label).join(', ');
   const listaZonas = ZONES.map(z => z.label).join(', ');
+  const COLUNAS_ABERTAS = CARD_STATUSES.filter(c => c.id !== CARD_STATUS.DONE);
+  const listaColunas = COLUNAS_ABERTAS.map(c => c.label).join(', ');
+  const listaTipos = CARD_TYPES.map(t => t.label).join(', ');
+  const VER_QUADRO = 'list_vehicle_board';
+  const USE_ADD_CARD = 'Para sintoma use add_vehicle_card.';
 
   const pecaSchema = {
     type: 'object',
@@ -44,7 +49,9 @@
     oficina: { type: 'string' },
     pecas: { type: 'array', items: pecaSchema, description: 'Peças usadas' },
     maoDeObraReais: { type: 'number', description: 'Mão de obra em reais' },
-    obs: { type: 'string' }
+    obs: { type: 'string' },
+    tipo: { type: 'string', description: 'Serviço (padrão) ou Modificação. Para sintoma use add_vehicle_card.' },
+    estimativaReais: { type: 'number', description: 'Quanto se esperava gastar, em reais (não entra nos totais)' }
   };
 
   // ===== Conversões =====
@@ -78,7 +85,7 @@
 
   /** Acha a manutenção; sem veículo informado, procura em todos os veículos. */
   function _resolveManutencao(veiculoParamValor, manutencaoId) {
-    if (!manutencaoId) return { erro: 'Informe manutencaoId (veja search_maintenance).' };
+    if (!manutencaoId) return { erro: `Informe o id do registro (veja search_maintenance ou ${VER_QUADRO}).` };
     const candidatos = veiculoParamValor ? [_resolveVeiculo(veiculoParamValor)] : VehicleService.list().map(veiculo => ({ veiculo }));
     const erro = candidatos.find(c => c.erro);
     if (erro) return erro;
@@ -86,13 +93,14 @@
       const manutencao = veiculo.maintenances.find(m => m.id === manutencaoId);
       if (manutencao) return { veiculo, manutencao };
     }
-    return { erro: `Manutenção "${manutencaoId}" não encontrada (veja search_maintenance).` };
+    return { erro: `Manutenção "${manutencaoId}" não encontrada (veja search_maintenance ou ${VER_QUADRO}).` };
   }
 
   /** Categoria/zona por id ou rótulo, sem acento nem caixa. */
   function _resolveOpcao(valor, lista, rotulo) {
     const alvo = norm(valor);
-    const achada = lista.find(x => x.id === valor || norm(x.id) === alvo || norm(x.label) === alvo);
+    const achada = lista.find(x => x.id === valor || norm(x.id) === alvo || norm(x.label) === alvo
+      || (x.aliases || []).some(a => norm(a) === alvo));
     if (achada) return { id: achada.id };
     return { erro: `${rotulo} "${valor}" não existe. Opções: ${lista.map(x => x.label).join(', ')}` };
   }
@@ -123,6 +131,20 @@
       obs: m.notes || null, lancamentosVinculados: m.transactionIds.length
     };
   }
+
+  /** Card do quadro (aberto, ou sintoma concluído): sem haDias/haKm, que só fazem sentido no histórico. */
+  function _cardSaida(m) {
+    return {
+      id: m.id, titulo: m.title, tipo: _label(CARD_TYPES, VehicleService.typeOf(m)), coluna: _label(CARD_STATUSES, VehicleService.statusOf(m)),
+      zonas: m.zones.map(z => _label(ZONES, z)), categoria: _label(CATEGORIES, m.category),
+      estimativaReais: m.estimateCentavos == null ? null : toReais(m.estimateCentavos),
+      pecas: m.parts.map(_pecaSaida), maoDeObraReais: toReais(m.laborCentavos),
+      data: m.date || null, km: m.km ?? null, oficina: m.shop || null, obs: m.notes || null,
+      ...(m.resolvedById && { resolvidoPorId: m.resolvedById })
+    };
+  }
+
+  const _registroSaida = (m, kmAtual) => (VehicleService.isHistory(m) ? _manutencaoSaida(m, kmAtual) : _cardSaida(m));
 
   function _fichaSaida(v) {
     return {
@@ -183,13 +205,24 @@
     return dto;
   }
 
+  /** Tipo por id ou rótulo; sintoma só nasce em add_vehicle_card. */
+  function _dtoTipo(input) {
+    if (!_definido(input.tipo)) return {};
+    const r = _resolveOpcao(input.tipo, CARD_TYPES, 'Tipo');
+    if (r.erro) return r;
+    return r.id === CARD_TYPE.SYMPTOM ? { erro: USE_ADD_CARD } : { type: r.id };
+  }
+
   /** Traduz os campos em pt-BR para o modelo do service; só o que foi informado. */
   function _dtoManutencao(input) {
     const extras = _dtoCategoriaEZonas(input);
     if (extras.erro) return extras;
+    const tipo = _dtoTipo(input);
+    if (tipo.erro) return tipo;
     const dto = {
       date: input.data, km: input.km, title: input.titulo, shop: input.oficina, notes: input.obs,
-      ...extras,
+      ...extras, ...tipo,
+      estimateCentavos: _definido(input.estimativaReais) ? toCentavos(input.estimativaReais) : undefined,
       parts: Array.isArray(input.pecas) ? input.pecas.map(_pecaEntrada) : input.pecas,
       laborCentavos: _definido(input.maoDeObraReais) ? toCentavos(input.maoDeObraReais) : undefined
     };
@@ -205,13 +238,22 @@
     return removida.erro ? removida : { ok: true, removida: { data: leitura.date, km: leitura.km }, kmAtual: VehicleService.getCurrentKm(veiculo) };
   }
 
+  function _quadroResumo(veiculoId) {
+    const quadro = VehicleBoardService.getBoard(veiculoId);
+    return {
+      sintomasAbertos: quadro.symptoms.length,
+      cardsAbertos: quadro.columns.reduce((total, c) => total + c.cards.length, 0),
+      planejadoReais: toReais(quadro.plannedCentavos)
+    };
+  }
+
   const LEITURA = {
 
     get_vehicle: {
       write: false,
       schema: {
         name: 'get_vehicle',
-        description: 'Ficha do veículo (apelido, marca, modelo, anos, placa), km atual, resumo de gastos em reais (total, no ano, custo por km e por 1.000 km), oficinas e as últimas manutenções.',
+        description: 'Ficha do veículo (apelido, marca, modelo, anos, placa), km atual, resumo de gastos em reais (total, no ano, custo por km e por 1.000 km), oficinas e as últimas manutenções. "quadro" resume os sintomas abertos e os cards (ideias, a fazer, fazendo) com o planejado em reais.',
         input_schema: { type: 'object', properties: { veiculo: veiculoParam } }
       },
       run({ veiculo }) {
@@ -219,7 +261,7 @@
         const v = r.veiculo;
         const resumo = VehicleService.getSummary(v.id);
         return {
-          ficha: _fichaSaida(v), kmAtual: resumo.currentKm, resumo: _resumoSaida(resumo),
+          ficha: _fichaSaida(v), kmAtual: resumo.currentKm, resumo: _resumoSaida(resumo), quadro: _quadroResumo(v.id),
           oficinas: VehicleService.getShops(v.id).map(o => ({ nome: o.name, visitas: o.visits, ultimaVisita: o.lastVisit, totalReais: toReais(o.totalCentavos) })),
           ultimasManutencoes: VehicleService.listMaintenances(v.id).slice(0, RECENT_MAINTENANCES).map(m => _manutencaoSaida(m, resumo.currentKm))
         };
@@ -230,7 +272,7 @@
       write: false,
       schema: {
         name: 'search_maintenance',
-        description: 'Busca no histórico de manutenções (mais recentes primeiro). Cada resultado traz há quantos dias e km foi feito, total em reais, peças e a situação da garantia de cada peça. Use para "quando troquei X?", "o que já fiz na dianteira?" e diagnósticos.',
+        description: 'Busca no histórico de manutenções CONCLUÍDAS (mais recentes primeiro); cards abertos e sintomas não aparecem aqui, use list_vehicle_board. Cada resultado traz há quantos dias e km foi feito, total em reais, peças e a situação da garantia de cada peça. Use para "quando troquei X?", "o que já fiz na dianteira?" e diagnósticos.',
         input_schema: {
           type: 'object',
           properties: {
@@ -277,7 +319,7 @@
     const { lastUse: u, warranty: g } = item;
     return {
       nome: item.name, codigo: item.code || null, vezesTrocada: item.timesReplaced,
-      ultimaTroca: { manutencaoId: u.maintenanceId, data: u.date, km: u.km, marca: u.brand || null, loja: u.store || null, qtd: u.qty, precoUnitarioReais: toReais(u.unitPriceCentavos) },
+      ultimaTroca: { manutencaoId: u.maintenanceId, data: u.date, haDias: u.daysAgo, km: u.km, haKm: u.kmAgo, marca: u.brand || null, loja: u.store || null, qtd: u.qty, precoUnitarioReais: toReais(u.unitPriceCentavos) },
       historicoDePreco: item.priceHistory.map(h => ({ data: h.date, precoUnitarioReais: toReais(h.unitPriceCentavos), loja: h.store || null })),
       garantia: g && { ate: g.until, dentroDaGarantia: g.active, haDias: g.daysAgo, haKm: g.kmAgo }
     };
@@ -345,6 +387,17 @@
     }
   };
 
+  /** Manutenção concluída + sugestões de vínculo (nunca lança nada). */
+  function _concluidaSaida(veiculo, m) {
+    const sugestoes = VehicleFinanceService.suggestLinks({
+      date: m.date, amountsCentavos: VehicleFinanceService.defaultMaintenanceAmounts(m), excludeMaintenanceId: m.id
+    });
+    return {
+      ok: true, manutencao: _manutencaoSaida(m, VehicleService.getCurrentKm(veiculo)),
+      sugestoesDeVinculo: sugestoes.map(_sugestaoSaida), aviso: AVISO_SEM_LANCAMENTO
+    };
+  }
+
   const MANUTENCOES = {
 
     register_maintenance: {
@@ -359,13 +412,7 @@
         const dto = _dtoManutencao(input); if (dto.erro) return dto;
         const m = VehicleService.addMaintenance(r.veiculo.id, dto);
         if (m.erro) return m;
-        const sugestoes = VehicleFinanceService.suggestLinks({
-          date: m.date, amountsCentavos: VehicleFinanceService.defaultMaintenanceAmounts(m), excludeMaintenanceId: m.id
-        });
-        return {
-          ok: true, manutencao: _manutencaoSaida(m, VehicleService.getCurrentKm(r.veiculo)),
-          sugestoesDeVinculo: sugestoes.map(_sugestaoSaida), aviso: AVISO_SEM_LANCAMENTO
-        };
+        return _concluidaSaida(r.veiculo, m);
       }
     },
 
@@ -373,7 +420,7 @@
       write: true,
       schema: {
         name: 'update_maintenance',
-        description: 'Edita uma manutenção. Envie em patch só o que muda; "pecas" SUBSTITUI a lista inteira (reenvie as que continuam). Em "pecas" e "zonas": omitido ou null = não mexer; lista vazia [] = limpar a lista. Não mexe nos lançamentos vinculados.',
+        description: 'Edita uma manutenção ou card do quadro (para mudar de coluna use move_vehicle_card). Envie em patch só o que muda; "pecas" SUBSTITUI a lista inteira (reenvie as que continuam). Em "pecas" e "zonas": omitido ou null = não mexer; lista vazia [] = limpar a lista. Não mexe nos lançamentos vinculados.',
         input_schema: {
           type: 'object',
           properties: { veiculo: veiculoParam, manutencaoId: { type: 'string' }, patch: { type: 'object', properties: manutencaoProps } },
@@ -386,7 +433,7 @@
         if (desconhecido) return { erro: `Campo "${desconhecido}" não existe. Use: ${CAMPOS_PATCH.join(', ')}.` };
         const dto = _dtoManutencao(patch || {}); if (dto.erro) return dto;
         const m = VehicleService.updateMaintenance(r.veiculo.id, manutencaoId, dto);
-        return m.erro ? m : { ok: true, manutencao: _manutencaoSaida(m, VehicleService.getCurrentKm(r.veiculo)) };
+        return m.erro ? m : { ok: true, manutencao: _registroSaida(m, VehicleService.getCurrentKm(r.veiculo)) };
       }
     },
 
@@ -394,7 +441,7 @@
       write: true,
       schema: {
         name: 'delete_maintenance',
-        description: 'Exclui uma manutenção do histórico. Os lançamentos vinculados continuam nas Finanças (só o vínculo se perde). Confirme com o André antes.',
+        description: 'Exclui uma manutenção ou card. Apagar uma manutenção reabre (volta para A fazer) os sintomas que ela resolvia. Os lançamentos vinculados continuam nas Finanças (só o vínculo se perde). Confirme com o André antes.',
         input_schema: {
           type: 'object',
           properties: { veiculo: veiculoParam, manutencaoId: { type: 'string' } },
@@ -483,5 +530,193 @@
     }
   };
 
-  AiTools.register({ ...LEITURA, ...ESCRITA_FICHA, ...MANUTENCOES, ...VINCULO });
+  // ===== Quadro e diagnóstico =====
+
+  const _colunaSaida = c => ({
+    coluna: _label(CARD_STATUSES, c.status), total: c.cards.length,
+    subtotalReais: toReais(c.estimateCentavos), cards: c.cards.map(_cardSaida)
+  });
+
+  function _zonaContextoSaida(contexto, kmAtual) {
+    return {
+      zona: contexto.zone.label, kmAtual,
+      historico: contexto.history.map(m => _manutencaoSaida(m, kmAtual)),
+      pecas: contexto.parts.map(_cadernoItemSaida),
+      cardsAbertos: contexto.openCards.map(_cardSaida),
+      sintomasResolvidos: contexto.resolvedSymptoms.map(s => ({
+        ..._cardSaida(s), resolvidoPor: s.resolvedBy && { id: s.resolvedBy.id, titulo: s.resolvedBy.title, data: s.resolvedBy.date, km: s.resolvedBy.km }
+      }))
+    };
+  }
+
+  const QUADRO = {
+
+    get_zone_context: {
+      write: false,
+      schema: {
+        name: 'get_zone_context',
+        description: 'Contexto de uma zona do carro para diagnóstico: histórico de manutenções da zona, peças (com garantia e idade em dias e km), cards abertos e sintomas já resolvidos. Use ANTES de opinar sobre um sintoma: cruze o sintoma com as peças da zona, a idade em km e dias e a garantia.',
+        input_schema: {
+          type: 'object',
+          properties: { veiculo: veiculoParam, zona: { type: 'string', description: `Id ou nome: ${listaZonas}` } },
+          required: ['zona']
+        }
+      },
+      run({ veiculo, zona }) {
+        const r = _resolveVeiculo(veiculo); if (r.erro) return r;
+        const z = _resolveOpcao(zona, ZONES, 'Zona'); if (z.erro) return z;
+        const contexto = VehicleBoardService.getZoneContext(r.veiculo.id, z.id);
+        return contexto.erro ? contexto : _zonaContextoSaida(contexto, contexto.currentKm);
+      }
+    },
+
+    list_vehicle_board: {
+      write: false,
+      schema: {
+        name: 'list_vehicle_board',
+        description: 'Quadro do veículo: sintomas abertos, colunas Ideias / A fazer / Fazendo com os cards e o subtotal estimado de cada uma, o total planejado (A fazer + Fazendo) e os últimos serviços concluídos.',
+        input_schema: { type: 'object', properties: { veiculo: veiculoParam } }
+      },
+      run({ veiculo }) {
+        const r = _resolveVeiculo(veiculo); if (r.erro) return r;
+        const quadro = VehicleBoardService.getBoard(r.veiculo.id);
+        const kmAtual = VehicleService.getCurrentKm(r.veiculo);
+        return {
+          sintomas: quadro.symptoms.map(_cardSaida), colunas: quadro.columns.map(_colunaSaida),
+          planejadoReais: toReais(quadro.plannedCentavos),
+          ultimosConcluidos: quadro.recentDone.map(m => _manutencaoSaida(m, kmAtual))
+        };
+      }
+    }
+  };
+
+  /** Traduz a coluna (id ou rótulo) para o status de um card aberto; padrão "A fazer". */
+  function _resolveColuna(coluna) {
+    if (!_definido(coluna)) return { id: CARD_STATUS.TODO };
+    const r = _resolveOpcao(coluna, COLUNAS_ABERTAS, 'Coluna');
+    const concluir = norm(coluna) === norm(_label(CARD_STATUSES, CARD_STATUS.DONE));
+    return concluir ? { erro: 'Para registrar algo já feito use register_maintenance (ou mova um card com move_vehicle_card).' } : r;
+  }
+
+  function _dtoCard(input) {
+    const tipo = _resolveOpcao(input.tipo || CARD_TYPE.SERVICE, CARD_TYPES, 'Tipo'); if (tipo.erro) return tipo;
+    const coluna = _resolveColuna(input.coluna); if (coluna.erro) return coluna;
+    const extras = _dtoCategoriaEZonas(input); if (extras.erro) return extras;
+    const dto = {
+      title: input.titulo, type: tipo.id, status: coluna.id, notes: input.obs, ...extras,
+      estimateCentavos: _definido(input.estimativaReais) ? toCentavos(input.estimativaReais) : undefined
+    };
+    return Object.fromEntries(Object.entries(dto).filter(([, v]) => v !== undefined));
+  }
+
+  const MOVER = {
+    para: { type: 'string', description: `Coluna destino: ${listaColunas} ou Feito` },
+    data: { type: 'string', description: 'Feito: data em que foi feito YYYY-MM-DD (obrigatória)' },
+    km: { type: 'integer', description: 'Feito: km do serviço' },
+    oficina: { type: 'string' },
+    pecas: { type: 'array', items: pecaSchema, description: 'Feito: peças usadas' },
+    maoDeObraReais: { type: 'number' },
+    obs: { type: 'string' }
+  };
+
+  function _moverParaFeito(r, input) {
+    if (!input.data) return { erro: 'Para concluir informe a data em que foi feito (data, YYYY-MM-DD).' };
+    const dto = _dtoManutencao(input); if (dto.erro) return dto;
+    const m = VehicleService.updateMaintenance(r.veiculo.id, r.manutencao.id, { ...dto, status: CARD_STATUS.DONE });
+    return m.erro ? m : _concluidaSaida(r.veiculo, m);
+  }
+
+  function _moverCard(r, input) {
+    const destino = _resolveOpcao(input.para, CARD_STATUSES, 'Coluna'); if (destino.erro) return destino;
+    if (VehicleService.isDone(r.manutencao)) return { erro: 'Esse registro já está concluído; para ajustar use update_maintenance.' };
+    if (destino.id === CARD_STATUS.DONE) return _moverParaFeito(r, input);
+    const m = VehicleService.updateMaintenance(r.veiculo.id, r.manutencao.id, { status: destino.id });
+    return m.erro ? m : { ok: true, card: _cardSaida(m) };
+  }
+
+  const ACOES_SINTOMA = ['resolver', 'virar_servico'];
+
+  function _resolverSintoma(veiculo, input) {
+    if (!input.manutencaoId) return { erro: 'Para resolver informe manutencaoId: a manutenção concluída que resolveu o sintoma (veja search_maintenance).' };
+    const s = VehicleBoardService.resolveSymptom(veiculo.id, input.sintomaId, input.manutencaoId);
+    return s.erro ? s : { ok: true, sintoma: _cardSaida(s) };
+  }
+
+  const ESCRITA_QUADRO = {
+
+    add_vehicle_card: {
+      write: true,
+      schema: {
+        name: 'add_vehicle_card',
+        description: 'Cria um card no quadro do veículo (nada vira histórico nem custo até ser concluído). tipo: Serviço (padrão), Modificação ou Sintoma. Sintoma exige ao menos uma zona e fica na coluna Sintomas. coluna: Ideias, A fazer (padrão) ou Fazendo. Para sintoma, chame get_zone_context antes de opinar.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            veiculo: veiculoParam,
+            titulo: { type: 'string' },
+            tipo: { type: 'string', description: `Id ou nome: ${listaTipos}` },
+            coluna: { type: 'string', description: `Id ou nome: ${listaColunas} (padrão A fazer)` },
+            zonas: manutencaoProps.zonas,
+            categoria: manutencaoProps.categoria,
+            estimativaReais: manutencaoProps.estimativaReais,
+            obs: { type: 'string' }
+          },
+          required: ['titulo']
+        }
+      },
+      run(input) {
+        const r = _resolveVeiculo(input.veiculo); if (r.erro) return r;
+        const dto = _dtoCard(input); if (dto.erro) return dto;
+        const m = VehicleService.addMaintenance(r.veiculo.id, dto);
+        return m.erro ? m : { ok: true, card: _cardSaida(m) };
+      }
+    },
+
+    move_vehicle_card: {
+      write: true,
+      schema: {
+        name: 'move_vehicle_card',
+        description: 'Move um card entre Ideias, A fazer e Fazendo, ou o conclui com para "Feito": aí exige data e aceita km, oficina, peças, mão de obra e obs, vira histórico (entra nos custos) e devolve sugestoesDeVinculo; nenhum lançamento é criado. Concluído não volta para o quadro. Sintoma não se move: use resolve_vehicle_symptom.',
+        input_schema: {
+          type: 'object',
+          properties: { veiculo: veiculoParam, cardId: { type: 'string' }, ...MOVER },
+          required: ['cardId', 'para']
+        }
+      },
+      run(input) {
+        const r = _resolveManutencao(input.veiculo, input.cardId); if (r.erro) return r;
+        if (VehicleService.typeOf(r.manutencao) === CARD_TYPE.SYMPTOM) {
+          return { erro: 'Sintoma não se move: use resolve_vehicle_symptom (resolver com a manutenção que o resolveu, ou virar_servico).' };
+        }
+        return _moverCard(r, input);
+      }
+    },
+
+    resolve_vehicle_symptom: {
+      write: true,
+      schema: {
+        name: 'resolve_vehicle_symptom',
+        description: 'Fecha um sintoma aberto. acao "resolver": liga o sintoma à manutenção concluída que o resolveu (manutencaoId) e o tira do quadro. acao "virar_servico": o próprio card passa a ser um Serviço em A fazer.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            veiculo: veiculoParam,
+            sintomaId: { type: 'string' },
+            acao: { type: 'string', enum: ACOES_SINTOMA },
+            manutencaoId: { type: 'string', description: 'Obrigatório em resolver' }
+          },
+          required: ['sintomaId', 'acao']
+        }
+      },
+      run(input) {
+        if (!ACOES_SINTOMA.includes(input.acao)) return { erro: `acao deve ser: ${ACOES_SINTOMA.join(', ')}.` };
+        const r = _resolveManutencao(input.veiculo, input.sintomaId); if (r.erro) return r;
+        if (input.acao === 'resolver') return _resolverSintoma(r.veiculo, input);
+        const card = VehicleBoardService.convertSymptom(r.veiculo.id, input.sintomaId);
+        return card.erro ? card : { ok: true, card: _cardSaida(card) };
+      }
+    }
+  };
+
+  AiTools.register({ ...LEITURA, ...QUADRO, ...ESCRITA_FICHA, ...MANUTENCOES, ...ESCRITA_QUADRO, ...VINCULO });
 })();

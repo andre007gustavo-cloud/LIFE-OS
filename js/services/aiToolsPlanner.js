@@ -489,9 +489,10 @@
         const r = resolveProjeto(projeto); if (r.erro) return r;
         const notas = (r.proj.notes || []).length;
         const veiculo = VehicleService.getByProject(r.proj.id);
-        const manutencoes = veiculo ? veiculo.maintenances.length : 0;
+        const historico = veiculo ? veiculo.maintenances.filter(VehicleService.isHistory).length : 0;
+        const cards = veiculo ? veiculo.maintenances.length - historico : 0;
         ProjectService.remove(r.proj.id);
-        return { ok: true, excluido: r.proj.name, notasExcluidas: notas, ...(veiculo && { veiculoExcluido: true, manutencoesExcluidas: manutencoes }) };
+        return { ok: true, excluido: r.proj.name, notasExcluidas: notas, ...(veiculo && { veiculoExcluido: true, manutencoesExcluidas: historico, cardsExcluidos: cards }) };
       }
     },
 

@@ -218,7 +218,7 @@ const Constants = (() => {
     SEARCH_DEBOUNCE_MS: 250,
     MIN_COST_PER_KM_CENTAVOS: 1,
     CARD_STATUSES: [
-      { id: 'idea', label: 'Ideias' },
+      { id: 'idea', label: 'Ideias', aliases: ['ideia'] },
       { id: 'todo', label: 'A fazer' },
       { id: 'doing', label: 'Fazendo' },
       { id: 'done', label: 'Feito' }

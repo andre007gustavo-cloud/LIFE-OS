@@ -136,7 +136,9 @@ REGRAS:
     update_transaction: 'Editar lançamento', delete_transaction: 'Excluir lançamento',
     update_vehicle_sheet: 'Atualizar ficha do veículo', register_maintenance: 'Registrar manutenção',
     update_maintenance: 'Editar manutenção', delete_maintenance: 'Excluir manutenção',
-    link_maintenance_payment: 'Ligar manutenção ao pagamento', update_odometer: 'Atualizar km do veículo'
+    link_maintenance_payment: 'Ligar manutenção ao pagamento', update_odometer: 'Atualizar km do veículo',
+    add_vehicle_card: 'Criar card no quadro do veículo', move_vehicle_card: 'Mover card do veículo',
+    resolve_vehicle_symptom: 'Resolver sintoma do veículo'
   };
 
   function actionPreview(block) {
