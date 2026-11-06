@@ -203,6 +203,10 @@ const Constants = (() => {
       { id: 'underbody', label: 'Embaixo' }
     ],
     KM_MAX: 2000000,
+    TEXT_MAX: 120,
+    NOTES_MAX: 2000,
+    YEAR_MIN: 1900,
+    YEAR_MAX: 2100,
     DEFAULT_FINANCE_CATEGORY: 'Transporte',
     LINK: { WINDOW_DAYS: 10, WIDE_WINDOW_DAYS: 45, MAX_SUGGESTIONS: 5 }
   };

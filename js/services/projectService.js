@@ -73,6 +73,7 @@ const ProjectService = (() => {
     const db = AppState.getDB();
     const project = db.projects.find(p => p.id === id);
     if (project) _cleanupProjectImages(project);
+    if (typeof VehicleService !== 'undefined') VehicleService.removeByProject(id);
     db.projects = db.projects.filter(p => p.id !== id);
     db.areas.forEach(a => {
       if (a.projects) a.projects = a.projects.filter(p => p.id !== id);
