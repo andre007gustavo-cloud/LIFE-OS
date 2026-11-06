@@ -439,7 +439,7 @@
       write: true,
       schema: {
         name: 'update_project',
-        description: 'Edita um projeto. Envie só o que muda.',
+        description: 'Edita um projeto. Envie só o que muda. Trocar o template de "vehicle" para "generic" esconde a ficha e o histórico do veículo, mas não apaga nada; voltar para "vehicle" mostra tudo de novo.',
         input_schema: {
           type: 'object',
           properties: {

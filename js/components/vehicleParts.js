@@ -37,6 +37,9 @@ const VehicleParts = (() => {
     return `Última troca: ${Utils.fmtDateFull(lastUse.date)}${km}`;
   }
 
+  const lastPriceText = lastUse =>
+    (lastUse.unitPriceCentavos == null ? 'sem preço informado' : `${Utils.formatBRL(lastUse.unitPriceCentavos)} cada`);
+
   function priceHistoryHtml(item) {
     const rows = [...item.priceHistory].reverse().map(h => `<li>
       <span>${Utils.fmtDateFull(h.date)}</span><span>${h.store ? esc(h.store) : '—'}</span>
@@ -50,7 +53,7 @@ const VehicleParts = (() => {
       <summary>
         <span class="veh-part-head"><strong>${esc(item.name)}</strong>${warrantyBadgeHtml(item.warranty)}</span>
         <span class="veh-part-sub">${partSubtitleHtml(item)}</span>
-        <span class="veh-part-sub">${lastChangeText(lastUse)} · ${Utils.formatBRL(lastUse.unitPriceCentavos)} cada · ${item.timesReplaced}x trocada</span>
+        <span class="veh-part-sub">${lastChangeText(lastUse)} · ${lastPriceText(lastUse)} · ${item.timesReplaced}x trocada</span>
       </summary>
       ${priceHistoryHtml(item)}
       <button type="button" class="btn btn-ghost btn-sm"

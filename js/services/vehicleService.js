@@ -98,8 +98,14 @@ const VehicleService = (() => {
 
   function _normalizeZones(zones) {
     if (_isBlank(zones)) return [];
-    if (!Array.isArray(zones)) _fail('As zonas devem ser uma lista');
+    if (!Array.isArray(zones)) _fail('zonas deve ser uma lista');
     return [...new Set(zones.map(z => _oneOf(z, Constants.VEHICLE.ZONES, 'Zona')))];
+  }
+
+  function _normalizeParts(parts) {
+    if (_isBlank(parts)) return [];
+    if (!Array.isArray(parts)) _fail('pecas deve ser uma lista');
+    return parts.map(_normalizePart);
   }
 
   function _normalizeMaintenance(raw) {
@@ -114,7 +120,7 @@ const VehicleService = (() => {
       category,
       zones: _normalizeZones(raw.zones),
       shop: _text(raw.shop),
-      parts: (raw.parts || []).map(_normalizePart),
+      parts: _normalizeParts(raw.parts),
       laborCentavos: _centavos(raw.laborCentavos, 'Mão de obra'),
       notes: _text(raw.notes, Constants.VEHICLE.NOTES_MAX),
       transactionIds: [...(raw.transactionIds || [])]
@@ -180,9 +186,25 @@ const VehicleService = (() => {
 
   // ===== Odômetro =====
 
-  function _assertOdometerOrder(readings, date, km) {
-    const conflict = readings.find(r => (r.date < date && r.km > km) || (r.date > date && r.km < km));
-    if (conflict) _fail(`Km incoerente: em ${conflict.date} o odômetro marcava ${conflict.km} km`);
+  /** Km já conhecidos antes (ou na) da data: manutenções com km e a compra, se tiver data. */
+  function _earlierKmSources(vehicle, date) {
+    const sources = vehicle.maintenances
+      .filter(m => Number.isInteger(m.km) && m.date <= date)
+      .map(m => ({ km: m.km, text: `há uma manutenção de ${m.km.toLocaleString('pt-BR')} km em ${Utils.fmtDateFull(m.date)}` }));
+    if (vehicle.purchaseDate && vehicle.purchaseDate <= date && Number.isInteger(vehicle.purchaseKm)) {
+      sources.push({ km: vehicle.purchaseKm, text: `a compra registrou ${vehicle.purchaseKm.toLocaleString('pt-BR')} km em ${Utils.fmtDateFull(vehicle.purchaseDate)}` });
+    }
+    return sources;
+  }
+
+  function _assertOdometerOrder(vehicle, readings, date, km) {
+    const earlier = readings.filter(r => r.date < date)
+      .map(r => ({ km: r.km, text: `em ${Utils.fmtDateFull(r.date)} o odômetro marcava ${r.km.toLocaleString('pt-BR')} km` }));
+    const tooHigh = [...earlier, ..._earlierKmSources(vehicle, date)].filter(s => s.km > km)
+      .sort((a, b) => b.km - a.km)[0];
+    if (tooHigh) _fail(`Km incoerente: ${tooHigh.text}`);
+    const later = readings.find(r => r.date > date && r.km < km);
+    if (later) _fail(`Km incoerente: em ${Utils.fmtDateFull(later.date)} o odômetro marcava ${later.km.toLocaleString('pt-BR')} km`);
   }
 
   /** Registra a leitura do odômetro; a mesma data substitui a anterior. */
@@ -191,7 +213,7 @@ const VehicleService = (() => {
       const vehicle = _requireVehicle(vehicleId);
       const reading = { id: Utils.uid(), date: _requiredDate(date, 'Data'), km: _km(km) ?? _fail('O km é obrigatório') };
       const others = vehicle.odometer.filter(r => r.date !== reading.date);
-      _assertOdometerOrder(others, reading.date, reading.km);
+      _assertOdometerOrder(vehicle, others, reading.date, reading.km);
       vehicle.odometer = [...others, reading].sort((a, b) => a.date.localeCompare(b.date));
       vehicle.updatedAt = Date.now();
       AppState.persist();
@@ -256,7 +278,10 @@ const VehicleService = (() => {
 
   // ===== Consultas derivadas (nada é guardado) =====
 
-  /** Manutenções que contam como histórico; todas as consultas passam por aqui. */
+  /**
+   * Manutenções que contam como histórico; todas as consultas passam por aqui.
+   * Hoje é todas; é o ponto onde a fase 2 filtra por status (ideia, a fazer, feito).
+   */
   const _history = vehicle => vehicle.maintenances;
 
   const _newestFirst = (a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0);
@@ -375,16 +400,18 @@ const VehicleService = (() => {
   }
 
   const _unitPrice = part => Math.round(part.priceCentavos / part.qty);
+  const _hasPrice = use => use.part.priceCentavos > 0;
 
   function _notebookItem(key, uses, currentKm) {
     const last = uses[uses.length - 1];
+    const lastPriced = [...uses].reverse().find(_hasPrice);
     return {
       key,
       name: last.part.name,
       code: last.part.code,
       lastUse: { maintenanceId: last.maintenance.id, date: last.maintenance.date, km: last.maintenance.km ?? null,
-        store: last.part.store, brand: last.part.brand, qty: last.part.qty, unitPriceCentavos: _unitPrice(last.part) },
-      priceHistory: uses.map(u => ({ date: u.maintenance.date, unitPriceCentavos: _unitPrice(u.part), store: u.part.store })),
+        store: last.part.store, brand: last.part.brand, qty: last.part.qty, unitPriceCentavos: lastPriced ? _unitPrice(lastPriced.part) : null },
+      priceHistory: uses.filter(_hasPrice).map(u => ({ date: u.maintenance.date, unitPriceCentavos: _unitPrice(u.part), store: u.part.store })),
       timesReplaced: uses.length,
       warranty: _warranty(last, currentKm),
       _haystack: Utils.normalizeText(uses.flatMap(u => [u.part.name, u.part.brand, u.part.code, u.part.store]).filter(Boolean).join(' '))
