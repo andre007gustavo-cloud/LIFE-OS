@@ -25,7 +25,7 @@ const RAIZ = process.cwd();
 const ARQUIVOS_APP = [
   'js/config/constants.js', 'js/core/utils.js', 'js/core/state.js',
   ...['taskService', 'areaService', 'inboxService', 'projectService', 'financeService',
-    'cartaoService', 'autoLancamentoService', 'vehicleService', 'habitService', 'reviewService', 'trelloService',
+    'cartaoService', 'autoLancamentoService', 'vehicleService', 'vehicleFinanceService', 'habitService', 'reviewService', 'trelloService',
     'aiTools', 'aiToolsPlanner', 'aiToolsFinance'].map(s => `js/services/${s}.js`)
 ];
 
