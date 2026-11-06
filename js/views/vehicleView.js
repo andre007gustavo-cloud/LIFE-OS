@@ -7,8 +7,8 @@
 
 const VehicleView = (() => {
 
+  const { RECENT_MAINTENANCES } = Constants.VEHICLE;
   const TOP_ZONES = 5;
-  const RECENT_MAINTENANCES = 3;
   const MIN_COST_PER_KM_CENTAVOS = 1;
   const SHEET_ID_PREFIX = 'veh-f-';
 

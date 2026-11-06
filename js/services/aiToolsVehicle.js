@@ -10,12 +10,10 @@
 (() => {
 
   const {
-    norm, toCentavos, resolveCategoria, resolveConta, resolveCartao, resolveProjeto, nomeProjeto
+    norm, toCentavos, toReais, resolveCategoria, resolveConta, resolveCartao, resolveProjeto, nomeProjeto
   } = AiTools.helpers;
 
-  const { CATEGORIES, ZONES } = Constants.VEHICLE;
-  const ULTIMAS_MANUTENCOES = 3;
-  const CARD_PREFIX = 'card:';
+  const { CATEGORIES, ZONES, RECENT_MAINTENANCES, CARD_PREFIX } = Constants.VEHICLE;
   const AVISO_SEM_LANCAMENTO = 'Nenhum lançamento foi criado nas Finanças. Pergunte ao André se alguma sugestão de vínculo é o pagamento, ou se quer lançar agora (link_maintenance_payment).';
 
   const veiculoParam = { type: 'string', description: 'Id do veículo, id ou nome do projeto. Opcional se houver só um veículo.' };
@@ -51,7 +49,6 @@
 
   // ===== Conversões =====
 
-  const _reais = centavos => (centavos == null ? null : centavos / 100);
   const _label = (lista, id) => (lista.find(x => x.id === id) || {}).label || id;
   const _haDias = data => Math.max(0, Utils.diffDays(data, Utils.today()));
   const _haKm = (km, kmAtual) => (Number.isInteger(km) && kmAtual != null ? Math.max(0, kmAtual - km) : null);
@@ -111,7 +108,7 @@
     const garantiaAte = peca.warrantyUntil || null;
     return {
       nome: peca.name, marca: peca.brand || null, codigo: peca.code || null, loja: peca.store || null,
-      qtd: peca.qty, precoReais: _reais(peca.priceCentavos),
+      qtd: peca.qty, precoReais: toReais(peca.priceCentavos),
       garantiaAte, dentroDaGarantia: garantiaAte ? garantiaAte >= Utils.today() : null
     };
   }
@@ -121,7 +118,7 @@
       id: m.id, data: m.date, haDias: _haDias(m.date), km: m.km ?? null, haKm: _haKm(m.km, kmAtual),
       titulo: m.title, categoria: _label(CATEGORIES, m.category), zonas: m.zones.map(z => _label(ZONES, z)),
       oficina: m.shop || null, pecas: m.parts.map(_pecaSaida),
-      maoDeObraReais: _reais(m.laborCentavos), totalReais: _reais(VehicleService.maintenanceTotal(m)),
+      maoDeObraReais: toReais(m.laborCentavos), totalReais: toReais(VehicleService.maintenanceTotal(m)),
       obs: m.notes || null, lancamentosVinculados: m.transactionIds.length
     };
   }
@@ -138,16 +135,16 @@
   function _resumoSaida(resumo) {
     const ultimo = resumo.lastService;
     return {
-      totalReais: _reais(resumo.totalCentavos), noAnoReais: _reais(resumo.yearCentavos), quantidade: resumo.count,
-      custoPorKmReais: _reais(resumo.costPerKmCentavos), custoPor1000KmReais: _reais(resumo.costPer1000KmCentavos),
-      porCategoriaReais: Object.fromEntries(Object.entries(resumo.byCategory).map(([id, c]) => [_label(CATEGORIES, id), _reais(c)])),
+      totalReais: toReais(resumo.totalCentavos), noAnoReais: toReais(resumo.yearCentavos), quantidade: resumo.count,
+      custoPorKmReais: toReais(resumo.costPerKmCentavos), custoPor1000KmReais: toReais(resumo.costPer1000KmCentavos),
+      porCategoriaReais: Object.fromEntries(Object.entries(resumo.byCategory).map(([id, c]) => [_label(CATEGORIES, id), toReais(c)])),
       ultimoServico: ultimo && { titulo: ultimo.title, data: ultimo.date, haDias: ultimo.daysAgo, haKm: ultimo.kmAgo }
     };
   }
 
   function _sugestaoSaida(s) {
     return {
-      transacaoId: s.transactionId, data: s.data, valorReais: _reais(s.valorCentavos),
+      transacaoId: s.transactionId, data: s.data, valorReais: toReais(s.valorCentavos),
       descricao: s.descricao, contaOuCartao: s.contaOuCartao, motivo: s.reason
     };
   }
@@ -155,7 +152,7 @@
   function _lancamentosVinculados(veiculoId, manutencaoId) {
     return VehicleFinanceService.getLinkedTransactions(veiculoId, manutencaoId).map(l => (l.missing
       ? { transacaoId: l.transactionId, apagado: true }
-      : { transacaoId: l.transactionId, data: l.data, valorReais: _reais(l.valorCentavos), descricao: l.descricao, contaOuCartao: l.contaOuCartao }));
+      : { transacaoId: l.transactionId, data: l.data, valorReais: toReais(l.valorCentavos), descricao: l.descricao, contaOuCartao: l.contaOuCartao }));
   }
 
   // ===== Entrada: manutenção =====
@@ -215,8 +212,8 @@
         const resumo = VehicleService.getSummary(v.id);
         return {
           ficha: _fichaSaida(v), kmAtual: resumo.currentKm, resumo: _resumoSaida(resumo),
-          oficinas: VehicleService.getShops(v.id).map(o => ({ nome: o.name, visitas: o.visits, ultimaVisita: o.lastVisit, totalReais: _reais(o.totalCentavos) })),
-          ultimasManutencoes: VehicleService.listMaintenances(v.id).slice(0, ULTIMAS_MANUTENCOES).map(m => _manutencaoSaida(m, resumo.currentKm))
+          oficinas: VehicleService.getShops(v.id).map(o => ({ nome: o.name, visitas: o.visits, ultimaVisita: o.lastVisit, totalReais: toReais(o.totalCentavos) })),
+          ultimasManutencoes: VehicleService.listMaintenances(v.id).slice(0, RECENT_MAINTENANCES).map(m => _manutencaoSaida(m, resumo.currentKm))
         };
       }
     },
@@ -272,8 +269,8 @@
     const { lastUse: u, warranty: g } = item;
     return {
       nome: item.name, codigo: item.code || null, vezesTrocada: item.timesReplaced,
-      ultimaTroca: { manutencaoId: u.maintenanceId, data: u.date, km: u.km, marca: u.brand || null, loja: u.store || null, qtd: u.qty, precoUnitarioReais: _reais(u.unitPriceCentavos) },
-      historicoDePreco: item.priceHistory.map(h => ({ data: h.date, precoUnitarioReais: _reais(h.unitPriceCentavos), loja: h.store || null })),
+      ultimaTroca: { manutencaoId: u.maintenanceId, data: u.date, km: u.km, marca: u.brand || null, loja: u.store || null, qtd: u.qty, precoUnitarioReais: toReais(u.unitPriceCentavos) },
+      historicoDePreco: item.priceHistory.map(h => ({ data: h.date, precoUnitarioReais: toReais(h.unitPriceCentavos), loja: h.store || null })),
       garantia: g && { ate: g.until, dentroDaGarantia: g.active, haDias: g.daysAgo, haKm: g.kmAgo }
     };
   }

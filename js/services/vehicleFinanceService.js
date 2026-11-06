@@ -10,7 +10,7 @@
 const VehicleFinanceService = (() => {
 
   const { WINDOW_DAYS, WIDE_WINDOW_DAYS, MAX_SUGGESTIONS } = Constants.VEHICLE.LINK;
-  const CARD_PREFIX = 'card:';
+  const { CARD_PREFIX } = Constants.VEHICLE;
   const TOTAL_AMOUNT_INDEX = 0;
 
   const _sum = (items, pick) => items.reduce((total, item) => total + pick(item), 0);

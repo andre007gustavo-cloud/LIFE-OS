@@ -212,6 +212,8 @@ const Constants = (() => {
     CENTAVOS_MAX: Number.MAX_SAFE_INTEGER,
     KM_PER_COST_BASE: 1000,
     DEFAULT_FINANCE_CATEGORY: 'Transporte',
+    RECENT_MAINTENANCES: 3,
+    CARD_PREFIX: 'card:',
     LINK: { WINDOW_DAYS: 10, WIDE_WINDOW_DAYS: 45, MAX_SUGGESTIONS: 5 }
   };
 

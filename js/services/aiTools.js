@@ -29,6 +29,7 @@ const AiTools = (() => {
   const brl = c => Utils.formatBRL(c);
   const norm = s => Utils.normalizeText(s);
   const toCentavos = reais => Math.round((Number(reais) || 0) * 100);
+  const toReais = centavos => (centavos == null ? null : centavos / 100);
 
   // ===== Resolução por nome/id =====
 
@@ -200,7 +201,7 @@ const AiTools = (() => {
 
   /** Helpers compartilhados com os arquivos de domínio. */
   const helpers = {
-    brl, norm, toCentavos, match,
+    brl, norm, toCentavos, toReais, match,
     resolveCategoria, resolveConta, resolveCartao, resolveArea, resolveProjeto, resolveHabito,
     nomeArea, nomeProjeto, nomeCategoria, nomeConta, nomeCartao,
     tarefaResumo, tarefasNoIntervalo
