@@ -251,6 +251,166 @@ const VehicleService = (() => {
     });
   }
 
+  // ===== Consultas derivadas (nada é guardado) =====
+
+  /** Manutenções que contam como histórico; todas as consultas passam por aqui. */
+  const _history = vehicle => vehicle.maintenances;
+
+  const _newestFirst = (a, b) => b.date.localeCompare(a.date) || (b.createdAt || 0) - (a.createdAt || 0);
+  const _oldestFirst = (a, b) => -_newestFirst(a, b);
+  const _sum = (items, pick) => items.reduce((total, item) => total + pick(item), 0);
+
+  function _query(vehicleId, fn) {
+    return _guard(() => fn(_requireVehicle(vehicleId)));
+  }
+
+  function maintenanceTotal(maintenance) {
+    return _sum(maintenance.parts, p => p.priceCentavos) + maintenance.laborCentavos;
+  }
+
+  /** Todas as palavras buscadas precisam aparecer (sem acento nem caixa). */
+  function _textMatcher(text) {
+    const words = Utils.normalizeText(text).split(' ').filter(Boolean);
+    return haystack => words.every(w => haystack.includes(w));
+  }
+
+  function _searchHaystack(m) {
+    const partTexts = m.parts.flatMap(p => [p.name, p.brand, p.code, p.store]);
+    return Utils.normalizeText([m.title, m.notes, m.shop, ...partTexts].filter(Boolean).join(' '));
+  }
+
+  function _maintenanceFilter({ text, category, zone, from, to } = {}) {
+    const matchesText = _textMatcher(text);
+    const start = _date(from, 'Data inicial');
+    const end = _date(to, 'Data final');
+    return m => (!category || m.category === category)
+      && (!zone || m.zones.includes(zone))
+      && (!start || m.date >= start)
+      && (!end || m.date <= end)
+      && matchesText(_searchHaystack(m));
+  }
+
+  function listMaintenances(vehicleId, filters) {
+    return _query(vehicleId, vehicle => _history(vehicle)
+      .filter(_maintenanceFilter(filters))
+      .sort(_newestFirst));
+  }
+
+  function _sumBy(maintenances, keyOf) {
+    const totals = {};
+    maintenances.forEach(m => { totals[keyOf(m)] = (totals[keyOf(m)] || 0) + maintenanceTotal(m); });
+    return totals;
+  }
+
+  const _daysSince = date => Math.max(0, Utils.diffDays(date, Utils.today()));
+  const _kmSince = (km, currentKm) => (Number.isInteger(km) && currentKm != null ? Math.max(0, currentKm - km) : null);
+
+  function _lastService(history, currentKm) {
+    const last = [...history].sort(_newestFirst)[0];
+    if (!last) return null;
+    return { id: last.id, title: last.title, date: last.date, km: last.km ?? null,
+      daysAgo: _daysSince(last.date), kmAgo: _kmSince(last.km, currentKm) };
+  }
+
+  /** Km de partida do custo por km: km da compra ou a leitura mais antiga do odômetro. */
+  function _startKm(vehicle) {
+    if (Number.isInteger(vehicle.purchaseKm)) return vehicle.purchaseKm;
+    const first = [...vehicle.odometer].sort((a, b) => a.date.localeCompare(b.date))[0];
+    return first ? first.km : null;
+  }
+
+  /** Centavos por km rodado, arredondado ao centavo mais próximo; null sem km rodados. */
+  function _costPerKm(vehicle, totalCentavos, currentKm) {
+    const startKm = _startKm(vehicle);
+    const driven = startKm == null || currentKm == null ? 0 : currentKm - startKm;
+    return driven > 0 ? Math.round(totalCentavos / driven) : null;
+  }
+
+  function getSummary(vehicleId) {
+    return _query(vehicleId, vehicle => {
+      const history = _history(vehicle);
+      const currentKm = getCurrentKm(vehicle);
+      const byYear = _sumBy(history, m => m.date.slice(0, 4));
+      const totalCentavos = _sum(history, maintenanceTotal);
+      return {
+        totalCentavos,
+        yearCentavos: byYear[Utils.today().slice(0, 4)] || 0,
+        byCategory: _sumBy(history, m => m.category),
+        byYear,
+        count: history.length,
+        lastService: _lastService(history, currentKm),
+        currentKm,
+        costPerKmCentavos: _costPerKm(vehicle, totalCentavos, currentKm)
+      };
+    });
+  }
+
+  // ----- Caderno de peças -----
+
+  const _partKey = part => {
+    const code = Utils.normalizeText(part.code);
+    return code ? `code:${code}` : `name:${Utils.normalizeText(part.name)}`;
+  };
+
+  function _groupPartUses(history) {
+    const groups = new Map();
+    [...history].sort(_oldestFirst).forEach(m => m.parts.forEach(part => {
+      const key = _partKey(part);
+      groups.set(key, [...(groups.get(key) || []), { part, maintenance: m }]);
+    }));
+    return groups;
+  }
+
+  function _warranty({ part, maintenance }, currentKm) {
+    if (!part.warrantyUntil) return null;
+    return { until: part.warrantyUntil, active: part.warrantyUntil >= Utils.today(),
+      daysAgo: _daysSince(maintenance.date), kmAgo: _kmSince(maintenance.km, currentKm) };
+  }
+
+  const _unitPrice = part => Math.round(part.priceCentavos / part.qty);
+
+  function _notebookItem(key, uses, currentKm) {
+    const last = uses[uses.length - 1];
+    return {
+      key,
+      name: last.part.name,
+      code: last.part.code,
+      lastUse: { maintenanceId: last.maintenance.id, date: last.maintenance.date, km: last.maintenance.km ?? null,
+        store: last.part.store, brand: last.part.brand, qty: last.part.qty, unitPriceCentavos: _unitPrice(last.part) },
+      priceHistory: uses.map(u => ({ date: u.maintenance.date, unitPriceCentavos: _unitPrice(u.part), store: u.part.store })),
+      timesReplaced: uses.length,
+      warranty: _warranty(last, currentKm),
+      _haystack: Utils.normalizeText(uses.flatMap(u => [u.part.name, u.part.brand, u.part.code, u.part.store]).filter(Boolean).join(' '))
+    };
+  }
+
+  function getPartsNotebook(vehicleId, { text } = {}) {
+    return _query(vehicleId, vehicle => {
+      const currentKm = getCurrentKm(vehicle);
+      const matchesText = _textMatcher(text);
+      return [..._groupPartUses(_history(vehicle))]
+        .map(([key, uses]) => _notebookItem(key, uses, currentKm))
+        .filter(item => matchesText(item._haystack))
+        .map(({ _haystack, ...item }) => item)
+        .sort((a, b) => b.lastUse.date.localeCompare(a.lastUse.date));
+    });
+  }
+
+  // ----- Oficinas -----
+
+  function getShops(vehicleId) {
+    return _query(vehicleId, vehicle => {
+      const shops = new Map();
+      [..._history(vehicle)].filter(m => m.shop).sort(_oldestFirst).forEach(m => {
+        const key = Utils.normalizeText(m.shop);
+        const prev = shops.get(key) || { visits: 0, totalCentavos: 0 };
+        shops.set(key, { key, name: m.shop, visits: prev.visits + 1, lastVisit: m.date,
+          totalCentavos: prev.totalCentavos + maintenanceTotal(m) });
+      });
+      return [...shops.values()].sort((a, b) => b.lastVisit.localeCompare(a.lastVisit));
+    });
+  }
+
   return {
     list,
     getById,
@@ -261,6 +421,11 @@ const VehicleService = (() => {
     getCurrentKm,
     addMaintenance,
     updateMaintenance,
-    removeMaintenance
+    removeMaintenance,
+    listMaintenances,
+    maintenanceTotal,
+    getSummary,
+    getPartsNotebook,
+    getShops
   };
 })();
