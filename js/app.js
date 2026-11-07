@@ -348,6 +348,7 @@
     window.VehicleBoard            = VehicleBoard;
     window.VehicleZonePanel        = VehicleZonePanel;
     window.Vehicle3D               = Vehicle3D;
+    window.VehicleVisualFields     = VehicleVisualFields;
     window.openProject         = AreasView.openProject;
     window.setProjTab          = AreasView.setProjTab;
     window.pSaveField          = AreasView.saveField;

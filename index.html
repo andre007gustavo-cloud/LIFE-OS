@@ -1114,6 +1114,7 @@
       <span class="form-label" id="veh-m-zones-label">Zonas do carro</span>
       <div class="veh-zone-toggles" id="veh-m-zones" role="group" aria-labelledby="veh-m-zones-label"></div>
     </div>
+    <div class="form-group veh-visual" id="veh-m-visual" hidden></div>
     <div class="veh-parts-head">
       <span class="form-label">Peças</span>
       <button type="button" class="btn btn-ghost btn-sm" onclick="VehicleMaintenanceModal.addPartRow()">
@@ -1156,7 +1157,7 @@
     <div class="form-row" id="veh-c-row-kind">
       <div class="form-group">
         <label class="form-label" for="veh-c-type">Tipo</label>
-        <select class="form-select" id="veh-c-type"></select>
+        <select class="form-select" id="veh-c-type" onchange="VehicleCardModal.syncVisual()"></select>
       </div>
       <div class="form-group">
         <label class="form-label" for="veh-c-status">Coluna</label>
@@ -1177,6 +1178,7 @@
         <input class="form-input" id="veh-c-estimate" inputmode="decimal" placeholder="Ex: 800,00">
       </div>
     </div>
+    <div class="form-group veh-visual" id="veh-c-visual" hidden></div>
     <div class="form-group">
       <label class="form-label" for="veh-c-notes">Observações</label>
       <textarea class="form-textarea" id="veh-c-notes"></textarea>
@@ -1402,6 +1404,7 @@
 <script src="js/components/vehicleModelProcedural.js"></script>
 <script src="js/components/vehicle3d.js"></script>
 <script src="js/components/vehicleZonePanel.js"></script>
+<script src="js/components/vehicleVisualFields.js"></script>
 <script src="js/components/vehiclePayment.js"></script>
 <script src="js/components/vehicleMaintenanceModal.js"></script>
 <script src="js/components/vehicleCardModal.js"></script>

@@ -153,6 +153,13 @@
 .veh-3d-canvas{display:block;width:100%;height:100%;border-radius:var(--radius-sm);outline-offset:2px}
 @media(min-width:900px){.veh-3d-host.is-3d{height:360px}}
 
+/* ----- Efeito visual (modais e simulador) ----- */
+.veh-visual[hidden]{display:none}
+.veh-visual-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.veh-visual-field .form-label{display:block;margin-bottom:4px}
+.veh-visual-color{display:flex;align-items:center;gap:6px}
+.veh-visual-color input[type=color]{width:44px;height:34px;padding:0;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;cursor:pointer}
+
 /* ----- Painel da zona ----- */
 .veh-zone-chips button.proj-meta-chip{font-family:inherit}
 .veh-zone-chips .proj-meta-chip[aria-pressed="true"]{border-color:var(--accent);color:var(--text)}

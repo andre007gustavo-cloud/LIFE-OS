@@ -18,6 +18,7 @@ const VehicleMaintenanceModal = (() => {
   let vehicleId = null;
   let editId = null;
   let completing = false;
+  let isMod = false;
   let notebook = [];
   let partSeq = 0;
   const selectedZones = new Set();
@@ -172,6 +173,16 @@ const VehicleMaintenanceModal = (() => {
     el('veh-m-parts').innerHTML = '';
     (m.parts || []).forEach(addPartRow);
     updateTotal();
+    fillVisual(maintenance);
+  }
+
+  /** Efeito visual só aparece para Modificação; a conclusão de uma mod mantém o que foi definido no card. */
+  function fillVisual(maintenance) {
+    isMod = !!maintenance && VehicleService.typeOf(maintenance) === CARD_TYPE.MOD;
+    VehicleVisualFields.setVisible('veh-m-visual', isMod);
+    if (!isMod) return;
+    VehicleVisualFields.render('veh-m-visual', 'veh-m');
+    VehicleVisualFields.fill('veh-m', maintenance.visualEffect);
   }
 
   function applyMode(maintenance) {
@@ -232,7 +243,8 @@ const VehicleMaintenanceModal = (() => {
       shop: el('veh-m-shop').value,
       parts: partRows().map(readPart).filter(p => !isBlankPart(p)),
       laborCentavos: parseMoney(el('veh-m-labor').value),
-      notes: el('veh-m-notes').value
+      notes: el('veh-m-notes').value,
+      ...(isMod && { visualEffect: VehicleVisualFields.read('veh-m') })
     };
   }
 

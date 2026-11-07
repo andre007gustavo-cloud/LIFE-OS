@@ -113,6 +113,14 @@ const VehicleCardModal = (() => {
     selectedZones.clear();
     (card.zones || []).forEach(z => selectedZones.add(z));
     renderZoneToggles();
+    VehicleVisualFields.render('veh-c-visual', 'veh-c');
+    VehicleVisualFields.fill('veh-c', card.visualEffect);
+    syncVisual();
+  }
+
+  /** Efeito visual só existe em Modificação (nos outros tipos o campo some e o card grava sem efeito). */
+  function syncVisual() {
+    VehicleVisualFields.setVisible('veh-c-visual', !symptomMode && el('veh-c-type').value === CARD_TYPE.MOD);
   }
 
   function applyMode(isEdit, card) {
@@ -137,9 +145,12 @@ const VehicleCardModal = (() => {
     el('veh-c-title').focus();
   }
 
-  function openNew(id, { status = CARD_STATUS.TODO, type = CARD_TYPE.SERVICE, zones = [] } = {}) {
-    if (VehicleService.getById(id)) show(id, { status, type, zones }, false);
+  function openNew(id, { status = CARD_STATUS.TODO, type = CARD_TYPE.SERVICE, zones = [], visualEffect } = {}) {
+    if (VehicleService.getById(id)) show(id, { status, type, zones, visualEffect }, false);
   }
+
+  /** Nova Modificação em Ideias já com o efeito (vem do simulador). */
+  const openNewMod = (id, visualEffect) => openNew(id, { type: CARD_TYPE.MOD, status: CARD_STATUS.IDEA, visualEffect });
 
   const zonesOf = zoneId => (zoneId ? [zoneId] : []);
   const openNewSymptom = (id, zoneId) => openNew(id, { type: CARD_TYPE.SYMPTOM, zones: zonesOf(zoneId) });
@@ -163,6 +174,7 @@ const VehicleCardModal = (() => {
       zones: [...selectedZones],
       category: el('veh-c-category').value,
       estimateCentavos: estimate.trim() === '' ? undefined : Utils.brlToCentavos(estimate) ?? NaN,
+      visualEffect: el('veh-c-type').value === CARD_TYPE.MOD ? VehicleVisualFields.read('veh-c') : null,
       notes: el('veh-c-notes').value
     };
   }
@@ -244,7 +256,7 @@ const VehicleCardModal = (() => {
   }
 
   return {
-    openNew, openNewSymptom, openNewInZone, open, save, saveAndDiagnose, remove, toggleZone,
+    openNew, openNewMod, openNewSymptom, openNewInZone, syncVisual, open, save, saveAndDiagnose, remove, toggleZone,
     convertToService, resolve
   };
 })();

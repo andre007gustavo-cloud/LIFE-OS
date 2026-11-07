@@ -21,9 +21,11 @@ const VehicleView = (() => {
     { key: 'yearMade', label: 'Ano de fabricação', type: 'number' },
     { key: 'yearModel', label: 'Ano do modelo', type: 'number' },
     { key: 'purchaseDate', label: 'Data da compra', type: 'date' },
-    { key: 'purchaseKm', label: 'Km na compra', type: 'number' }
+    { key: 'purchaseKm', label: 'Km na compra', type: 'number' },
+    { key: 'paintHex', label: 'Cor da pintura no carro 3D', type: 'color' }
   ];
   const NUMBER_FIELDS = SHEET_FIELDS.filter(f => f.type === 'number').map(f => f.key);
+  const { DEFAULT_PAINT } = Constants.VEHICLE.VISUAL;
 
   // Aparece enquanto o 3D sobe e fica de vez quando o 3D não está disponível.
   const CAR_SILHOUETTE = `
@@ -43,9 +45,10 @@ const VehicleView = (() => {
   function fieldHtml(field, value) {
     const id = SHEET_ID_PREFIX + field.key;
     const placeholder = field.placeholder ? ` placeholder="${attr(field.placeholder)}"` : '';
+    const shown = field.type === 'color' ? (value || DEFAULT_PAINT) : (value ?? '');
     return `<div class="form-group">
       <label class="form-label" for="${id}">${field.label}</label>
-      <input class="form-input" id="${id}" type="${field.type}"${placeholder} value="${attr(value ?? '')}">
+      <input class="form-input" id="${id}" type="${field.type}"${placeholder} value="${attr(shown)}">
     </div>`;
   }
 
@@ -60,6 +63,7 @@ const VehicleView = (() => {
   function readSheetForm() {
     return Object.fromEntries(SHEET_FIELDS.map(({ key }) => {
       const value = document.getElementById(SHEET_ID_PREFIX + key).value.trim();
+      if (key === 'paintHex') return [key, value === DEFAULT_PAINT ? '' : value];
       return [key, NUMBER_FIELDS.includes(key) && value !== '' ? Number(value) : value];
     }));
   }
