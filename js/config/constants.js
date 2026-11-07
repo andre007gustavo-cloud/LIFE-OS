@@ -208,6 +208,23 @@ const Constants = (() => {
     ],
     // Zonas que a câmera não enxerga de fora (ficam dentro de outras): só abrem pelo chip.
     HIDDEN_ZONES: ['interior'],
+    // Efeito visual de uma modificação no carro 3D. tint = quanto o vidro escurece (0 a 1): G35 deixa passar 35% da luz.
+    VISUAL: {
+      DEFAULT_PAINT: '#b9bec6',
+      DEFAULT_WHEELS: '#c9ccd1',
+      RIDE_MIN_CM: -15,
+      RIDE_MAX_CM: 15,
+      GLASS_MAX_OPACITY: 0.97,
+      GLASS_MAX_DARKEN: 0.8,
+      FILMS: [
+        { id: 'none', label: 'Sem película', tint: 0, aliases: ['sem'] },
+        { id: 'g5', label: 'G5', tint: 0.95 },
+        { id: 'g20', label: 'G20', tint: 0.8 },
+        { id: 'g35', label: 'G35', tint: 0.65 },
+        { id: 'g50', label: 'G50', tint: 0.5 },
+        { id: 'g70', label: 'G70', tint: 0.3 }
+      ]
+    },
     ZONE_STATE: { SYMPTOM: 'symptom', PLANNED: 'planned', NEUTRAL: 'neutral' },
     SCENE: {
       LENGTH_M: 4.45,

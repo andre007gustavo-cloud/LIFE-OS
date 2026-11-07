@@ -13,6 +13,8 @@ const VehicleService = (() => {
   const { CARD_STATUS, CARD_TYPE } = Constants.VEHICLE;
   const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
   const SHEET_TEXT_FIELDS = ['nickname', 'make', 'model', 'trim', 'color', 'plate', 'financeCategoryId'];
+  const HEX_COLOR = /^#[0-9a-f]{6}$/;
+  const VISUAL_KEYS = ['paint', 'wheels', 'tint', 'rideHeight'];
 
   // ===== Erros e validação =====
 
@@ -65,6 +67,21 @@ const VehicleService = (() => {
     return value;
   }
 
+  /** Cor #rrggbb, sempre em minúsculas. */
+  function _hex(value, label) {
+    if (_isBlank(value)) return undefined;
+    const hex = String(value).trim().toLowerCase();
+    if (!HEX_COLOR.test(hex)) _fail(`${label} inválida: use o formato #rrggbb`);
+    return hex;
+  }
+
+  /** Escurecimento da película: número de 0 a 1, com 2 casas. */
+  function _tint(value) {
+    if (_isBlank(value)) return undefined;
+    if (typeof value !== 'number' || !(value >= 0 && value <= 1)) _fail('Película inválida: informe um número entre 0 e 1');
+    return Math.round(value * 100) / 100;
+  }
+
   const _compact = obj => Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined));
 
   // ===== Normalização =====
@@ -78,7 +95,8 @@ const VehicleService = (() => {
       yearMade: _int(raw.yearMade, 'Ano de fabricação', YEAR_MIN, YEAR_MAX),
       yearModel: _int(raw.yearModel, 'Ano do modelo', YEAR_MIN, YEAR_MAX),
       purchaseDate: _date(raw.purchaseDate, 'Data da compra'),
-      purchaseKm: _km(raw.purchaseKm, 'Km da compra')
+      purchaseKm: _km(raw.purchaseKm, 'Km da compra'),
+      paintHex: _hex(raw.paintHex, 'Cor da pintura')
     });
   }
 
@@ -131,6 +149,24 @@ const VehicleService = (() => {
     return _text(resolvedById) || _fail('Sintoma só é concluído indicando a manutenção que o resolveu');
   }
 
+  /** Só modificação tem efeito visual; em outro tipo é erro (nunca descarta em silêncio). Vazio ou null = sem efeito. */
+  function _normalizeVisualEffect(raw, type) {
+    if (raw == null) return undefined;
+    if (typeof raw !== 'object' || Array.isArray(raw)) _fail('Efeito visual inválido');
+    const unknown = Object.keys(raw).find(key => !VISUAL_KEYS.includes(key));
+    if (unknown) _fail(`Efeito visual: campo desconhecido "${unknown}"`);
+    const { RIDE_MIN_CM, RIDE_MAX_CM } = Constants.VEHICLE.VISUAL;
+    const effect = _compact({
+      paint: _hex(raw.paint, 'Cor da pintura'),
+      wheels: _hex(raw.wheels, 'Cor das rodas'),
+      tint: _tint(raw.tint),
+      rideHeight: _int(raw.rideHeight, 'Altura', RIDE_MIN_CM, RIDE_MAX_CM)
+    });
+    if (!Object.keys(effect).length) return undefined;
+    if (type !== CARD_TYPE.MOD) _fail('Efeito visual só vale em Modificação: mude o tipo para Modificação ou limpe o efeito (null)');
+    return effect;
+  }
+
   function _normalizeMaintenance(raw) {
     const title = _text(raw.title);
     if (!title) _fail('O título da manutenção é obrigatório');
@@ -150,6 +186,7 @@ const VehicleService = (() => {
       laborCentavos: _centavos(raw.laborCentavos, 'Mão de obra'),
       estimateCentavos: _int(raw.estimateCentavos, 'Estimativa', 0, Constants.VEHICLE.CENTAVOS_MAX),
       resolvedById: _resolvedById(raw, kind),
+      visualEffect: _normalizeVisualEffect(raw.visualEffect, kind.type),
       notes: _text(raw.notes, Constants.VEHICLE.NOTES_MAX),
       transactionIds: open ? [] : [...(raw.transactionIds || [])]
     });
@@ -196,7 +233,7 @@ const VehicleService = (() => {
     return vehicle;
   }
 
-  const SHEET_KEYS = [...SHEET_TEXT_FIELDS, 'yearMade', 'yearModel', 'purchaseDate', 'purchaseKm'];
+  const SHEET_KEYS = [...SHEET_TEXT_FIELDS, 'yearMade', 'yearModel', 'purchaseDate', 'purchaseKm', 'paintHex'];
 
   function _updateSheet(existing, fields) {
     SHEET_KEYS.forEach(k => delete existing[k]);
