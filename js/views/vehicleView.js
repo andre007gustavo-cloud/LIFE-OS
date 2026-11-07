@@ -8,7 +8,7 @@
 
 const VehicleView = (() => {
 
-  const { RECENT_MAINTENANCES, TOP_ZONES, MIN_COST_PER_KM_CENTAVOS } = Constants.VEHICLE;
+  const { RECENT_MAINTENANCES, MIN_COST_PER_KM_CENTAVOS, ZONE_STATE } = Constants.VEHICLE;
   const SHEET_ID_PREFIX = 'veh-f-';
 
   const SHEET_FIELDS = [
@@ -122,14 +122,10 @@ const VehicleView = (() => {
     return String(yearMade || yearModel || '');
   }
 
-  function topZones(vehicle) {
+  function historyCounts(vehicle) {
     const counts = new Map();
     VehicleService.listMaintenances(vehicle.id).forEach(m => m.zones.forEach(z => counts.set(z, (counts.get(z) || 0) + 1)));
-    return Constants.VEHICLE.ZONES
-      .filter(z => counts.has(z.id))
-      .map(z => ({ id: z.id, label: z.label, count: counts.get(z.id) }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, TOP_ZONES);
+    return counts;
   }
 
   function openSymptomCounts(vehicle) {
@@ -139,33 +135,45 @@ const VehicleView = (() => {
     return counts;
   }
 
-  /** Zonas com sintoma aberto vêm primeiro e sempre aparecem, mesmo sem histórico. */
-  function chipZones(vehicle, symptoms) {
-    const top = topZones(vehicle);
-    const onlySymptom = Constants.VEHICLE.ZONES
-      .filter(z => symptoms.has(z.id) && !top.some(t => t.id === z.id))
-      .map(z => ({ id: z.id, label: z.label, count: 0 }));
-    const alerting = zone => (symptoms.has(zone.id) ? 0 : 1);
-    return [...onlySymptom, ...top].sort((a, b) => alerting(a) - alerting(b));
+  /** Uma entrada por zona (todas ficam alcançáveis pelo teclado e pelo toque), com o mesmo estado de cor do 3D. */
+  function zoneChipData(vehicle) {
+    const history = historyCounts(vehicle);
+    const symptoms = openSymptomCounts(vehicle);
+    const states = VehicleSceneService.getZoneStates(vehicle.id);
+    return Constants.VEHICLE.ZONES.map(z => ({
+      id: z.id, label: z.label, count: history.get(z.id) || 0, symptoms: symptoms.get(z.id) || 0, state: states[z.id]
+    }));
   }
 
-  function zoneChipLabel(zone, symptomCount) {
+  /** Sintoma primeiro, depois planejadas, depois com histórico, depois o resto; em cada grupo, as mais mexidas antes (a ordem das zonas desempata). */
+  function zoneChipRank(zone) {
+    if (zone.state === ZONE_STATE.SYMPTOM) return 0;
+    if (zone.state === ZONE_STATE.PLANNED) return 1;
+    return zone.count ? 2 : 3;
+  }
+
+  function sortZoneChips(zones) {
+    return [...zones].sort((a, b) => zoneChipRank(a) - zoneChipRank(b) || b.count - a.count);
+  }
+
+  function zoneChipLabel(zone) {
     const history = zone.count ? ` · ${zone.count}` : '';
-    if (!symptomCount) return `${esc(zone.label)}${history}`;
-    const noun = symptomCount === 1 ? 'sintoma aberto' : 'sintomas abertos';
-    return `<i class="ti ti-alert-triangle" aria-hidden="true"></i> ${esc(zone.label)}${history} · ${symptomCount} ${noun}`;
+    if (zone.symptoms) {
+      const noun = zone.symptoms === 1 ? 'sintoma aberto' : 'sintomas abertos';
+      return `<i class="ti ti-alert-triangle" aria-hidden="true"></i> ${esc(zone.label)}${history} · ${zone.symptoms} ${noun}`;
+    }
+    return `${esc(zone.label)}${history}${zone.state === ZONE_STATE.PLANNED ? ' · planejada' : ''}`;
   }
 
-  function zoneChipHtml(vehicle, zone, symptomCount, selectedZone) {
-    return `<button type="button" class="proj-meta-chip${symptomCount ? ' veh-chip-alert' : ''}" data-zone="${attr(zone.id)}"
-      aria-pressed="${zone.id === selectedZone}" onclick="VehicleView.selectZone('${attr(vehicle.id)}','${attr(zone.id)}')">${zoneChipLabel(zone, symptomCount)}</button>`;
+  const ZONE_CHIP_CLASS = { [ZONE_STATE.SYMPTOM]: ' veh-chip-alert', [ZONE_STATE.PLANNED]: ' veh-chip-planned', [ZONE_STATE.NEUTRAL]: '' };
+
+  function zoneChipHtml(vehicle, zone, selectedZone) {
+    return `<button type="button" class="proj-meta-chip${ZONE_CHIP_CLASS[zone.state]}" data-zone="${attr(zone.id)}"
+      aria-pressed="${zone.id === selectedZone}" onclick="VehicleView.selectZone('${attr(vehicle.id)}','${attr(zone.id)}')">${zoneChipLabel(zone)}</button>`;
   }
 
   function zoneChipsHtml(vehicle, selectedZone) {
-    const symptoms = openSymptomCounts(vehicle);
-    const zones = chipZones(vehicle, symptoms);
-    if (!zones.length) return '<div class="text-muted">As zonas mais mexidas aparecem conforme você registra manutenções.</div>';
-    return zones.map(z => zoneChipHtml(vehicle, z, symptoms.get(z.id), selectedZone)).join('');
+    return sortZoneChips(zoneChipData(vehicle)).map(z => zoneChipHtml(vehicle, z, selectedZone)).join('');
   }
 
   // ===== Garagem: zona escolhida e carro 3D =====

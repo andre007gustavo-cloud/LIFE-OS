@@ -142,6 +142,7 @@
 .veh-resolve-row .form-select{flex:1;min-width:0}
 .veh-symptom-btn{margin-top:10px}
 .veh-chip-alert{background:var(--bg3);color:var(--red);border-color:var(--red);font-weight:600}
+.veh-chip-planned{background:var(--bg3);color:var(--accent);border-color:var(--accent)}
 .veh-col-symptoms{border-color:var(--red)}
 .veh-card-alert{border-left:3px solid var(--red)}
 .veh-card-alert .ti{color:var(--red)}
