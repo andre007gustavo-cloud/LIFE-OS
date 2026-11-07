@@ -54,7 +54,7 @@ const VehicleService = (() => {
   function _int(value, label, min, max) {
     if (_isBlank(value)) return undefined;
     if (!Number.isInteger(value) || value < min || value > max) {
-      _fail(`${label} inválido: informe um número inteiro entre ${min} e ${max}`);
+      _fail(`${label}: valor inválido, informe um número inteiro entre ${min} e ${max}`);
     }
     return value;
   }
