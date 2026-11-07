@@ -13,7 +13,7 @@
     norm, toCentavos, toReais, resolveCategoria, resolveConta, resolveCartao, resolveProjeto, nomeProjeto
   } = AiTools.helpers;
 
-  const { CATEGORIES, ZONES, RECENT_MAINTENANCES, CARD_PREFIX, CARD_STATUSES, CARD_STATUS, CARD_TYPES, CARD_TYPE } = Constants.VEHICLE;
+  const { CATEGORIES, ZONES, RECENT_MAINTENANCES, CARD_PREFIX, CARD_STATUSES, CARD_STATUS, CARD_TYPES, CARD_TYPE, VISUAL } = Constants.VEHICLE;
   const AVISO_SEM_LANCAMENTO = 'Nenhum lançamento foi criado nas Finanças. Pergunte ao André se alguma sugestão de vínculo é o pagamento, ou se quer lançar agora (link_maintenance_payment).';
 
   const veiculoParam = { type: 'string', description: 'Id do veículo, id ou nome do projeto. Opcional se houver só um veículo.' };
@@ -40,6 +40,19 @@
     required: ['nome']
   };
 
+  const listaPeliculas = VISUAL.FILMS.map(f => f.label).join(', ');
+  const efeitoVisualSchema = {
+    type: 'object',
+    description: `Como a modificação muda o carro 3D (só em Modificação; null limpa). Informe só o que muda.`,
+    properties: {
+      cor: { type: 'string', description: 'Cor da pintura, #rrggbb' },
+      rodas: { type: 'string', description: 'Cor das rodas, #rrggbb' },
+      pelicula: { type: 'string', description: `Película dos vidros: ${listaPeliculas}` },
+      alturaCm: { type: 'integer', description: `Altura de rodagem em relação à original, em cm (${VISUAL.RIDE_MIN_CM} a ${VISUAL.RIDE_MAX_CM}; negativo = rebaixado)` }
+    }
+  };
+  const CAMPOS_EFEITO = Object.keys(efeitoVisualSchema.properties);
+
   const manutencaoProps = {
     data: dataISO,
     km: { type: 'integer', description: 'Km do odômetro no serviço' },
@@ -51,7 +64,8 @@
     maoDeObraReais: { type: 'number', description: 'Mão de obra em reais' },
     obs: { type: 'string' },
     tipo: { type: 'string', description: 'Serviço (padrão) ou Modificação. Para sintoma use add_vehicle_card.' },
-    estimativaReais: { type: 'number', description: 'Quanto se esperava gastar, em reais (não entra nos totais)' }
+    estimativaReais: { type: 'number', description: 'Quanto se esperava gastar, em reais (não entra nos totais)' },
+    efeitoVisual: efeitoVisualSchema
   };
 
   // ===== Conversões =====
@@ -122,13 +136,28 @@
     };
   }
 
+  /** Película pelo rótulo da mais próxima (G35, G50...). */
+  function _peliculaSaida(tint) {
+    const films = [...VISUAL.FILMS].sort((a, b) => Math.abs(a.tint - tint) - Math.abs(b.tint - tint));
+    return films[0].label;
+  }
+
+  function _efeitoSaida(efeito) {
+    return {
+      cor: efeito.paint ?? null, rodas: efeito.wheels ?? null,
+      pelicula: efeito.tint == null ? null : _peliculaSaida(efeito.tint), alturaCm: efeito.rideHeight ?? null
+    };
+  }
+
+  const _comEfeito = m => (m.visualEffect ? { efeitoVisual: _efeitoSaida(m.visualEffect) } : {});
+
   function _manutencaoSaida(m, kmAtual) {
     return {
       id: m.id, data: m.date, haDias: _haDias(m.date), km: m.km ?? null, haKm: _haKm(m.km, kmAtual),
       titulo: m.title, categoria: _label(CATEGORIES, m.category), zonas: m.zones.map(z => _label(ZONES, z)),
       oficina: m.shop || null, pecas: m.parts.map(_pecaSaida),
       maoDeObraReais: toReais(m.laborCentavos), totalReais: toReais(VehicleService.maintenanceTotal(m)),
-      obs: m.notes || null, lancamentosVinculados: m.transactionIds.length
+      obs: m.notes || null, lancamentosVinculados: m.transactionIds.length, ..._comEfeito(m)
     };
   }
 
@@ -140,7 +169,7 @@
       estimativaReais: m.estimateCentavos == null ? null : toReais(m.estimateCentavos),
       pecas: m.parts.map(_pecaSaida), maoDeObraReais: toReais(m.laborCentavos),
       data: m.date || null, km: m.km ?? null, oficina: m.shop || null, obs: m.notes || null,
-      ...(m.resolvedById && { resolvidoPorId: m.resolvedById })
+      ...(m.resolvedById && { resolvidoPorId: m.resolvedById }), ..._comEfeito(m)
     };
   }
 
@@ -213,15 +242,31 @@
     return r.id === CARD_TYPE.SYMPTOM ? { erro: USE_ADD_CARD } : { type: r.id };
   }
 
+  /** efeitoVisual (pt-BR) → visualEffect do service; null limpa, ausente não mexe. A validação de valores é do service. */
+  function _dtoEfeito(input) {
+    const efeito = input.efeitoVisual;
+    if (!_definido(efeito)) return {};
+    if (efeito === null) return { visualEffect: null };
+    if (typeof efeito !== 'object' || Array.isArray(efeito)) return { erro: 'efeitoVisual deve ser um objeto com cor, rodas, pelicula e alturaCm.' };
+    const desconhecido = Object.keys(efeito).find(k => !CAMPOS_EFEITO.includes(k));
+    if (desconhecido) return { erro: `efeitoVisual: campo "${desconhecido}" não existe. Use: ${CAMPOS_EFEITO.join(', ')}.` };
+    const pelicula = _definido(efeito.pelicula) ? _resolveOpcao(efeito.pelicula, VISUAL.FILMS, 'Película') : null;
+    if (pelicula?.erro) return pelicula;
+    const tint = pelicula ? VISUAL.FILMS.find(f => f.id === pelicula.id).tint : undefined;
+    return { visualEffect: { paint: efeito.cor, wheels: efeito.rodas, tint, rideHeight: efeito.alturaCm } };
+  }
+
   /** Traduz os campos em pt-BR para o modelo do service; só o que foi informado. */
   function _dtoManutencao(input) {
     const extras = _dtoCategoriaEZonas(input);
     if (extras.erro) return extras;
     const tipo = _dtoTipo(input);
     if (tipo.erro) return tipo;
+    const efeito = _dtoEfeito(input);
+    if (efeito.erro) return efeito;
     const dto = {
       date: input.data, km: input.km, title: input.titulo, shop: input.oficina, notes: input.obs,
-      ...extras, ...tipo,
+      ...extras, ...tipo, ...efeito,
       estimateCentavos: _definido(input.estimativaReais) ? toCentavos(input.estimativaReais) : undefined,
       parts: Array.isArray(input.pecas) ? input.pecas.map(_pecaEntrada) : input.pecas,
       laborCentavos: _definido(input.maoDeObraReais) ? toCentavos(input.maoDeObraReais) : undefined
@@ -602,8 +647,9 @@
     const tipo = _resolveOpcao(input.tipo || CARD_TYPE.SERVICE, CARD_TYPES, 'Tipo'); if (tipo.erro) return tipo;
     const coluna = _resolveColuna(input.coluna); if (coluna.erro) return coluna;
     const extras = _dtoCategoriaEZonas(input); if (extras.erro) return extras;
+    const efeito = _dtoEfeito(input); if (efeito.erro) return efeito;
     const dto = {
-      title: input.titulo, type: tipo.id, status: coluna.id, notes: input.obs, ...extras,
+      title: input.titulo, type: tipo.id, status: coluna.id, notes: input.obs, ...extras, ...efeito,
       estimateCentavos: _definido(input.estimativaReais) ? toCentavos(input.estimativaReais) : undefined
     };
     return Object.fromEntries(Object.entries(dto).filter(([, v]) => v !== undefined));
@@ -659,6 +705,7 @@
             zonas: manutencaoProps.zonas,
             categoria: manutencaoProps.categoria,
             estimativaReais: manutencaoProps.estimativaReais,
+            efeitoVisual: efeitoVisualSchema,
             obs: { type: 'string' }
           },
           required: ['titulo']
