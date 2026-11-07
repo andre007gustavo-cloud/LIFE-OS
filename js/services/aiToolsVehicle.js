@@ -42,13 +42,13 @@
 
   const listaPeliculas = VISUAL.FILMS.map(f => f.label).join(', ');
   const efeitoVisualSchema = {
-    type: 'object',
-    description: `Como a modificação muda o carro 3D (só em Modificação; null limpa). Informe só o que muda.`,
+    type: ['object', 'null'],
+    description: 'Como a modificação muda o carro 3D (só em Modificação). Informe só o que muda: na edição os campos omitidos continuam como estão. null no campo remove só aquele campo; null em efeitoVisual limpa o efeito inteiro.',
     properties: {
-      cor: { type: 'string', description: 'Cor da pintura, #rrggbb' },
-      rodas: { type: 'string', description: 'Cor das rodas, #rrggbb' },
-      pelicula: { type: 'string', description: `Película dos vidros: ${listaPeliculas}` },
-      alturaCm: { type: 'integer', description: `Altura de rodagem em relação à original, em cm (${VISUAL.RIDE_MIN_CM} a ${VISUAL.RIDE_MAX_CM}; negativo = rebaixado)` }
+      cor: { type: ['string', 'null'], description: 'Cor da pintura, #rrggbb' },
+      rodas: { type: ['string', 'null'], description: 'Cor das rodas, #rrggbb' },
+      pelicula: { type: ['string', 'null'], description: `Película dos vidros: ${listaPeliculas}` },
+      alturaCm: { type: ['integer', 'null'], description: `Altura de rodagem em relação à original, em cm (${VISUAL.RIDE_MIN_CM} a ${VISUAL.RIDE_MAX_CM}; negativo = rebaixado)` }
     }
   };
   const CAMPOS_EFEITO = Object.keys(efeitoVisualSchema.properties);
@@ -242,27 +242,37 @@
     return r.id === CARD_TYPE.SYMPTOM ? { erro: USE_ADD_CARD } : { type: r.id };
   }
 
-  /** efeitoVisual (pt-BR) → visualEffect do service; null limpa, ausente não mexe. A validação de valores é do service. */
-  function _dtoEfeito(input) {
+  /** Efeito do service a partir do efeito atual e dos campos informados: omitido mantém, null no campo remove. */
+  function _mesclarEfeito(atual, campos) {
+    const merged = { ...atual };
+    Object.entries(campos).forEach(([key, value]) => {
+      if (value === null) delete merged[key];
+      else if (value !== undefined) merged[key] = value;
+    });
+    return Object.keys(merged).length ? merged : null;
+  }
+
+  /** efeitoVisual (pt-BR) → visualEffect do service; null limpa tudo, ausente não mexe, campos informados se somam ao efeito atual. A validação de valores é do service. */
+  function _dtoEfeito(input, atual) {
     const efeito = input.efeitoVisual;
     if (!_definido(efeito)) return {};
     if (efeito === null) return { visualEffect: null };
     if (typeof efeito !== 'object' || Array.isArray(efeito)) return { erro: 'efeitoVisual deve ser um objeto com cor, rodas, pelicula e alturaCm.' };
     const desconhecido = Object.keys(efeito).find(k => !CAMPOS_EFEITO.includes(k));
     if (desconhecido) return { erro: `efeitoVisual: campo "${desconhecido}" não existe. Use: ${CAMPOS_EFEITO.join(', ')}.` };
-    const pelicula = _definido(efeito.pelicula) ? _resolveOpcao(efeito.pelicula, VISUAL.FILMS, 'Película') : null;
+    const pelicula = efeito.pelicula != null ? _resolveOpcao(efeito.pelicula, VISUAL.FILMS, 'Película') : null;
     if (pelicula?.erro) return pelicula;
-    const tint = pelicula ? VISUAL.FILMS.find(f => f.id === pelicula.id).tint : undefined;
-    return { visualEffect: { paint: efeito.cor, wheels: efeito.rodas, tint, rideHeight: efeito.alturaCm } };
+    const tint = pelicula ? VISUAL.FILMS.find(f => f.id === pelicula.id).tint : (efeito.pelicula === null ? null : undefined);
+    return { visualEffect: _mesclarEfeito(atual, { paint: efeito.cor, wheels: efeito.rodas, tint, rideHeight: efeito.alturaCm }) };
   }
 
   /** Traduz os campos em pt-BR para o modelo do service; só o que foi informado. */
-  function _dtoManutencao(input) {
+  function _dtoManutencao(input, efeitoAtual) {
     const extras = _dtoCategoriaEZonas(input);
     if (extras.erro) return extras;
     const tipo = _dtoTipo(input);
     if (tipo.erro) return tipo;
-    const efeito = _dtoEfeito(input);
+    const efeito = _dtoEfeito(input, efeitoAtual);
     if (efeito.erro) return efeito;
     const dto = {
       date: input.data, km: input.km, title: input.titulo, shop: input.oficina, notes: input.obs,
@@ -476,7 +486,7 @@
         const r = _resolveManutencao(veiculo, manutencaoId); if (r.erro) return r;
         const desconhecido = Object.keys(patch || {}).find(k => !CAMPOS_PATCH.includes(k));
         if (desconhecido) return { erro: `Campo "${desconhecido}" não existe. Use: ${CAMPOS_PATCH.join(', ')}.` };
-        const dto = _dtoManutencao(patch || {}); if (dto.erro) return dto;
+        const dto = _dtoManutencao(patch || {}, r.manutencao.visualEffect); if (dto.erro) return dto;
         const m = VehicleService.updateMaintenance(r.veiculo.id, manutencaoId, dto);
         return m.erro ? m : { ok: true, manutencao: _registroSaida(m, VehicleService.getCurrentKm(r.veiculo)) };
       }
@@ -667,7 +677,7 @@
 
   function _moverParaFeito(r, input) {
     if (!input.data) return { erro: 'Para concluir informe a data em que foi feito (data, YYYY-MM-DD).' };
-    const dto = _dtoManutencao(input); if (dto.erro) return dto;
+    const dto = _dtoManutencao(input, r.manutencao.visualEffect); if (dto.erro) return dto;
     const m = VehicleService.updateMaintenance(r.veiculo.id, r.manutencao.id, { ...dto, status: CARD_STATUS.DONE });
     return m.erro ? m : _concluidaSaida(r.veiculo, m);
   }
