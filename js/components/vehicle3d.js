@@ -33,10 +33,17 @@ const Vehicle3D = (() => {
     return !failed && hasImportMap && typeof WebGLRenderingContext !== 'undefined';
   }
 
-  /** Import memoizado: a biblioteca baixa uma vez só, mesmo que a Garagem abra e feche. */
+  /**
+   * Import memoizado: a biblioteca baixa uma vez só, mesmo que a Garagem abra e feche.
+   * Se o download falha (rede), a promessa é descartada para a próxima montagem tentar de novo.
+   */
   function loadLibs() {
     libsPromise ??= Promise.all([import('three'), import('three/addons/controls/OrbitControls.js')])
-      .then(([THREE, controls]) => ({ THREE, OrbitControls: controls.OrbitControls }));
+      .then(([THREE, controls]) => ({ THREE, OrbitControls: controls.OrbitControls }))
+      .catch(error => {
+        libsPromise = null;
+        throw error;
+      });
     return libsPromise;
   }
 
@@ -318,18 +325,34 @@ const Vehicle3D = (() => {
     return true;
   }
 
+  async function buildSession(libs) {
+    const model = await VehicleModelProcedural.load(libs.THREE);
+    session = createSession(libs, model);
+    watchCanvas(session);
+  }
+
+  /** Mantém a silhueta. Falha de carga (rede) é passageira; falha ao montar a cena (WebGL, modelo) desliga o 3D de vez. */
+  function giveUp(error, permanent) {
+    failed ||= permanent;
+    disposeSession();
+    host?.classList.remove(HOST_READY_CLASS);
+    console.warn('[Vehicle3D] Carro 3D indisponível, mantendo a silhueta:', error);
+    return false;
+  }
+
   async function start() {
     try {
-      const libs = await loadLibs();
-      const model = await VehicleModelProcedural.load(libs.THREE);
-      session = createSession(libs, model);
-      watchCanvas(session);
-    } catch (error) {
-      failed = true;
-      disposeSession();
-      host?.classList.remove(HOST_READY_CLASS);
-      console.warn('[Vehicle3D] Carro 3D indisponível, mantendo a silhueta:', error);
-      return false;
+      let libs;
+      try {
+        libs = await loadLibs();
+      } catch (error) {
+        return giveUp(error, false);
+      }
+      try {
+        await buildSession(libs);
+      } catch (error) {
+        return giveUp(error, true);
+      }
     } finally {
       starting = null;
     }
