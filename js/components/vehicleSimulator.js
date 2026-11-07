@@ -5,7 +5,7 @@
  * recolhível "Simular" (cor, rodas, película, altura), que age ao vivo e NUNCA
  * grava. "Salvar como ideia" abre o modal de card como Modificação em Ideias
  * com o efeito; "Descartar" volta ao que está registrado.
- * O estado (prévia ligada, simulação, painel aberto) vive só na tela.
+ * O estado (prévia ligada, simulação, painel aberto) vive só na tela, em AppState.ui.vehicleSim.
  */
 
 const VehicleSimulator = (() => {
@@ -16,12 +16,12 @@ const VehicleSimulator = (() => {
   const attr = Utils.escapeAttr;
   const el = id => document.getElementById(id);
 
-  let state = { vehicleId: null, preview: false, override: null, open: false };
-
   /** A simulação e a prévia pertencem a um veículo: ao trocar de veículo recomeçam. */
   function stateFor(vehicleId) {
-    if (state.vehicleId !== vehicleId) state = { vehicleId, preview: false, override: null, open: false };
-    return state;
+    if (AppState.ui.vehicleSim.vehicleId !== vehicleId) {
+      AppState.ui.vehicleSim = { vehicleId, preview: false, override: null, open: false };
+    }
+    return AppState.ui.vehicleSim;
   }
 
   /** Aparência a mostrar agora: registrado + prévia (se ligada) + simulação. */
@@ -56,18 +56,20 @@ const VehicleSimulator = (() => {
   }
 
   function setOpen(isOpen) {
-    state.open = isOpen;
+    AppState.ui.vehicleSim.open = isOpen;
   }
 
   function update() {
-    state.override = VehicleVisualFields.read(FIELDS_PREFIX);
-    applyNow(state.vehicleId);
+    const sim = AppState.ui.vehicleSim;
+    sim.override = VehicleVisualFields.read(FIELDS_PREFIX);
+    applyNow(sim.vehicleId);
   }
 
   function discard() {
-    state.override = null;
+    const sim = AppState.ui.vehicleSim;
+    sim.override = null;
     VehicleVisualFields.fill(FIELDS_PREFIX, null);
-    applyNow(state.vehicleId);
+    applyNow(sim.vehicleId);
   }
 
   function saveAsIdea(vehicleId) {

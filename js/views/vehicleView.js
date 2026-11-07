@@ -170,13 +170,11 @@ const VehicleView = (() => {
 
   // ===== Garagem: zona escolhida e carro 3D =====
 
-  /** Estado só de tela: a zona aberta sobrevive ao redesenho da Garagem (salvar, snapshot remoto). */
-  let zoneSelection = { vehicleId: null, zoneId: null };
-
-  const selectedZoneOf = vehicle => (zoneSelection.vehicleId === vehicle.id ? zoneSelection.zoneId : null);
+  /** A zona aberta (AppState.ui.vehicleZone) sobrevive ao redesenho da Garagem (salvar, snapshot remoto). */
+  const selectedZoneOf = vehicle => (AppState.ui.vehicleZone.vehicleId === vehicle.id ? AppState.ui.vehicleZone.zoneId : null);
 
   function selectZone(vehicleId, zoneId) {
-    zoneSelection = { vehicleId, zoneId };
+    AppState.ui.vehicleZone = { vehicleId, zoneId };
     const panel = document.getElementById('veh-zone-panel');
     if (panel) panel.innerHTML = zoneId ? VehicleZonePanel.html(vehicleId, zoneId) : '';
     document.querySelectorAll('.veh-zone-chips [data-zone]').forEach(chip => {

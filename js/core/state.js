@@ -44,6 +44,9 @@ const AppState = (() => {
     // Veículo: filtros da aba Manutenções e busca do caderno de peças (nunca vão para o DB)
     vehicleFilters: { text: '', category: '', zone: '', year: '' },
     vehiclePartsText: '',
+    // Veículo: zona aberta na Garagem e simulador do carro 3D (só de tela)
+    vehicleZone: { vehicleId: null, zoneId: null },
+    vehicleSim: { vehicleId: null, preview: false, override: null, open: false },
 
     // Habits
     habitEditId: null,
