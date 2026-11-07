@@ -15,6 +15,7 @@ const Vehicle3D = (() => {
   const { SCENE, ZONES, ZONE_STATE, VISUAL } = Constants.VEHICLE;
   const Geometry = VehicleZoneGeometry;
   const HOST_READY_CLASS = 'is-3d';
+  const RAD_PER_DEG = Math.PI / 180;
   const CANVAS_LABEL = 'Carro em 3D. Toque numa região para ver os detalhes dela; os botões de zona abaixo fazem o mesmo pelo teclado.';
 
   let libsPromise = null;
@@ -51,11 +52,12 @@ const Vehicle3D = (() => {
   }
 
   function addLights(THREE, scene) {
-    const sky = new THREE.HemisphereLight('#ffffff', '#59606d', 1.5);
-    const sun = new THREE.DirectionalLight('#ffffff', 2.4);
-    sun.position.set(4, 6, 3);
-    const fill = new THREE.DirectionalLight('#cfd8ff', 0.9);
-    fill.position.set(-5, 3, -4);
+    const { SKY, SUN, FILL } = SCENE.LIGHTS;
+    const sky = new THREE.HemisphereLight(SKY.color, SKY.ground, SKY.intensity);
+    const sun = new THREE.DirectionalLight(SUN.color, SUN.intensity);
+    sun.position.set(...SUN.position);
+    const fill = new THREE.DirectionalLight(FILL.color, FILL.intensity);
+    fill.position.set(...FILL.position);
     scene.add(sky, sun, fill);
   }
 
@@ -82,8 +84,8 @@ const Vehicle3D = (() => {
     controls.enablePan = false;
     controls.enableZoom = false;
     controls.enableDamping = true;
-    controls.dampingFactor = 0.1;
-    controls.minPolarAngle = Math.PI / 2 - (SCENE.MAX_ELEVATION_DEG * Math.PI) / 180;
+    controls.dampingFactor = SCENE.DAMPING_FACTOR;
+    controls.minPolarAngle = Math.PI / 2 - SCENE.MAX_ELEVATION_DEG * RAD_PER_DEG;
     controls.maxPolarAngle = Math.PI / 2;
     canvas.style.touchAction = 'pan-y';
     return controls;
@@ -101,7 +103,7 @@ const Vehicle3D = (() => {
     const zoneGroup = new THREE.Group();
     addLights(THREE, scene);
     scene.add(model.root, zoneGroup);
-    const camera = new THREE.PerspectiveCamera(SCENE.FOV_DEG, 1, 0.1, 100);
+    const camera = new THREE.PerspectiveCamera(SCENE.FOV_DEG, 1, SCENE.CAMERA_NEAR, SCENE.CAMERA_FAR);
     const s = {
       renderer, scene, camera, model, canvas: renderer.domElement, raycaster: new THREE.Raycaster(),
       glassBase: model.glass.map(material => ({ opacity: material.opacity, color: material.color.clone() })),
@@ -186,8 +188,8 @@ const Vehicle3D = (() => {
 
   /** Em telas estreitas abre o campo de visão na vertical, para o carro inteiro caber na largura. */
   function fovFor(aspect) {
-    const base = Math.tan((SCENE.FOV_DEG * Math.PI) / 360);
-    return (2 * Math.atan(base * Math.max(1, SCENE.MIN_ASPECT / aspect)) * 180) / Math.PI;
+    const halfTan = Math.tan((SCENE.FOV_DEG * RAD_PER_DEG) / 2);
+    return (2 * Math.atan(halfTan * Math.max(1, SCENE.MIN_ASPECT / aspect))) / RAD_PER_DEG;
   }
 
   function resize() {

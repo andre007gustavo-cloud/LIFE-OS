@@ -243,7 +243,15 @@ const Constants = (() => {
       HIGHLIGHT_COLORS: { symptom: '#ef4444', planned: '#3b82f6', neutral: '#ffffff' },
       HIGHLIGHT_OPACITY: 0.26,
       HIGHLIGHT_OPACITY_SELECTED: 0.5,
-      PANEL_RECENT: 3
+      PANEL_RECENT: 3,
+      DAMPING_FACTOR: 0.1,
+      CAMERA_NEAR: 0.1,
+      CAMERA_FAR: 100,
+      LIGHTS: {
+        SKY: { color: '#ffffff', ground: '#59606d', intensity: 1.5 },
+        SUN: { color: '#ffffff', intensity: 2.4, position: [4, 6, 3] },
+        FILL: { color: '#cfd8ff', intensity: 0.9, position: [-5, 3, -4] }
+      }
     },
     KM_MAX: 2000000,
     TEXT_MAX: 120,
