@@ -3,6 +3,8 @@
  * Estratégia:
  *  - Arquivos locais (JS/CSS/HTML): pre-cache no install, cache-first no runtime
  *  - CDN externo (Firebase SDK, Tabler Icons): cache-first após primeiro fetch
+ *  - /vendor/ e /models/ (three.js e modelos 3D, pesados): cache-first no ASSET_CACHE,
+ *    que sobrevive às trocas de CACHE_VERSION (a versão da pasta já está no caminho)
  *  - APIs Firebase/Google (Firestore, Auth): pass-through (Firebase gerencia offline)
  *
  * Para publicar nova versão: incremente CACHE_VERSION.
@@ -10,6 +12,8 @@
 
 const CACHE_VERSION = 'v20261106-205812';
 const CACHE_NAME = `lifeos-${CACHE_VERSION}`;
+const ASSET_CACHE = 'lifeos-assets-v1';
+const ASSET_PATHS = ['/vendor/', '/models/'];
 
 // Domínios do Firebase/Google — deixa passar, Firebase cuida do offline via IndexedDB
 const FIREBASE_BYPASS = [
@@ -153,7 +157,7 @@ self.addEventListener('activate', event => {
     caches.keys()
       .then(keys => Promise.all(
         keys
-          .filter(k => k.startsWith('lifeos-') && k !== CACHE_NAME)
+          .filter(k => k.startsWith('lifeos-') && k !== CACHE_NAME && k !== ASSET_CACHE)
           .map(k => {
             console.log('[SW] Removendo cache antigo:', k);
             return caches.delete(k);
@@ -181,6 +185,12 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // Bibliotecas e modelos 3D: cache próprio, que não é limpo a cada publicação
+  if (ASSET_PATHS.some(prefix => url.pathname.startsWith(prefix))) {
+    event.respondWith(cacheFirst(request, ASSET_CACHE));
+    return;
+  }
+
   // Documento HTML principal: network-first (garante app atualizado)
   if (request.destination === 'document') {
     event.respondWith(networkFirst(request));
@@ -193,7 +203,7 @@ self.addEventListener('fetch', event => {
 
 // ===== Estratégias de cache =====
 
-async function cacheFirst(request) {
+async function cacheFirst(request, cacheName = CACHE_NAME) {
   const cached = await caches.match(request);
   if (cached) return cached;
 
@@ -201,7 +211,7 @@ async function cacheFirst(request) {
     const response = await fetch(request);
     // Cacheia respostas válidas (inclui opaque responses de CDN)
     if (response.ok || response.status === 0) {
-      const cache = await caches.open(CACHE_NAME);
+      const cache = await caches.open(cacheName);
       cache.put(request, response.clone());
     }
     return response;
