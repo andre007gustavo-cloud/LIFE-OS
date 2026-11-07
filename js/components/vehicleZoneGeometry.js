@@ -9,7 +9,6 @@
 const VehicleZoneGeometry = (() => {
 
   const { ZONES, HIDDEN_ZONES, SCENE } = Constants.VEHICLE;
-  const DEG_TO_RAD = Math.PI / 180;
 
   /** Caixa normalizada da zona → { min, max } em metros. */
   function worldBox(box, scene = SCENE) {
@@ -56,8 +55,8 @@ const VehicleZoneGeometry = (() => {
 
   /** Posição da câmera: do ponto-alvo, na direção do azimute/elevação, a `distance` metros. */
   function orbitPosition(target, { azimuth, elevation }, distance) {
-    const az = azimuth * DEG_TO_RAD;
-    const el = elevation * DEG_TO_RAD;
+    const az = azimuth * SCENE.DEG_TO_RAD;
+    const el = elevation * SCENE.DEG_TO_RAD;
     return [
       target[0] + distance * Math.cos(el) * Math.cos(az),
       target[1] + distance * Math.sin(el),

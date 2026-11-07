@@ -148,10 +148,8 @@ const AreasView = (() => {
 
   function renderTabContent() {
     const project = ProjectService.getById(AppState.ui.activeProjectId);
-    if (!project) return;
-
-    TAB_RENDERERS[AppState.ui.activeProjTab]?.(project);
-    if (typeof Vehicle3D !== 'undefined') Vehicle3D.releaseIfDetached();
+    if (project) TAB_RENDERERS[AppState.ui.activeProjTab]?.(project);
+    Vehicle3D.releaseIfDetached();
   }
 
   // ===== Tab renderers =====

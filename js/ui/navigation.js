@@ -30,6 +30,7 @@ const Navigation = (() => {
 
     const renderer = viewRenderers[viewName];
     if (renderer) renderer();
+    if (typeof Vehicle3D !== 'undefined') Vehicle3D.releaseIfDetached();
 
     // Mantém a faixa coerente ao entrar/sair de qualquer view (inclui Modo Agora)
     if (typeof NextUpBar !== 'undefined') NextUpBar.render();

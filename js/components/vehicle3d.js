@@ -15,7 +15,6 @@ const Vehicle3D = (() => {
   const { SCENE, ZONES, ZONE_STATE, VISUAL } = Constants.VEHICLE;
   const Geometry = VehicleZoneGeometry;
   const HOST_READY_CLASS = 'is-3d';
-  const RAD_PER_DEG = Math.PI / 180;
   const CANVAS_LABEL = 'Carro em 3D. Toque numa região para ver os detalhes dela; os botões de zona abaixo fazem o mesmo pelo teclado.';
 
   let libsPromise = null;
@@ -78,7 +77,7 @@ const Vehicle3D = (() => {
         new THREE.MeshBasicMaterial({ transparent: true, depthTest: false, depthWrite: false })
       );
       mesh.position.set(...Geometry.boxCenter(box));
-      mesh.renderOrder = 10;
+      mesh.renderOrder = SCENE.ZONE_RENDER_ORDER;
       mesh.visible = false;
       group.add(mesh);
       meshes.set(zone.id, mesh);
@@ -92,7 +91,7 @@ const Vehicle3D = (() => {
     controls.enableZoom = false;
     controls.enableDamping = true;
     controls.dampingFactor = SCENE.DAMPING_FACTOR;
-    controls.minPolarAngle = Math.PI / 2 - SCENE.MAX_ELEVATION_DEG * RAD_PER_DEG;
+    controls.minPolarAngle = Math.PI / 2 - SCENE.MAX_ELEVATION_DEG * SCENE.DEG_TO_RAD;
     controls.maxPolarAngle = Math.PI / 2;
     canvas.style.touchAction = 'pan-y';
     return controls;
@@ -104,8 +103,19 @@ const Vehicle3D = (() => {
     s.controls.update();
   }
 
-  function createSession({ THREE, OrbitControls }, model) {
-    const renderer = createRenderer(THREE);
+  /** Se montar a cena falha depois de criar o renderer, solta o contexto WebGL antes de repassar o erro. */
+  function createSession(libs, model) {
+    const renderer = createRenderer(libs.THREE);
+    try {
+      return assembleSession(libs, model, renderer);
+    } catch (error) {
+      renderer.dispose();
+      renderer.forceContextLoss();
+      throw error;
+    }
+  }
+
+  function assembleSession({ THREE, OrbitControls }, model, renderer) {
     const scene = new THREE.Scene();
     const zoneGroup = new THREE.Group();
     addLights(THREE, scene);
@@ -195,8 +205,8 @@ const Vehicle3D = (() => {
 
   /** Em telas estreitas abre o campo de visão na vertical, para o carro inteiro caber na largura. */
   function fovFor(aspect) {
-    const halfTan = Math.tan((SCENE.FOV_DEG * RAD_PER_DEG) / 2);
-    return (2 * Math.atan(halfTan * Math.max(1, SCENE.MIN_ASPECT / aspect))) / RAD_PER_DEG;
+    const halfTan = Math.tan((SCENE.FOV_DEG * SCENE.DEG_TO_RAD) / 2);
+    return (2 * Math.atan(halfTan * Math.max(1, SCENE.MIN_ASPECT / aspect))) / SCENE.DEG_TO_RAD;
   }
 
   function resize() {
@@ -390,9 +400,16 @@ const Vehicle3D = (() => {
     flyTo(poseFor(options.selectedZone));
   }
 
-  /** Libera o WebGL se a Garagem saiu da tela (o canvas ficou fora do documento). */
+  /** A Garagem saiu da tela: o canvas ficou fora do documento ou dentro de uma view escondida. */
+  function isCanvasGone(canvas) {
+    if (!canvas.isConnected) return true;
+    const view = canvas.closest('.view');
+    return !!view && !view.classList.contains('active');
+  }
+
+  /** Libera o WebGL se a Garagem saiu da tela. */
   function releaseIfDetached() {
-    if (!session || session.canvas.isConnected) return false;
+    if (!session || !isCanvasGone(session.canvas)) return false;
     disposeSession();
     return true;
   }

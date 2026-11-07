@@ -244,6 +244,8 @@ const Constants = (() => {
       HIGHLIGHT_OPACITY: 0.26,
       HIGHLIGHT_OPACITY_SELECTED: 0.5,
       PANEL_RECENT: 3,
+      DEG_TO_RAD: Math.PI / 180,
+      ZONE_RENDER_ORDER: 10,
       DAMPING_FACTOR: 0.1,
       CAMERA_NEAR: 0.1,
       CAMERA_FAR: 100,
