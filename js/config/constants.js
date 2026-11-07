@@ -191,18 +191,44 @@ const Constants = (() => {
       { id: 'service', label: 'Revisão' },
       { id: 'other', label: 'Outros' }
     ],
+    // box: caixa normalizada no carro [x -0,5 traseira...+0,5 frente, y 0 chão...1 teto, z -0,5 esquerda...+0,5 direita];
+    // view: de onde a câmera olha (azimute 0 = de frente, 90 = pela direita; elevação em graus).
+    // As caixas externas não se sobrepõem: a faixa baixa (y < 0,24) é eixos + embaixo; acima dela, frente, capô, laterais, vidros e traseira.
     ZONES: [
-      { id: 'engine', label: 'Motor' },
-      { id: 'front', label: 'Dianteira' },
-      { id: 'rear', label: 'Traseira' },
-      { id: 'front-axle', label: 'Eixo dianteiro' },
-      { id: 'rear-axle', label: 'Eixo traseiro' },
-      { id: 'left-side', label: 'Lateral esquerda' },
-      { id: 'right-side', label: 'Lateral direita' },
-      { id: 'roof-glass', label: 'Teto e vidros' },
-      { id: 'interior', label: 'Interior' },
-      { id: 'underbody', label: 'Embaixo' }
+      { id: 'engine', label: 'Motor', box: [[0.05, 0.24, -0.3], [0.30, 0.62, 0.3]], view: { azimuth: 35, elevation: 55 } },
+      { id: 'front', label: 'Dianteira', box: [[0.30, 0.24, -0.5], [0.5, 0.62, 0.5]], view: { azimuth: 25, elevation: 12 } },
+      { id: 'rear', label: 'Traseira', box: [[-0.5, 0.24, -0.5], [-0.30, 0.64, 0.5]], view: { azimuth: 155, elevation: 12 } },
+      { id: 'front-axle', label: 'Eixo dianteiro', box: [[0.16, 0, -0.5], [0.5, 0.24, 0.5]], view: { azimuth: -50, elevation: 4 } },
+      { id: 'rear-axle', label: 'Eixo traseiro', box: [[-0.5, 0, -0.5], [-0.16, 0.24, 0.5]], view: { azimuth: -130, elevation: 4 } },
+      { id: 'left-side', label: 'Lateral esquerda', box: [[-0.30, 0.24, -0.5], [0.30, 0.55, -0.3]], view: { azimuth: -90, elevation: 8 } },
+      { id: 'right-side', label: 'Lateral direita', box: [[-0.30, 0.24, 0.3], [0.30, 0.55, 0.5]], view: { azimuth: 90, elevation: 8 } },
+      { id: 'roof-glass', label: 'Teto e vidros', box: [[-0.30, 0.55, -0.3], [0.05, 1, 0.3]], view: { azimuth: -60, elevation: 30 } },
+      { id: 'interior', label: 'Interior', box: [[-0.30, 0.24, -0.3], [0.05, 0.55, 0.3]], view: { azimuth: -60, elevation: 40 } },
+      { id: 'underbody', label: 'Embaixo', box: [[-0.16, 0, -0.5], [0.16, 0.24, 0.5]], view: { azimuth: -90, elevation: 3 } }
     ],
+    // Zonas que a câmera não enxerga de fora (ficam dentro de outras): só abrem pelo chip.
+    HIDDEN_ZONES: ['interior'],
+    ZONE_STATE: { SYMPTOM: 'symptom', PLANNED: 'planned', NEUTRAL: 'neutral' },
+    SCENE: {
+      LENGTH_M: 4.45,
+      WIDTH_M: 1.70,
+      HEIGHT_M: 1.38,
+      CM_PER_UNIT: 100,
+      FOV_DEG: 35,
+      ZONE_DISTANCE_M: 4.6,
+      HOME_VIEW: { azimuth: -38, elevation: 16, distance: 7.2 },
+      MIN_DISTANCE_M: 3,
+      MAX_DISTANCE_M: 11,
+      MAX_ELEVATION_DEG: 80,
+      MAX_PIXEL_RATIO: 1.5,
+      FLY_MS: 700,
+      TAP_MAX_MOVE_PX: 6,
+      TAP_MAX_MS: 600,
+      HIGHLIGHT_COLORS: { symptom: '#ef4444', planned: '#3b82f6', neutral: '#ffffff' },
+      HIGHLIGHT_OPACITY: 0.32,
+      HIGHLIGHT_OPACITY_SELECTED: 0.5,
+      PANEL_RECENT: 3
+    },
     KM_MAX: 2000000,
     TEXT_MAX: 120,
     NOTES_MAX: 2000,
