@@ -253,6 +253,9 @@ const Utils = (() => {
       .trim();
   }
 
+  /** Limita o número ao intervalo [min, max]. */
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
   // ===== HTML helpers =====
 
   /** Escapa conteúdo do usuário antes de interpolar em innerHTML */
@@ -307,6 +310,7 @@ const Utils = (() => {
 
   return {
     uid,
+    clamp,
     toISO,
     parseISO,
     today,

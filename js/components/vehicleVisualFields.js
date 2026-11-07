@@ -65,11 +65,24 @@ const VehicleVisualFields = (() => {
     el(`${prefix}-${key}`).dataset.set = '1';
   }
 
+  /** Película que não é uma das opções (ex.: gravada pelo conector) ganha a sua própria opção, para não se perder ao salvar. */
+  function fillTint(prefix, tint) {
+    const select = el(`${prefix}-tint`);
+    select.querySelector('[data-custom]')?.remove();
+    const value = tint == null ? '' : String(tint);
+    if (value && ![...select.options].some(option => option.value === value)) {
+      const option = new Option(`Personalizada (${Math.round(tint * 100)}%)`, value);
+      option.dataset.custom = '1';
+      select.add(option);
+    }
+    select.value = value;
+  }
+
   /** Preenche com o efeito { paint, wheels, tint, rideHeight } (ou limpa, se vazio). */
   function fill(prefix, effect) {
     const e = effect || {};
     COLORS.forEach(({ key }) => fillColor(prefix, key, e[key]));
-    el(`${prefix}-tint`).value = e.tint == null ? '' : String(e.tint);
+    fillTint(prefix, e.tint);
     el(`${prefix}-ride`).value = e.rideHeight ?? '';
   }
 
@@ -78,15 +91,28 @@ const VehicleVisualFields = (() => {
     return input.dataset.set === '1' ? input.value : undefined;
   }
 
+  /**
+   * Altura digitada: vazio ou que não é número finito vira "sem altura". Com clamp, valor fora
+   * do alcance é limitado e o campo mostra o valor limitado; sem clamp, o service recusa com erro claro.
+   */
+  function readHeight(prefix, clamp) {
+    const input = el(`${prefix}-ride`);
+    const value = Number(input.value.trim() === '' ? NaN : input.value);
+    if (!Number.isFinite(value)) return undefined;
+    if (!clamp) return value;
+    const limited = Utils.clamp(Math.round(value), VISUAL.RIDE_MIN_CM, VISUAL.RIDE_MAX_CM);
+    if (limited !== value) input.value = limited;
+    return limited;
+  }
+
   /** Efeito digitado, só com o que foi mexido; null se nada foi mexido. */
-  function read(prefix) {
+  function read(prefix, { clamp = false } = {}) {
     const tint = el(`${prefix}-tint`).value;
-    const ride = el(`${prefix}-ride`).value.trim();
     const effect = {
       paint: readColor(prefix, 'paint'),
       wheels: readColor(prefix, 'wheels'),
       tint: tint === '' ? undefined : Number(tint),
-      rideHeight: ride === '' ? undefined : Number(ride)
+      rideHeight: readHeight(prefix, clamp)
     };
     const defined = Object.entries(effect).filter(([, value]) => value !== undefined);
     return defined.length ? Object.fromEntries(defined) : null;

@@ -50,6 +50,18 @@ const VehicleSceneService = (() => {
     return [...done, ...open];
   }
 
+  /** O override vem da tela (digitado): descarta o que não é número e limita ao que o carro aguenta. */
+  function _safeOverride(override) {
+    const safe = { ...override };
+    const limits = { tint: [0, 1], rideHeight: [VISUAL.RIDE_MIN_CM, VISUAL.RIDE_MAX_CM] };
+    Object.entries(limits).forEach(([key, [min, max]]) => {
+      if (safe[key] === undefined) return;
+      if (Number.isFinite(safe[key])) safe[key] = Utils.clamp(safe[key], min, max);
+      else delete safe[key];
+    });
+    return safe;
+  }
+
   /** Por efeito vale o último que o define; a altura é absoluta (não soma). */
   function _applyEffect(look, effect) {
     const defined = LOOK_KEYS.filter(key => effect[key] !== undefined);
@@ -70,7 +82,7 @@ const VehicleSceneService = (() => {
       _applyEffect(look, card.visualEffect);
       look.applied.push({ id: card.id, title: card.title, planned: !VehicleService.isDone(card) });
     });
-    look.simulated = override ? _applyEffect(look, override) : false;
+    look.simulated = override ? _applyEffect(look, _safeOverride(override)) : false;
     return look;
   }
 

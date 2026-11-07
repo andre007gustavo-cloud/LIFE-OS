@@ -12,6 +12,7 @@ const VehicleSimulator = (() => {
 
   const FIELDS_PREFIX = 'veh-sim';
   const UNAVAILABLE_TEXT = 'O simulador precisa do carro em 3D, que não está disponível neste aparelho.';
+  const RETRY_TEXT = 'Não foi possível carregar o 3D agora; tente de novo.';
   const esc = Utils.escapeHtml;
   const attr = Utils.escapeAttr;
   const el = id => document.getElementById(id);
@@ -61,7 +62,7 @@ const VehicleSimulator = (() => {
 
   function update() {
     const sim = AppState.ui.vehicleSim;
-    sim.override = VehicleVisualFields.read(FIELDS_PREFIX);
+    sim.override = VehicleVisualFields.read(FIELDS_PREFIX, { clamp: true });
     applyNow(sim.vehicleId);
   }
 
@@ -104,7 +105,8 @@ const VehicleSimulator = (() => {
       </details>`;
   }
 
-  const unavailableHtml = () => `<details class="veh-sim"><summary>Simular</summary><p class="veh-sim-note">${UNAVAILABLE_TEXT}</p></details>`;
+  /** Sem suporte é definitivo; com suporte, o 3D só falhou agora (rede) e a próxima montagem tenta de novo. */
+  const unavailableHtml = () => `<details class="veh-sim"><summary>Simular</summary><p class="veh-sim-note">${Vehicle3D.isSupported() ? RETRY_TEXT : UNAVAILABLE_TEXT}</p></details>`;
 
   /** Monta os campos depois que o HTML da Garagem entrou na tela. */
   function setup(vehicleId) {
