@@ -25,7 +25,7 @@ const VehicleView = (() => {
   ];
   const NUMBER_FIELDS = SHEET_FIELDS.filter(f => f.type === 'number').map(f => f.key);
 
-  // Silhueta provisória de sedan, até o carro 3D da fase 3.
+  // Aparece enquanto o 3D sobe e fica de vez quando o 3D não está disponível.
   const CAR_SILHOUETTE = `
     <svg class="veh-car" viewBox="0 0 400 140" role="img" aria-label="Silhueta de um carro">
       <path d="M28 104V88q0-10 12-13l52-8 36-30q6-5 14-5h100q9 0 15 6l36 29 62 9q14 3 14 15v13z" fill="currentColor" opacity=".85"/>
@@ -145,28 +145,62 @@ const VehicleView = (() => {
     return [...onlySymptom, ...top].sort((a, b) => alerting(a) - alerting(b));
   }
 
-  function zoneChipHtml(zone, symptomCount) {
+  function zoneChipLabel(zone, symptomCount) {
     const history = zone.count ? ` · ${zone.count}` : '';
-    if (!symptomCount) return `<span class="proj-meta-chip">${esc(zone.label)}${history}</span>`;
+    if (!symptomCount) return `${esc(zone.label)}${history}`;
     const noun = symptomCount === 1 ? 'sintoma aberto' : 'sintomas abertos';
-    return `<span class="proj-meta-chip veh-chip-alert"><i class="ti ti-alert-triangle" aria-hidden="true"></i>
-      ${esc(zone.label)}${history} · ${symptomCount} ${noun}</span>`;
+    return `<i class="ti ti-alert-triangle" aria-hidden="true"></i> ${esc(zone.label)}${history} · ${symptomCount} ${noun}`;
   }
 
-  function zoneChipsHtml(vehicle) {
+  function zoneChipHtml(vehicle, zone, symptomCount, selectedZone) {
+    return `<button type="button" class="proj-meta-chip${symptomCount ? ' veh-chip-alert' : ''}" data-zone="${attr(zone.id)}"
+      aria-pressed="${zone.id === selectedZone}" onclick="VehicleView.selectZone('${attr(vehicle.id)}','${attr(zone.id)}')">${zoneChipLabel(zone, symptomCount)}</button>`;
+  }
+
+  function zoneChipsHtml(vehicle, selectedZone) {
     const symptoms = openSymptomCounts(vehicle);
     const zones = chipZones(vehicle, symptoms);
     if (!zones.length) return '<div class="text-muted">As zonas mais mexidas aparecem conforme você registra manutenções.</div>';
-    return zones.map(z => zoneChipHtml(z, symptoms.get(z.id))).join('');
+    return zones.map(z => zoneChipHtml(vehicle, z, symptoms.get(z.id), selectedZone)).join('');
+  }
+
+  // ===== Garagem: zona escolhida e carro 3D =====
+
+  /** Estado só de tela: a zona aberta sobrevive ao redesenho da Garagem (salvar, snapshot remoto). */
+  let zoneSelection = { vehicleId: null, zoneId: null };
+
+  const selectedZoneOf = vehicle => (zoneSelection.vehicleId === vehicle.id ? zoneSelection.zoneId : null);
+
+  function selectZone(vehicleId, zoneId) {
+    zoneSelection = { vehicleId, zoneId };
+    const panel = document.getElementById('veh-zone-panel');
+    if (panel) panel.innerHTML = zoneId ? VehicleZonePanel.html(vehicleId, zoneId) : '';
+    document.querySelectorAll('.veh-zone-chips [data-zone]').forEach(chip => {
+      chip.setAttribute('aria-pressed', String(chip.dataset.zone === zoneId));
+    });
+    Vehicle3D.focusZone(zoneId);
+  }
+
+  const clearZone = vehicleId => selectZone(vehicleId, null);
+
+  /** Põe o carro 3D no host que acabou de ser desenhado; sem 3D, a silhueta fica. */
+  function mountCar(vehicle) {
+    Vehicle3D.mount(document.getElementById('veh-3d-host'), {
+      zoneStates: VehicleSceneService.getZoneStates(vehicle.id),
+      selectedZone: selectedZoneOf(vehicle),
+      onZoneSelect: zoneId => selectZone(vehicle.id, zoneId)
+    });
   }
 
   function garageHeaderHtml(vehicle) {
     const details = [vehicle.make, vehicle.model, vehicle.trim, yearsText(vehicle)].filter(Boolean).join(' · ');
+    const selectedZone = selectedZoneOf(vehicle);
     return `<div class="card veh-hero">
       <div class="veh-nickname">${esc(vehicleTitle(vehicle))}</div>
       <div class="veh-details">${esc(details)}</div>
-      ${CAR_SILHOUETTE}
-      <div class="veh-zone-chips">${zoneChipsHtml(vehicle)}</div>
+      <div class="veh-3d-host${Vehicle3D.isSupported() ? ' is-3d' : ''}" id="veh-3d-host">${CAR_SILHOUETTE}</div>
+      <div class="veh-zone-chips">${zoneChipsHtml(vehicle, selectedZone)}</div>
+      <div id="veh-zone-panel" aria-live="polite">${selectedZone ? VehicleZonePanel.html(vehicle.id, selectedZone) : ''}</div>
       <button class="btn btn-ghost btn-sm veh-symptom-btn" onclick="VehicleCardModal.openNewSymptom('${vehicle.id}')">
         <i class="ti ti-alert-triangle"></i> Descrever um sintoma
       </button>
@@ -294,6 +328,7 @@ const VehicleView = (() => {
           <div class="card-title">Preencha a ficha do seu veículo</div>
           ${sheetFormHtml(null, project.id)}
         </div>`;
+    if (vehicle) mountCar(vehicle);
   }
 
   function renderEmptyTab(icon, message) {
@@ -326,6 +361,6 @@ const VehicleView = (() => {
 
   return {
     renderGarage, renderBoard, renderMaintenances, renderParts, refresh,
-    saveSheet, setFinanceCategory, updateKm, removeReading
+    saveSheet, setFinanceCategory, updateKm, removeReading, selectZone, clearZone
   };
 })();

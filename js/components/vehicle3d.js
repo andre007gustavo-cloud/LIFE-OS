@@ -103,7 +103,7 @@ const Vehicle3D = (() => {
     scene.add(model.root, zoneGroup);
     const camera = new THREE.PerspectiveCamera(SCENE.FOV_DEG, 1, 0.1, 100);
     const s = {
-      THREE, renderer, scene, camera, model, canvas: renderer.domElement, raycaster: new THREE.Raycaster(),
+      renderer, scene, camera, canvas: renderer.domElement, raycaster: new THREE.Raycaster(),
       controls: createControls(OrbitControls, camera, renderer.domElement),
       zoneMeshes: buildZoneMeshes(THREE, zoneGroup),
       dirty: true, raf: 0, flight: null, inView: true, contextLost: false, pointerDown: null, cleanups: []
@@ -158,6 +158,12 @@ const Vehicle3D = (() => {
     if (s.flight) requestRender();
   }
 
+  /** Em telas estreitas abre o campo de visão na vertical, para o carro inteiro caber na largura. */
+  function fovFor(aspect) {
+    const base = Math.tan((SCENE.FOV_DEG * Math.PI) / 360);
+    return (2 * Math.atan(base * Math.max(1, SCENE.MIN_ASPECT / aspect)) * 180) / Math.PI;
+  }
+
   function resize() {
     const s = session;
     const width = s?.canvas.clientWidth;
@@ -165,6 +171,7 @@ const Vehicle3D = (() => {
     if (!width || !height) return;
     s.renderer.setSize(width, height, false);
     s.camera.aspect = width / height;
+    s.camera.fov = fovFor(s.camera.aspect);
     s.camera.updateProjectionMatrix();
     requestRender();
   }
@@ -313,7 +320,7 @@ const Vehicle3D = (() => {
     host = newHost;
     options = { ...options, ...newOptions };
     if (session) return Promise.resolve(attach());
-    if (failed) return Promise.resolve(false);
+    if (!isSupported()) return Promise.resolve(false);
     starting ??= start();
     return starting;
   }

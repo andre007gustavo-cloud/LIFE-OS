@@ -151,6 +151,7 @@ const AreasView = (() => {
     if (!project) return;
 
     TAB_RENDERERS[AppState.ui.activeProjTab]?.(project);
+    if (typeof Vehicle3D !== 'undefined') Vehicle3D.releaseIfDetached();
   }
 
   // ===== Tab renderers =====

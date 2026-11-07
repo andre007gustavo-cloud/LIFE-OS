@@ -1,0 +1,86 @@
+/**
+ * ===================== VEHICLE ZONE PANEL =====================
+ * Painel que a Garagem mostra abaixo do carro quando uma zona é escolhida
+ * (toque no 3D ou num chip): sintomas e cards abertos, as últimas manutenções
+ * e os atalhos para registrar algo naquela zona. Funciona com e sem o 3D.
+ * Só devolve HTML; os cliques abrem os modais que já existem.
+ */
+
+const VehicleZonePanel = (() => {
+
+  const { CARD_STATUSES, CARD_TYPE, ZONES, SCENE } = Constants.VEHICLE;
+  const esc = Utils.escapeHtml;
+  const attr = Utils.escapeAttr;
+
+  function itemHtml({ onclick, title, meta, alert }) {
+    const alertClass = alert ? ' veh-zone-item-alert' : '';
+    return `<button type="button" class="veh-zone-item${alertClass}" onclick="${onclick}">
+      <span class="veh-zone-item-title">${alert ? '<i class="ti ti-alert-triangle" aria-hidden="true"></i> ' : ''}${esc(title)}</span>
+      <span class="veh-zone-item-meta">${esc(meta)}</span>
+    </button>`;
+  }
+
+  const sectionHtml = (heading, body) => (body ? `<div class="veh-zone-section"><div class="veh-zone-heading">${heading}</div>${body}</div>` : '');
+
+  function openCardItem(vehicleId, card) {
+    const isSymptom = VehicleService.typeOf(card) === CARD_TYPE.SYMPTOM;
+    const status = VehicleLabels.labelOf(CARD_STATUSES, VehicleService.statusOf(card));
+    return itemHtml({
+      onclick: `VehicleCardModal.open('${attr(vehicleId)}','${attr(card.id)}')`,
+      title: card.title,
+      meta: isSymptom ? 'Sintoma aberto' : status,
+      alert: isSymptom
+    });
+  }
+
+  function historyItem(vehicleId, maintenance) {
+    return itemHtml({
+      onclick: `VehicleMaintenanceModal.open('${attr(vehicleId)}','${attr(maintenance.id)}')`,
+      title: maintenance.title,
+      meta: Utils.fmtDate(maintenance.date)
+    });
+  }
+
+  function openCardsHtml(vehicleId, cards) {
+    const isSymptom = card => VehicleService.typeOf(card) === CARD_TYPE.SYMPTOM;
+    const ordered = [...cards.filter(isSymptom), ...cards.filter(card => !isSymptom(card))];
+    return sectionHtml('Em aberto', ordered.map(card => openCardItem(vehicleId, card)).join(''));
+  }
+
+  function historyHtml(vehicleId, history) {
+    const recent = history.slice(0, SCENE.PANEL_RECENT);
+    const more = history.length - recent.length;
+    const rest = more > 0 ? `<div class="veh-zone-more">+${more} no histórico</div>` : '';
+    return sectionHtml('Últimas manutenções', recent.map(m => historyItem(vehicleId, m)).join('') + rest);
+  }
+
+  function actionsHtml(vehicleId, zoneId) {
+    const args = `'${attr(vehicleId)}','${attr(zoneId)}'`;
+    return `<div class="veh-zone-actions">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="VehicleCardModal.openNewSymptom(${args})"><i class="ti ti-alert-triangle"></i> Descrever sintoma aqui</button>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="VehicleCardModal.openNewInZone(${args})"><i class="ti ti-plus"></i> Novo card aqui</button>
+    </div>`;
+  }
+
+  /** HTML do painel da zona; vazio se o veículo ou a zona não existem. */
+  function html(vehicleId, zoneId) {
+    const zone = ZONES.find(z => z.id === zoneId);
+    const context = zone && VehicleBoardService.getZoneContext(vehicleId, zoneId);
+    if (!context || context.erro) return '';
+    const empty = !context.openCards.length && !context.history.length;
+    return `<section class="veh-zone-panel" aria-label="Zona ${attr(zone.label)}">
+      <div class="veh-zone-head">
+        <h3 class="veh-zone-name">${esc(zone.label)}</h3>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="VehicleView.clearZone('${attr(vehicleId)}')" aria-label="Fechar painel da zona">
+          <i class="ti ti-x"></i>
+        </button>
+      </div>
+      ${openCardsHtml(vehicleId, context.openCards)}
+      ${historyHtml(vehicleId, context.history)}
+      ${empty ? '<div class="text-muted">Nada registrado nesta zona ainda.</div>' : ''}
+      ${actionsHtml(vehicleId, zoneId)}
+    </section>`;
+  }
+
+  return { html };
+})();

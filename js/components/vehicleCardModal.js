@@ -137,11 +137,13 @@ const VehicleCardModal = (() => {
     el('veh-c-title').focus();
   }
 
-  function openNew(id, { status = CARD_STATUS.TODO, type = CARD_TYPE.SERVICE } = {}) {
-    if (VehicleService.getById(id)) show(id, { status, type }, false);
+  function openNew(id, { status = CARD_STATUS.TODO, type = CARD_TYPE.SERVICE, zones = [] } = {}) {
+    if (VehicleService.getById(id)) show(id, { status, type, zones }, false);
   }
 
-  const openNewSymptom = id => openNew(id, { type: CARD_TYPE.SYMPTOM });
+  const zonesOf = zoneId => (zoneId ? [zoneId] : []);
+  const openNewSymptom = (id, zoneId) => openNew(id, { type: CARD_TYPE.SYMPTOM, zones: zonesOf(zoneId) });
+  const openNewInZone = (id, zoneId) => openNew(id, { zones: zonesOf(zoneId) });
 
   function open(id, cardId) {
     const card = VehicleService.getMaintenance(id, cardId);
@@ -242,7 +244,7 @@ const VehicleCardModal = (() => {
   }
 
   return {
-    openNew, openNewSymptom, open, save, saveAndDiagnose, remove, toggleZone,
+    openNew, openNewSymptom, openNewInZone, open, save, saveAndDiagnose, remove, toggleZone,
     convertToService, resolve
   };
 })();

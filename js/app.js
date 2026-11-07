@@ -346,6 +346,8 @@
     window.VehicleMaintenanceModal = VehicleMaintenanceModal;
     window.VehicleCardModal        = VehicleCardModal;
     window.VehicleBoard            = VehicleBoard;
+    window.VehicleZonePanel        = VehicleZonePanel;
+    window.Vehicle3D               = Vehicle3D;
     window.openProject         = AreasView.openProject;
     window.setProjTab          = AreasView.setProjTab;
     window.pSaveField          = AreasView.saveField;
