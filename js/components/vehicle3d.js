@@ -12,7 +12,7 @@
 
 const Vehicle3D = (() => {
 
-  const { SCENE, ZONES, ZONE_STATE } = Constants.VEHICLE;
+  const { SCENE, ZONES, ZONE_STATE, VISUAL } = Constants.VEHICLE;
   const Geometry = VehicleZoneGeometry;
   const HOST_READY_CLASS = 'is-3d';
   const CANVAS_LABEL = 'Carro em 3D. Toque numa região para ver os detalhes dela; os botões de zona abaixo fazem o mesmo pelo teclado.';
@@ -22,7 +22,7 @@ const Vehicle3D = (() => {
   let starting = null;
   let session = null;
   let host = null;
-  let options = { zoneStates: {}, selectedZone: null, onZoneSelect: null };
+  let options = { zoneStates: {}, selectedZone: null, onZoneSelect: null, look: null };
 
   // ===== Suporte e carga =====
 
@@ -103,7 +103,8 @@ const Vehicle3D = (() => {
     scene.add(model.root, zoneGroup);
     const camera = new THREE.PerspectiveCamera(SCENE.FOV_DEG, 1, 0.1, 100);
     const s = {
-      renderer, scene, camera, canvas: renderer.domElement, raycaster: new THREE.Raycaster(),
+      renderer, scene, camera, model, canvas: renderer.domElement, raycaster: new THREE.Raycaster(),
+      glassBase: model.glass.map(material => ({ opacity: material.opacity, color: material.color.clone() })),
       controls: createControls(OrbitControls, camera, renderer.domElement),
       zoneMeshes: buildZoneMeshes(THREE, zoneGroup),
       dirty: true, raf: 0, flight: null, inView: true, contextLost: false, pointerDown: null, cleanups: []
@@ -132,6 +133,31 @@ const Vehicle3D = (() => {
       mesh.material.color.set(color);
       mesh.material.opacity = opacity;
     });
+    requestRender();
+  }
+
+  // ===== Aparência (pintura, rodas, película, altura) =====
+
+  /** A película escurece e opacifica o vidro a partir do que ele era sem ela. */
+  function tintGlass(material, base, tint) {
+    material.opacity = base.opacity + (VISUAL.GLASS_MAX_OPACITY - base.opacity) * tint;
+    material.color.copy(base.color).multiplyScalar(1 - VISUAL.GLASS_MAX_DARKEN * tint);
+  }
+
+  /** look: { paint, wheels, tint, rideHeight } (cores #rrggbb, película 0-1, altura em cm). */
+  function paintModel(s, look) {
+    const { paint, wheels, glass, suspended, cmPerUnit } = s.model;
+    paint.forEach(material => material.color.set(look.paint));
+    wheels.forEach(material => material.color.set(look.wheels));
+    glass.forEach((material, i) => tintGlass(material, s.glassBase[i], look.tint));
+    suspended.position.y = look.rideHeight / cmPerUnit;
+  }
+
+  /** Muda a aparência do carro (guarda para os próximos mount); não grava nada. */
+  function applyLook(look) {
+    options.look = look;
+    if (!session || !look) return;
+    paintModel(session, look);
     requestRender();
   }
 
@@ -286,6 +312,7 @@ const Vehicle3D = (() => {
     host.classList.add(HOST_READY_CLASS);
     resize();
     applyHighlights();
+    applyLook(options.look);
     return true;
   }
 
@@ -313,7 +340,8 @@ const Vehicle3D = (() => {
 
   /**
    * Põe o carro no host (síncrono se o canvas já existe). options: zoneStates
-   * { [zoneId]: 'symptom'|'planned'|'neutral' }, selectedZone, onZoneSelect(zoneId).
+   * { [zoneId]: 'symptom'|'planned'|'neutral' }, selectedZone, onZoneSelect(zoneId), look
+   * (aparência, como em applyLook).
    * Devolve uma promessa: true quando o 3D está na tela.
    */
   function mount(newHost, newOptions = {}) {
@@ -344,5 +372,5 @@ const Vehicle3D = (() => {
     return true;
   }
 
-  return { isSupported, mount, setZoneStates, focusZone, releaseIfDetached };
+  return { isSupported, mount, setZoneStates, focusZone, applyLook, releaseIfDetached };
 })();

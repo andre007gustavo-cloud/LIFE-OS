@@ -187,13 +187,15 @@ const VehicleView = (() => {
 
   const clearZone = vehicleId => selectZone(vehicleId, null);
 
-  /** Põe o carro 3D no host que acabou de ser desenhado; sem 3D, a silhueta fica. */
+  /** Põe o carro 3D no host que acabou de ser desenhado; sem 3D, a silhueta fica e o simulador explica. */
   function mountCar(vehicle) {
+    VehicleSimulator.setup(vehicle.id);
     Vehicle3D.mount(document.getElementById('veh-3d-host'), {
       zoneStates: VehicleSceneService.getZoneStates(vehicle.id),
       selectedZone: selectedZoneOf(vehicle),
+      look: VehicleSimulator.lookFor(vehicle.id),
       onZoneSelect: zoneId => selectZone(vehicle.id, zoneId)
-    });
+    }).then(mounted => { if (!mounted) VehicleSimulator.showUnavailable(); });
   }
 
   function garageHeaderHtml(vehicle) {
@@ -203,6 +205,7 @@ const VehicleView = (() => {
       <div class="veh-nickname">${esc(vehicleTitle(vehicle))}</div>
       <div class="veh-details">${esc(details)}</div>
       <div class="veh-3d-host${Vehicle3D.isSupported() ? ' is-3d' : ''}" id="veh-3d-host">${CAR_SILHOUETTE}</div>
+      <div class="veh-sim-root" id="veh-sim-root">${VehicleSimulator.html(vehicle.id)}</div>
       <div class="veh-zone-chips">${zoneChipsHtml(vehicle, selectedZone)}</div>
       <div id="veh-zone-panel" aria-live="polite">${selectedZone ? VehicleZonePanel.html(vehicle.id, selectedZone) : ''}</div>
       <button class="btn btn-ghost btn-sm veh-symptom-btn" onclick="VehicleCardModal.openNewSymptom('${vehicle.id}')">

@@ -11,7 +11,7 @@
 const VehicleModelProcedural = (() => {
 
   const { CM_PER_UNIT } = Constants.VEHICLE.SCENE;
-  const DEFAULT_PAINT = '#b9bec6';
+  const { DEFAULT_PAINT, DEFAULT_WHEELS } = Constants.VEHICLE.VISUAL;
   const WHEEL = { radius: 0.29, width: 0.215, rimRadius: 0.2, axleX: 1.35, trackZ: 0.76, archRadius: 0.36 };
   const SIDE_Z = 0.852;
   const SPOKES = 10;
@@ -28,7 +28,7 @@ const VehicleModelProcedural = (() => {
     return {
       paint: new T.MeshPhysicalMaterial({ color: DEFAULT_PAINT, metalness: 0.35, roughness: 0.32, clearcoat: 0.8, clearcoatRoughness: 0.15 }),
       glass: new T.MeshStandardMaterial({ color: '#16212b', metalness: 0.3, roughness: 0.12, transparent: true, opacity: 0.6 }),
-      wheel: new T.MeshStandardMaterial({ color: '#c9ccd1', metalness: 0.7, roughness: 0.35 }),
+      wheel: new T.MeshStandardMaterial({ color: DEFAULT_WHEELS, metalness: 0.7, roughness: 0.35 }),
       rubber: new T.MeshStandardMaterial({ color: '#141518', roughness: 0.9 }),
       dark: new T.MeshStandardMaterial({ color: '#0b0c0e', roughness: 0.7 }),
       rim: new T.MeshStandardMaterial({ color: '#23262b', metalness: 0.4, roughness: 0.6 }),
