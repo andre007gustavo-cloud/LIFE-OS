@@ -305,7 +305,23 @@ const Constants = (() => {
     BOARD_MOVE_DONE_LABEL: 'Feito (concluir)',
     DIAGNOSIS_TEMPLATE: 'Jarvis, meu carro {nickname} (veículo {vehicleId}) está com um sintoma: {description} — zona {zone}. Card {cardId}. Consulte get_zone_context dessa zona, cruze com o histórico, as peças, o km e a garantia, me diga as causas prováveis e atualize o card.',
     CARD_PREFIX: 'card:',
-    LINK: { WINDOW_DAYS: 10, WIDE_WINDOW_DAYS: 45, MAX_SUGGESTIONS: 5 }
+    LINK: { WINDOW_DAYS: 10, WIDE_WINDOW_DAYS: 45, MAX_SUGGESTIONS: 5 },
+    // Fotos do veículo: os bytes ficam na subcoleção de imagens; aqui, os limites de compressão e de tela.
+    PHOTO: {
+      THUMB: { maxDim: 360, quality: 0.7 },
+      FULL_STEPS: [{ maxDim: 1600, quality: 0.8 }, { maxDim: 1600, quality: 0.6 }, { maxDim: 1280, quality: 0.6 }],
+      MAX_DATAURL_CHARS: 900000,
+      EXIF_SCAN_BYTES: 131072,
+      MAX_PER_UPLOAD: 10,
+      CAPTION_MAX: 200,
+      GARAGE_STRIP: 8,
+      ZONE_PANEL: 6,
+      FULL_CACHE_MAX: 6,
+      LAZY_ROOT_MARGIN: '200px',
+      COMPARE_START: 50,
+      ROLES: [{ id: 'before', label: 'Antes' }, { id: 'after', label: 'Depois' }],
+      ROLE: { BEFORE: 'before', AFTER: 'after' }
+    }
   };
 
   /** Default storage key */
