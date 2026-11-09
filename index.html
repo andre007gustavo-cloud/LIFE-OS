@@ -1361,6 +1361,24 @@
 <!-- ========== JS MODULES ========== -->
 <!-- Order matters: config → core → services → ui → components → views → bootstrap -->
 
+<!-- Visualizador de fotos do veículo: sem .overlay de propósito (o clique no fundo não fecha sem limpeza) -->
+<div class="veh-viewer" id="veh-photo-viewer" role="dialog" aria-modal="true" aria-labelledby="veh-viewer-title" hidden>
+  <h2 class="veh-visually-hidden" id="veh-viewer-title">Foto do veículo</h2>
+  <div class="veh-viewer-bar">
+    <span class="veh-viewer-counter" id="veh-viewer-counter" aria-live="polite"></span>
+    <button type="button" class="veh-viewer-btn" id="veh-viewer-prev" aria-label="Foto anterior" title="Anterior" onclick="VehiclePhotoViewer.prev()"><i class="ti ti-chevron-left" aria-hidden="true"></i></button>
+    <button type="button" class="veh-viewer-btn" id="veh-viewer-next" aria-label="Próxima foto" title="Próxima" onclick="VehiclePhotoViewer.next()"><i class="ti ti-chevron-right" aria-hidden="true"></i></button>
+    <button type="button" class="veh-viewer-btn" id="veh-viewer-edit" aria-label="Editar foto" title="Editar" onclick="VehiclePhotoViewer.startEdit()"><i class="ti ti-pencil" aria-hidden="true"></i></button>
+    <button type="button" class="veh-viewer-btn" id="veh-viewer-remove" aria-label="Excluir foto" title="Excluir" onclick="VehiclePhotoViewer.remove()"><i class="ti ti-trash" aria-hidden="true"></i></button>
+    <button type="button" class="veh-viewer-btn" id="veh-viewer-close" aria-label="Fechar visualizador" title="Fechar" onclick="VehiclePhotoViewer.close()"><i class="ti ti-x" aria-hidden="true"></i></button>
+  </div>
+  <div class="veh-viewer-stage">
+    <img id="veh-viewer-img" alt="" draggable="false">
+    <p class="veh-viewer-notice" id="veh-viewer-notice" role="status" hidden></p>
+  </div>
+  <div class="veh-viewer-info" id="veh-viewer-info"></div>
+</div>
+
 <!-- Fora da tela mas não display:none: no iOS o click() programático falha em input escondido assim -->
 <input type="file" id="veh-photo-input" class="veh-visually-hidden" accept="image/*" multiple aria-hidden="true" tabindex="-1" onchange="VehiclePhotoUpload.onFilesChosen(this)">
 
@@ -1420,6 +1438,8 @@
 <script src="js/components/vehicleParts.js"></script>
 <script src="js/components/vehiclePhotoImages.js"></script>
 <script src="js/components/vehiclePhotoUpload.js"></script>
+<script src="js/components/vehiclePhotoForm.js"></script>
+<script src="js/components/vehiclePhotoViewer.js"></script>
 <script src="js/components/imageResize.js"></script>
 <script src="js/components/noteEditor.js"></script>
 <script src="js/components/fileHandler.js"></script>

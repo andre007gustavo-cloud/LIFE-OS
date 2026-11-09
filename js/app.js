@@ -345,6 +345,8 @@
     window.VehicleParts            = VehicleParts;
     window.VehiclePhotoImages      = VehiclePhotoImages;
     window.VehiclePhotoUpload      = VehiclePhotoUpload;
+    window.VehiclePhotoForm        = VehiclePhotoForm;
+    window.VehiclePhotoViewer      = VehiclePhotoViewer;
     window.VehicleMaintenanceModal = VehicleMaintenanceModal;
     window.VehicleCardModal        = VehicleCardModal;
     window.VehicleBoard            = VehicleBoard;
