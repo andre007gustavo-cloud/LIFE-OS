@@ -243,6 +243,8 @@ const Constants = (() => {
       LENGTH_M: 4.3,
       WIDTH_M: 1.82,
       HEIGHT_M: 1.38,
+      // Plano da sombra falsa sob o Civic real: comprimento x largura em metros, um pouco maiores que o carro.
+      SHADOW_PLANE_M: [5.4, 3.1],
       CM_PER_UNIT: 100,
       FOV_DEG: 35,
       MIN_ASPECT: 1.6,

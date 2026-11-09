@@ -11,10 +11,9 @@
 
 const VehicleModelCivicG6 = (() => {
 
-  const { MODEL_URL, CM_PER_UNIT } = Constants.VEHICLE.SCENE;
+  const { MODEL_URL, CM_PER_UNIT, SHADOW_PLANE_M } = Constants.VEHICLE.SCENE;
   const MATERIAL_ROLES = { paint: ['paint'], wheels: ['wheel_rim'], glass: ['glass_tinted', 'glass_tinted_side'] };
   const SUSPENDED_NODE = 'body';
-  const SHADOW_PLANE_M = [5.4, 3.1];
   const ROLE_LABELS = { paint: 'a pintura', wheels: 'o aro das rodas', glass: 'os vidros' };
 
   let loaderPromise = null;
@@ -59,21 +58,13 @@ const VehicleModelCivicG6 = (() => {
     return node;
   }
 
-  /** Arquivo que não serve: solta a memória dele antes de repassar o erro. */
-  function disposeScene(root) {
-    root.traverse(object => {
-      object.geometry?.dispose();
-      [].concat(object.material || []).forEach(material => material.dispose());
-    });
-  }
-
   function describe(THREE, root) {
     try {
       const model = { root, ...pickRoles(root), suspended: pickSuspended(root), cmPerUnit: CM_PER_UNIT };
       root.add(VehicleModelProcedural.buildShadow(THREE, SHADOW_PLANE_M));
       return model;
     } catch (error) {
-      disposeScene(root);
+      root.traverse(VehicleModelProcedural.disposeObject);
       throw error;
     }
   }

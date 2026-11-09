@@ -173,6 +173,15 @@ const VehicleModelProcedural = (() => {
     }));
   }
 
+  /** Libera a geometria, o material e toda textura que o material guarde (mapa, normal, rugosidade…). Uso: root.traverse(disposeObject). */
+  function disposeObject(object) {
+    object.geometry?.dispose();
+    [].concat(object.material || []).forEach(material => {
+      Object.values(material).filter(value => value?.isTexture).forEach(texture => texture.dispose());
+      material.dispose();
+    });
+  }
+
   async function load(T) {
     const mats = makeMaterials(T);
     const root = new T.Group();
@@ -183,5 +192,5 @@ const VehicleModelProcedural = (() => {
     return { root, paint: [mats.paint], wheels: [mats.wheel], glass: [mats.glass], suspended, cmPerUnit: CM_PER_UNIT };
   }
 
-  return { id: 'civic-sedan-procedural', load, buildShadow };
+  return { id: 'civic-sedan-procedural', load, buildShadow, disposeObject };
 })();

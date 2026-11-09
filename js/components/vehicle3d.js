@@ -15,6 +15,7 @@ const Vehicle3D = (() => {
 
   const { SCENE, ZONES, ZONE_STATE, VISUAL } = Constants.VEHICLE;
   const Geometry = VehicleZoneGeometry;
+  const { disposeObject } = VehicleModelProcedural;
   const HOST_READY_CLASS = 'is-3d';
   const CANVAS_LABEL = 'Carro em 3D. Toque numa região para ver os detalhes dela; os botões de zona abaixo fazem o mesmo pelo teclado.';
 
@@ -339,15 +340,6 @@ const Vehicle3D = (() => {
     listen(s, s.canvas, 'webglcontextrestored', () => { s.contextLost = false; requestRender(); });
     s.controls.addEventListener('change', requestRender);
     s.controls.addEventListener('start', () => { s.flight = null; });
-  }
-
-  /** Libera a geometria, o material e toda textura que o material guarde (mapa, normal, rugosidade…). */
-  function disposeObject(object) {
-    object.geometry?.dispose();
-    [].concat(object.material || []).forEach(material => {
-      Object.values(material).filter(value => value?.isTexture).forEach(texture => texture.dispose());
-      material.dispose();
-    });
   }
 
   function disposeSession() {
