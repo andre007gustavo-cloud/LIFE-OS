@@ -7,6 +7,7 @@
  * releaseIfDetached() libera tudo. Sem import map, sem WebGL ou com falha na
  * carga, o host mantém o conteúdo inicial (a silhueta) e nada quebra.
  *
+ * Carrega o modelo real (VehicleModelCivicG6) e cai no procedural se ele falhar.
  * Não lê service nenhum: quem chama passa os estados das zonas prontos.
  */
 
@@ -303,10 +304,11 @@ const Vehicle3D = (() => {
     s.controls.addEventListener('start', () => { s.flight = null; });
   }
 
+  /** Libera a geometria, o material e toda textura que o material guarde (mapa, normal, rugosidade…). */
   function disposeObject(object) {
     object.geometry?.dispose();
     [].concat(object.material || []).forEach(material => {
-      material.map?.dispose();
+      Object.values(material).filter(value => value?.isTexture).forEach(texture => texture.dispose());
       material.dispose();
     });
   }
@@ -335,9 +337,23 @@ const Vehicle3D = (() => {
     return true;
   }
 
+  /**
+   * O carro real é o padrão. Se o arquivo não vem (rede, 404) ou não serve, o procedural
+   * sobe no lugar: o 3D continua funcionando. A falha não é lembrada; a próxima montagem tenta o real de novo.
+   */
+  async function loadModel(THREE) {
+    try {
+      return { model: await VehicleModelCivicG6.load(THREE), real: true };
+    } catch (error) {
+      console.warn('[Vehicle3D] Modelo real indisponível, usando o carro simplificado:', error);
+      return { model: await VehicleModelProcedural.load(THREE), real: false };
+    }
+  }
+
   async function buildSession(libs) {
-    const model = await VehicleModelProcedural.load(libs.THREE);
+    const { model, real } = await loadModel(libs.THREE);
     session = createSession(libs, model);
+    session.usesRealModel = real;
     watchCanvas(session);
   }
 
@@ -388,6 +404,9 @@ const Vehicle3D = (() => {
     return starting;
   }
 
+  /** O modelo em uso é o real (o crédito da licença só vale para ele). */
+  const usesRealModel = () => !!session?.usesRealModel;
+
   function setZoneStates(zoneStates) {
     options.zoneStates = zoneStates;
     applyHighlights();
@@ -414,5 +433,5 @@ const Vehicle3D = (() => {
     return true;
   }
 
-  return { isSupported, mount, setZoneStates, focusZone, applyLook, releaseIfDetached };
+  return { isSupported, mount, usesRealModel, setZoneStates, focusZone, applyLook, releaseIfDetached };
 })();

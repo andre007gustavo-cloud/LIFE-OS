@@ -195,15 +195,15 @@ const Constants = (() => {
     // view: de onde a câmera olha (azimute 0 = de frente, 90 = pela direita; elevação em graus).
     // As caixas externas não se sobrepõem: a faixa baixa (y < 0,24) é eixos + embaixo; acima dela, frente, capô, laterais, vidros e traseira.
     ZONES: [
-      { id: 'engine', label: 'Motor', box: [[0.05, 0.24, -0.3], [0.30, 0.62, 0.3]], view: { azimuth: 35, elevation: 55 } },
+      { id: 'engine', label: 'Motor', box: [[0.10, 0.24, -0.3], [0.30, 0.62, 0.3]], view: { azimuth: 35, elevation: 55 } },
       { id: 'front', label: 'Dianteira', box: [[0.30, 0.24, -0.5], [0.5, 0.62, 0.5]], view: { azimuth: 25, elevation: 12 } },
-      { id: 'rear', label: 'Traseira', box: [[-0.5, 0.24, -0.5], [-0.30, 0.64, 0.5]], view: { azimuth: 155, elevation: 12 } },
+      { id: 'rear', label: 'Traseira', box: [[-0.5, 0.24, -0.5], [-0.36, 0.64, 0.5]], view: { azimuth: 155, elevation: 12 } },
       { id: 'front-axle', label: 'Eixo dianteiro', box: [[0.16, 0, -0.5], [0.5, 0.24, 0.5]], view: { azimuth: -50, elevation: 4 } },
       { id: 'rear-axle', label: 'Eixo traseiro', box: [[-0.5, 0, -0.5], [-0.16, 0.24, 0.5]], view: { azimuth: -130, elevation: 4 } },
       { id: 'left-side', label: 'Lateral esquerda', box: [[-0.30, 0.24, -0.5], [0.30, 0.55, -0.3]], view: { azimuth: -90, elevation: 8 } },
       { id: 'right-side', label: 'Lateral direita', box: [[-0.30, 0.24, 0.3], [0.30, 0.55, 0.5]], view: { azimuth: 90, elevation: 8 } },
-      { id: 'roof-glass', label: 'Teto e vidros', box: [[-0.30, 0.55, -0.3], [0.05, 1, 0.3]], view: { azimuth: -60, elevation: 30 } },
-      { id: 'interior', label: 'Interior', box: [[-0.30, 0.24, -0.3], [0.05, 0.55, 0.3]], view: { azimuth: -60, elevation: 40 } },
+      { id: 'roof-glass', label: 'Teto e vidros', box: [[-0.36, 0.55, -0.3], [0.10, 1, 0.3]], view: { azimuth: -60, elevation: 30 } },
+      { id: 'interior', label: 'Interior', box: [[-0.36, 0.24, -0.3], [0.10, 0.55, 0.3]], view: { azimuth: -60, elevation: 40 } },
       { id: 'underbody', label: 'Embaixo', box: [[-0.16, 0, -0.5], [0.16, 0.24, 0.5]], view: { azimuth: -90, elevation: 3 } }
     ],
     // Zonas que a câmera não enxerga de fora (ficam dentro de outras): só abrem pelo chip.
@@ -225,10 +225,18 @@ const Constants = (() => {
         { id: 'g70', label: 'G70', tint: 0.3 }
       ]
     },
+    // Crédito exigido pela licença do modelo 3D real (CC BY-NC 4.0): atribuição e aviso de modificação.
+    MODEL_CREDIT: {
+      before: 'Modelo 3D baseado em “Civic Honda 2004” de Blender Boy (',
+      linkLabel: 'CC BY-NC 4.0',
+      linkUrl: 'https://creativecommons.org/licenses/by-nc/4.0/',
+      after: '), modificado.'
+    },
     ZONE_STATE: { SYMPTOM: 'symptom', PLANNED: 'planned', NEUTRAL: 'neutral' },
     SCENE: {
-      LENGTH_M: 4.45,
-      WIDTH_M: 1.70,
+      MODEL_URL: '/models/civic-g6-v1.glb',
+      LENGTH_M: 4.3,
+      WIDTH_M: 1.82,
       HEIGHT_M: 1.38,
       CM_PER_UNIT: 100,
       FOV_DEG: 35,
