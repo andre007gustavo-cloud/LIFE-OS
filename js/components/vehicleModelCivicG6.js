@@ -14,6 +14,8 @@ const VehicleModelCivicG6 = (() => {
   const { MODEL_URL, CM_PER_UNIT } = Constants.VEHICLE.SCENE;
   const MATERIAL_ROLES = { paint: ['paint'], wheels: ['wheel_rim'], glass: ['glass_tinted', 'glass_tinted_side'] };
   const SUSPENDED_NODE = 'body';
+  // Sem mapa de ambiente, metal puro (metalness 1) só reflete as luzes e o aro fica escuro: o teto deixa a cor escolhida aparecer.
+  const RIM_MAX_METALNESS = 0.5;
   const ROLE_LABELS = { paint: 'a pintura', wheels: 'o aro das rodas', glass: 'os vidros' };
 
   let loaderPromise = null;
@@ -49,6 +51,7 @@ const VehicleModelCivicG6 = (() => {
       material.transparent = true;
       material.depthWrite = false;
     });
+    roles.wheels.forEach(material => { material.metalness = Math.min(material.metalness, RIM_MAX_METALNESS); });
     return roles;
   }
 
