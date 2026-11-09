@@ -223,7 +223,7 @@ const VehicleView = (() => {
   function modelCreditHtml() {
     const { before, linkLabel, linkUrl, after } = Constants.VEHICLE.MODEL_CREDIT;
     return `<p class="veh-3d-credit" id="veh-3d-credit" hidden>${esc(before)}<a href="${attr(linkUrl)}" target="_blank" rel="noopener"
-      title="Abre em nova aba">${esc(linkLabel)}</a>${esc(after)}</p>`;
+      aria-label="${attr(linkLabel)}, abre em nova aba">${esc(linkLabel)}</a>${esc(after)}</p>`;
   }
 
   function showModelCredit() {
