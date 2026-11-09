@@ -60,16 +60,30 @@ const VehicleModelCivicG6 = (() => {
     return node;
   }
 
-  function describe(THREE, root) {
+  /** Só erro do conteúdo do arquivo (papel ou nó ausente) é lembrado; o arquivo que não serve é liberado. */
+  function describeContent(root) {
     try {
-      const model = { root, ...pickRoles(root), suspended: pickSuspended(root), cmPerUnit: CM_PER_UNIT };
-      root.add(VehicleModelProcedural.buildShadow(THREE, SHADOW_PLANE_M));
-      return model;
+      return { root, ...pickRoles(root), suspended: pickSuspended(root), cmPerUnit: CM_PER_UNIT };
     } catch (error) {
       root.traverse(VehicleModelProcedural.disposeObject);
       contentError = error;
       throw error;
     }
+  }
+
+  /** A sombra é enfeite: se não der para desenhá-la (canvas indisponível), o carro sobe sem ela. */
+  function addShadow(THREE, root) {
+    try {
+      root.add(VehicleModelProcedural.buildShadow(THREE, SHADOW_PLANE_M));
+    } catch (error) {
+      console.warn('[VehicleModelCivicG6] Sem a sombra sob o carro:', error);
+    }
+  }
+
+  function describe(THREE, root) {
+    const model = describeContent(root);
+    addShadow(THREE, root);
+    return model;
   }
 
   async function load(THREE) {
