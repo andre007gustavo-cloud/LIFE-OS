@@ -70,15 +70,29 @@ const Vehicle3D = (() => {
   }
 
   /** Ambiente de estúdio gerado uma vez: dá o que a pintura metálica e o verniz refletem. Devolve o alvo a liberar no fim. */
-  function addEnvironment({ THREE, RoomEnvironment }, renderer, scene) {
+  function buildEnvironment({ THREE, RoomEnvironment }, renderer, scene) {
     const generator = new THREE.PMREMGenerator(renderer);
-    const room = new RoomEnvironment();
-    const target = generator.fromScene(room, SCENE.ENV_BLUR_SIGMA);
-    room.dispose();
-    generator.dispose();
-    scene.environment = target.texture;
-    scene.environmentIntensity = SCENE.ENV_INTENSITY;
-    return target;
+    let room = null;
+    try {
+      room = new RoomEnvironment();
+      const target = generator.fromScene(room, SCENE.ENV_BLUR_SIGMA);
+      scene.environment = target.texture;
+      scene.environmentIntensity = SCENE.ENV_INTENSITY;
+      return target;
+    } finally {
+      room?.dispose();
+      generator.dispose();
+    }
+  }
+
+  /** O ambiente só melhora o reflexo: se o aparelho não consegue gerá-lo (ex.: sem alvo half-float), o carro sobe sem ele (alvo null). */
+  function addEnvironment(libs, renderer, scene) {
+    try {
+      return buildEnvironment(libs, renderer, scene);
+    } catch (error) {
+      console.warn('[Vehicle3D] Sem mapa de ambiente, o reflexo da pintura fica mais simples:', error);
+      return null;
+    }
   }
 
   /** Uma caixa translúcida por zona, sempre à vista (depthTest off): marca onde está o sintoma ou o plano. */
@@ -117,30 +131,39 @@ const Vehicle3D = (() => {
     s.controls.update();
   }
 
-  /** Se montar a cena falha depois de criar o renderer, solta o contexto WebGL antes de repassar o erro. */
+  /**
+   * Monta a sessão e assume o modelo: se qualquer passo falha, solta tudo o que já nasceu
+   * (modelo, caixas das zonas, ambiente, contexto WebGL) antes de repassar o erro.
+   */
   function createSession(libs, model) {
-    const renderer = createRenderer(libs.THREE);
+    const scene = new libs.THREE.Scene();
+    scene.add(model.root);
+    let renderer = null;
+    let envTarget = null;
     try {
-      return assembleSession(libs, model, renderer);
+      renderer = createRenderer(libs.THREE);
+      envTarget = addEnvironment(libs, renderer, scene);
+      return assembleSession(libs, { model, scene, renderer, envTarget });
     } catch (error) {
-      renderer.dispose();
-      renderer.forceContextLoss();
+      scene.traverse(disposeObject);
+      envTarget?.dispose();
+      renderer?.dispose();
+      renderer?.forceContextLoss();
       throw error;
     }
   }
 
-  function assembleSession(libs, model, renderer) {
+  function assembleSession(libs, { model, scene, renderer, envTarget }) {
     const { THREE, OrbitControls } = libs;
-    const scene = new THREE.Scene();
     const zoneGroup = new THREE.Group();
+    scene.add(zoneGroup);
     addLights(THREE, scene);
-    scene.add(model.root, zoneGroup);
     const camera = new THREE.PerspectiveCamera(SCENE.FOV_DEG, 1, SCENE.CAMERA_NEAR, SCENE.CAMERA_FAR);
+    const zoneMeshes = buildZoneMeshes(THREE, zoneGroup);
     const s = {
-      renderer, scene, envTarget: addEnvironment(libs, renderer, scene), camera, model, canvas: renderer.domElement, raycaster: new THREE.Raycaster(),
+      renderer, scene, envTarget, camera, model, zoneMeshes, canvas: renderer.domElement, raycaster: new THREE.Raycaster(),
       base: captureBase(model),
       controls: createControls(OrbitControls, camera, renderer.domElement),
-      zoneMeshes: buildZoneMeshes(THREE, zoneGroup),
       dirty: true, raf: 0, flight: null, inView: true, contextLost: false, pointerDown: null, cleanups: []
     };
     placeCamera(s, poseFor(options.selectedZone));
@@ -193,7 +216,10 @@ const Vehicle3D = (() => {
     material.color.copy(base.color);
   }
 
-  const paintMaterials = (materials, bases, hex) => materials.forEach((material, i) => (hex ? material.color.set(hex) : material.color.copy(bases[i])));
+  const paintMaterials = (materials, bases, hex) => materials.forEach((material, i) => {
+    if (hex) material.color.set(hex);
+    else material.color.copy(bases[i]);
+  });
 
   /** look: { paint, wheels, tint, rideHeight } (cores #rrggbb, película 0-1, altura em cm); null = original do modelo. */
   function paintModel(s, look) {
@@ -319,6 +345,13 @@ const Vehicle3D = (() => {
 
   // ===== Ciclo de vida =====
 
+  /** A Garagem saiu da tela: o elemento (canvas ou host) ficou fora do documento ou dentro de uma view escondida. */
+  function isGone(element) {
+    if (!element?.isConnected) return true;
+    const view = element.closest('.view');
+    return !!view && !view.classList.contains('active');
+  }
+
   function listen(s, target, type, handler) {
     target.addEventListener(type, handler);
     s.cleanups.push(() => target.removeEventListener(type, handler));
@@ -350,7 +383,7 @@ const Vehicle3D = (() => {
     s.cleanups.forEach(cleanup => cleanup());
     s.controls.dispose();
     s.scene.traverse(disposeObject);
-    s.envTarget.dispose();
+    s.envTarget?.dispose();
     s.renderer.dispose();
     s.renderer.forceContextLoss();
     s.canvas.remove();
@@ -358,7 +391,7 @@ const Vehicle3D = (() => {
 
   /** Move o canvas para o host atual. Falso se o host já saiu da tela. */
   function attach() {
-    if (!session || !host?.isConnected) return false;
+    if (!session || isGone(host)) return false;
     host.replaceChildren(session.canvas);
     host.classList.add(HOST_READY_CLASS);
     resize();
@@ -369,7 +402,8 @@ const Vehicle3D = (() => {
 
   /**
    * O carro real é o padrão. Se o arquivo não vem (rede, 404) ou não serve, o procedural
-   * sobe no lugar: o 3D continua funcionando. A falha não é lembrada; a próxima montagem tenta o real de novo.
+   * sobe no lugar: o 3D continua funcionando. Falha de rede não é lembrada (a próxima montagem
+   * tenta o real de novo); arquivo com conteúdo ruim é lembrado pelo próprio modelo até recarregar a página.
    */
   async function loadModel(THREE) {
     try {
@@ -380,11 +414,28 @@ const Vehicle3D = (() => {
     }
   }
 
+  /** Monta a sessão com o carro real; se a cena não monta com ele, tenta uma vez com o procedural. */
+  async function createSessionWithFallback(libs, { model, real }) {
+    try {
+      return Object.assign(createSession(libs, model), { usesRealModel: real });
+    } catch (error) {
+      if (!real) throw error;
+      console.warn('[Vehicle3D] Cena com o modelo real falhou, usando o carro simplificado:', error);
+      const fallback = await VehicleModelProcedural.load(libs.THREE);
+      return Object.assign(createSession(libs, fallback), { usesRealModel: false });
+    }
+  }
+
+  /** Falso (sem criar renderer) se a Garagem saiu da tela enquanto o modelo carregava. */
   async function buildSession(libs) {
-    const { model, real } = await loadModel(libs.THREE);
-    session = createSession(libs, model);
-    session.usesRealModel = real;
+    const loaded = await loadModel(libs.THREE);
+    if (isGone(host)) {
+      loaded.model.root.traverse(disposeObject);
+      return false;
+    }
+    session = await createSessionWithFallback(libs, loaded);
     watchCanvas(session);
+    return true;
   }
 
   /** Mantém a silhueta. Falha de carga (rede) é passageira; falha ao montar a cena (WebGL, modelo) desliga o 3D de vez. */
@@ -405,7 +456,7 @@ const Vehicle3D = (() => {
         return giveUp(error, false);
       }
       try {
-        await buildSession(libs);
+        if (!await buildSession(libs)) return false;
       } catch (error) {
         return giveUp(error, true);
       }
@@ -449,16 +500,9 @@ const Vehicle3D = (() => {
     flyTo(poseFor(options.selectedZone));
   }
 
-  /** A Garagem saiu da tela: o canvas ficou fora do documento ou dentro de uma view escondida. */
-  function isCanvasGone(canvas) {
-    if (!canvas.isConnected) return true;
-    const view = canvas.closest('.view');
-    return !!view && !view.classList.contains('active');
-  }
-
   /** Libera o WebGL se a Garagem saiu da tela. */
   function releaseIfDetached() {
-    if (!session || !isCanvasGone(session.canvas)) return false;
+    if (!session || !isGone(session.canvas)) return false;
     disposeSession();
     return true;
   }
