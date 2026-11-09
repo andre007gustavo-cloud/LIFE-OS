@@ -70,13 +70,13 @@ const VehicleSceneService = (() => {
   }
 
   /**
-   * Aparência do carro: ficha (cor da pintura) + efeitos das modificações concluídas
+   * Aparência do carro (null = original do modelo): ficha (cor da pintura) + efeitos das modificações concluídas
    * + (com preview) das abertas + o override da simulação, que vem por último.
    * `applied` diz quem mexeu no visual; `simulated`, se o override mexeu.
    */
   function getLook(vehicleId, { preview = false, override } = {}) {
     const vehicle = VehicleService.getById(vehicleId);
-    const look = { paint: vehicle?.paintHex || VISUAL.DEFAULT_PAINT, wheels: VISUAL.DEFAULT_WHEELS, tint: 0, rideHeight: 0, applied: [], simulated: false };
+    const look = { ...VISUAL.BASE, paint: vehicle?.paintHex || VISUAL.BASE.paint, applied: [], simulated: false };
     if (!vehicle) return look;
     _lookSources(vehicleId, preview).forEach(card => {
       _applyEffect(look, card.visualEffect);

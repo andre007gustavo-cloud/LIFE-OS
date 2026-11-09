@@ -23,7 +23,7 @@ const VehicleVisualFields = (() => {
       <label class="form-label" for="${id}">${label}</label>
       <div class="veh-visual-color">
         <input type="color" id="${id}" value="${fallback}" data-set="0" oninput="this.dataset.set='1';${onChange}">
-        <button type="button" class="btn btn-ghost btn-sm" onclick="VehicleVisualFields.clearColor('${prefix}','${key}');${onChange}">Padrão</button>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="VehicleVisualFields.clearColor('${prefix}','${key}');${onChange}">Original</button>
       </div>
     </div>`;
   }
@@ -32,7 +32,7 @@ const VehicleVisualFields = (() => {
     const options = VISUAL.FILMS.map(f => `<option value="${f.tint}">${esc(f.label)}</option>`).join('');
     return `<div class="veh-visual-field">
       <label class="form-label" for="${prefix}-tint">Película</label>
-      <select class="form-select" id="${prefix}-tint" onchange="${onChange}"><option value="">Sem alteração</option>${options}</select>
+      <select class="form-select" id="${prefix}-tint" onchange="${onChange}"><option value="">Original do carro</option>${options}</select>
     </div>`;
   }
 
@@ -54,8 +54,19 @@ const VehicleVisualFields = (() => {
 
   function clearColor(prefix, key) {
     const input = el(`${prefix}-${key}`);
-    input.value = COLORS.find(c => c.key === key).fallback;
+    input.value = originalColor(key);
     input.dataset.set = '0';
+  }
+
+  /** Cor que o seletor mostra quando nada foi escolhido: a do modelo na tela (o seletor não tem "sem valor"). */
+  const originalColor = key => Vehicle3D.originalColors()?.[key] ?? COLORS.find(c => c.key === key).fallback;
+
+  /** O 3D acabou de subir: campos de cor sem escolha passam a mostrar a cor original do modelo. */
+  function showOriginals(prefix) {
+    COLORS.forEach(({ key }) => {
+      const input = el(`${prefix}-${key}`);
+      if (input?.dataset.set === '0') input.value = originalColor(key);
+    });
   }
 
   function fillColor(prefix, key, value) {
@@ -120,5 +131,5 @@ const VehicleVisualFields = (() => {
 
   const setVisible = (containerId, visible) => { el(containerId).hidden = !visible; };
 
-  return { render, fill, read, clearColor, setVisible };
+  return { render, fill, read, clearColor, showOriginals, setVisible };
 })();

@@ -124,7 +124,7 @@ const Vehicle3D = (() => {
     const camera = new THREE.PerspectiveCamera(SCENE.FOV_DEG, 1, SCENE.CAMERA_NEAR, SCENE.CAMERA_FAR);
     const s = {
       renderer, scene, camera, model, canvas: renderer.domElement, raycaster: new THREE.Raycaster(),
-      glassBase: model.glass.map(material => ({ opacity: material.opacity, color: material.color.clone() })),
+      base: captureBase(model),
       controls: createControls(OrbitControls, camera, renderer.domElement),
       zoneMeshes: buildZoneMeshes(THREE, zoneGroup),
       dirty: true, raf: 0, flight: null, inView: true, contextLost: false, pointerDown: null, cleanups: []
@@ -158,19 +158,43 @@ const Vehicle3D = (() => {
 
   // ===== Aparência (pintura, rodas, película, altura) =====
 
-  /** A película escurece e opacifica o vidro a partir do que ele era sem ela. */
-  function tintGlass(material, base, tint) {
-    material.opacity = base.opacity + (VISUAL.GLASS_MAX_OPACITY - base.opacity) * tint;
-    material.color.copy(base.color).multiplyScalar(1 - VISUAL.GLASS_MAX_DARKEN * tint);
+  /** Guarda como o modelo veio (cores e vidro): é a esse estado que "sem valor" volta. */
+  function captureBase({ paint, wheels, glass }) {
+    return {
+      paint: paint.map(material => material.color.clone()),
+      wheels: wheels.map(material => material.color.clone()),
+      glass: glass.map(material => ({ opacity: material.opacity, color: material.color.clone() }))
+    };
   }
 
-  /** look: { paint, wheels, tint, rideHeight } (cores #rrggbb, película 0-1, altura em cm). */
+  /** Película 0-1: parte do vidro limpo e escurece/opacifica. */
+  function tintGlass(material, tint) {
+    const clear = VISUAL.GLASS_CLEAR;
+    material.opacity = clear.opacity + (VISUAL.GLASS_MAX_OPACITY - clear.opacity) * tint;
+    material.color.set(clear.color).multiplyScalar(1 - VISUAL.GLASS_MAX_DARKEN * tint);
+  }
+
+  function restoreGlass(material, base) {
+    material.opacity = base.opacity;
+    material.color.copy(base.color);
+  }
+
+  const paintMaterials = (materials, bases, hex) => materials.forEach((material, i) => (hex ? material.color.set(hex) : material.color.copy(bases[i])));
+
+  /** look: { paint, wheels, tint, rideHeight } (cores #rrggbb, película 0-1, altura em cm); null = original do modelo. */
   function paintModel(s, look) {
     const { paint, wheels, glass, suspended, cmPerUnit } = s.model;
-    paint.forEach(material => material.color.set(look.paint));
-    wheels.forEach(material => material.color.set(look.wheels));
-    glass.forEach((material, i) => tintGlass(material, s.glassBase[i], look.tint));
+    paintMaterials(paint, s.base.paint, look.paint);
+    paintMaterials(wheels, s.base.wheels, look.wheels);
+    glass.forEach((material, i) => (look.tint == null ? restoreGlass(material, s.base.glass[i]) : tintGlass(material, look.tint)));
     suspended.position.y = look.rideHeight / cmPerUnit;
+  }
+
+  const toHex = color => `#${color.getHexString()}`;
+
+  /** Cores originais do modelo na tela ({ paint, wheels } em #rrggbb), ou null sem 3D. */
+  function originalColors() {
+    return session ? { paint: toHex(session.base.paint[0]), wheels: toHex(session.base.wheels[0]) } : null;
   }
 
   /** Muda a aparência do carro (guarda para os próximos mount); não grava nada. */
@@ -433,5 +457,5 @@ const Vehicle3D = (() => {
     return true;
   }
 
-  return { isSupported, mount, usesRealModel, setZoneStates, focusZone, applyLook, releaseIfDetached };
+  return { isSupported, mount, usesRealModel, originalColors, setZoneStates, focusZone, applyLook, releaseIfDetached };
 })();

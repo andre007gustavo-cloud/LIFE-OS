@@ -210,8 +210,13 @@ const Constants = (() => {
     HIDDEN_ZONES: ['interior'],
     // Efeito visual de uma modificação no carro 3D. tint = quanto o vidro escurece (0 a 1): G35 deixa passar 35% da luz.
     VISUAL: {
+      // Aparência base: null = manter o material como veio do modelo (o Civic é azul escuro, o procedural é prata).
+      BASE: { paint: null, wheels: null, tint: null, rideHeight: 0 },
+      // Cores do carro procedural (o modelo real traz as dele).
       DEFAULT_PAINT: '#b9bec6',
       DEFAULT_WHEELS: '#c9ccd1',
+      // Vidro sem película (a película parte daqui): quase transparente.
+      GLASS_CLEAR: { opacity: 0.25, color: '#9fb3c2' },
       RIDE_MIN_CM: -15,
       RIDE_MAX_CM: 15,
       GLASS_MAX_OPACITY: 0.97,

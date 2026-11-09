@@ -115,11 +115,16 @@ const VehicleSimulator = (() => {
     VehicleVisualFields.fill(FIELDS_PREFIX, stateFor(vehicleId).override);
   }
 
+  /** O 3D subiu: os seletores de cor sem escolha mostram a cor original do modelo. */
+  function showOriginals() {
+    if (el('veh-sim-fields')) VehicleVisualFields.showOriginals(FIELDS_PREFIX);
+  }
+
   /** O 3D não subiu: troca o bloco pela explicação. */
   function showUnavailable() {
     const root = el('veh-sim-root');
     if (root) root.innerHTML = unavailableHtml();
   }
 
-  return { lookFor, html, setup, showUnavailable, setPreview, setOpen, update, discard, saveAsIdea };
+  return { lookFor, html, setup, showOriginals, showUnavailable, setPreview, setOpen, update, discard, saveAsIdea };
 })();

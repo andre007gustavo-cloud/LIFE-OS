@@ -25,7 +25,6 @@ const VehicleView = (() => {
     { key: 'paintHex', label: 'Cor da pintura no carro 3D', type: 'color' }
   ];
   const NUMBER_FIELDS = SHEET_FIELDS.filter(f => f.type === 'number').map(f => f.key);
-  const { DEFAULT_PAINT } = Constants.VEHICLE.VISUAL;
 
   // Aparece enquanto o 3D sobe e fica de vez quando o 3D não está disponível.
   const CAR_SILHOUETTE = `
@@ -45,11 +44,37 @@ const VehicleView = (() => {
   function fieldHtml(field, value) {
     const id = SHEET_ID_PREFIX + field.key;
     const placeholder = field.placeholder ? ` placeholder="${attr(field.placeholder)}"` : '';
-    const shown = field.type === 'color' ? (value || DEFAULT_PAINT) : (value ?? '');
+    if (field.type === 'color') return colorFieldHtml(field, id, value);
     return `<div class="form-group">
       <label class="form-label" for="${id}">${field.label}</label>
-      <input class="form-input" id="${id}" type="${field.type}"${placeholder} value="${attr(shown)}">
+      <input class="form-input" id="${id}" type="${field.type}"${placeholder} value="${attr(value ?? '')}">
     </div>`;
+  }
+
+  /** Cor sem escolha (data-set 0) = original do modelo: o seletor só mostra a cor que o carro tem na tela. */
+  function colorFieldHtml(field, id, value) {
+    const shown = value || originalPaint();
+    return `<div class="form-group">
+      <label class="form-label" for="${id}">${field.label}</label>
+      <div class="veh-visual-color">
+        <input id="${id}" type="color" value="${attr(shown)}" data-set="${value ? 1 : 0}" oninput="this.dataset.set='1'">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="VehicleView.clearSheetColor('${id}')">Original</button>
+      </div>
+    </div>`;
+  }
+
+  const originalPaint = () => Vehicle3D.originalColors()?.paint || Constants.VEHICLE.VISUAL.DEFAULT_PAINT;
+
+  function clearSheetColor(id) {
+    const input = document.getElementById(id);
+    input.value = originalPaint();
+    input.dataset.set = '0';
+  }
+
+  /** O 3D subiu depois da ficha ser desenhada: a cor sem escolha passa a mostrar a original do modelo. */
+  function showSheetOriginal() {
+    const input = document.getElementById(`${SHEET_ID_PREFIX}paintHex`);
+    if (input?.dataset.set === '0') input.value = originalPaint();
   }
 
   function sheetFormHtml(vehicle, projectId) {
@@ -62,8 +87,9 @@ const VehicleView = (() => {
 
   function readSheetForm() {
     return Object.fromEntries(SHEET_FIELDS.map(({ key }) => {
-      const value = document.getElementById(SHEET_ID_PREFIX + key).value.trim();
-      if (key === 'paintHex') return [key, value === DEFAULT_PAINT ? '' : value];
+      const input = document.getElementById(SHEET_ID_PREFIX + key);
+      const value = input.value.trim();
+      if (key === 'paintHex') return [key, input.dataset.set === '1' ? value : ''];
       return [key, NUMBER_FIELDS.includes(key) && value !== '' ? Number(value) : value];
     }));
   }
@@ -214,7 +240,11 @@ const VehicleView = (() => {
       look: VehicleSimulator.lookFor(vehicle.id),
       onZoneSelect: zoneId => selectZone(vehicle.id, zoneId)
     }).then(mounted => {
-      if (!mounted) VehicleSimulator.showUnavailable();
+      if (mounted) {
+        VehicleSimulator.showOriginals();
+        showSheetOriginal();
+      }
+      else VehicleSimulator.showUnavailable();
       showModelCredit();
     });
   }
@@ -390,6 +420,6 @@ const VehicleView = (() => {
 
   return {
     renderGarage, renderBoard, renderMaintenances, renderParts, refresh,
-    saveSheet, setFinanceCategory, updateKm, removeReading, selectZone, clearZone
+    saveSheet, clearSheetColor, setFinanceCategory, updateKm, removeReading, selectZone, clearZone
   };
 })();
