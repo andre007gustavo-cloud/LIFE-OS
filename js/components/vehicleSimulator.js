@@ -1,11 +1,12 @@
 /**
  * ===================== VEHICLE SIMULATOR =====================
- * Controles da Garagem para ver o carro 3D com outra aparência: o toggle
- * "Prévia: incluir planejadas", a legenda do que está sendo mostrado e o painel
+ * Controles da Garagem para ver o carro 3D com outra aparência: os toggles
+ * "Prévia: incluir planejadas" e "Mostrar regiões" (as marcas coloridas das zonas),
+ * a legenda do que está sendo mostrado e o painel
  * recolhível "Simular" (cor, rodas, película, altura), que age ao vivo e NUNCA
  * grava. "Salvar como ideia" abre o modal de card como Modificação em Ideias
  * com o efeito; "Descartar" volta ao que está registrado.
- * O estado (prévia ligada, simulação, painel aberto) vive só na tela, em AppState.ui.vehicleSim.
+ * O estado (prévia ligada, regiões à vista, simulação, painel aberto) vive só na tela, em AppState.ui.vehicleSim.
  */
 
 const VehicleSimulator = (() => {
@@ -20,10 +21,12 @@ const VehicleSimulator = (() => {
   /** A simulação e a prévia pertencem a um veículo: ao trocar de veículo recomeçam. */
   function stateFor(vehicleId) {
     if (AppState.ui.vehicleSim.vehicleId !== vehicleId) {
-      AppState.ui.vehicleSim = { vehicleId, preview: false, override: null, open: false };
+      AppState.ui.vehicleSim = { vehicleId, preview: false, showZones: true, override: null, open: false };
     }
     return AppState.ui.vehicleSim;
   }
+
+  const showsZones = vehicleId => stateFor(vehicleId).showZones;
 
   /** Aparência a mostrar agora: registrado + prévia (se ligada) + simulação. */
   const lookFor = vehicleId => {
@@ -54,6 +57,11 @@ const VehicleSimulator = (() => {
   function setPreview(vehicleId, checked) {
     stateFor(vehicleId).preview = checked;
     applyNow(vehicleId);
+  }
+
+  function setShowZones(vehicleId, checked) {
+    stateFor(vehicleId).showZones = checked;
+    Vehicle3D.setZonesVisible(checked);
   }
 
   function setOpen(isOpen) {
@@ -93,11 +101,15 @@ const VehicleSimulator = (() => {
 
   /** Bloco da Garagem (toggle, legenda e painel). Sem 3D, só explica que o simulador precisa dele. */
   function html(vehicleId) {
-    const { preview, open } = stateFor(vehicleId);
+    const { preview, showZones, open } = stateFor(vehicleId);
     if (!Vehicle3D.isSupported()) return unavailableHtml();
     return `<div class="veh-sim-bar">
-        <label class="veh-sim-toggle"><input type="checkbox" id="veh-sim-preview"${preview ? ' checked' : ''}
-          onchange="VehicleSimulator.setPreview('${attr(vehicleId)}', this.checked)"> Prévia: incluir planejadas</label>
+        <div class="veh-sim-toggles">
+          <label class="veh-sim-toggle"><input type="checkbox" id="veh-sim-preview"${preview ? ' checked' : ''}
+            onchange="VehicleSimulator.setPreview('${attr(vehicleId)}', this.checked)"> Prévia: incluir planejadas</label>
+          <label class="veh-sim-toggle"><input type="checkbox" id="veh-sim-zones"${showZones ? ' checked' : ''}
+            onchange="VehicleSimulator.setShowZones('${attr(vehicleId)}', this.checked)"> Mostrar regiões</label>
+        </div>
         <div class="veh-sim-legend" id="veh-sim-legend" aria-live="polite">${esc(legendText(lookFor(vehicleId)))}</div>
       </div>
       <details class="veh-sim" id="veh-sim"${open ? ' open' : ''} ontoggle="VehicleSimulator.setOpen(this.open)">
@@ -126,5 +138,5 @@ const VehicleSimulator = (() => {
     if (root) root.innerHTML = unavailableHtml();
   }
 
-  return { lookFor, html, setup, showOriginals, showUnavailable, setPreview, setOpen, update, discard, saveAsIdea };
+  return { lookFor, showsZones, html, setup, showOriginals, showUnavailable, setPreview, setShowZones, setOpen, update, discard, saveAsIdea };
 })();

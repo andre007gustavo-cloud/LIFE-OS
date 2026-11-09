@@ -46,7 +46,7 @@ const AppState = (() => {
     vehiclePartsText: '',
     // Veículo: zona aberta na Garagem e simulador do carro 3D (só de tela)
     vehicleZone: { vehicleId: null, zoneId: null },
-    vehicleSim: { vehicleId: null, preview: false, override: null, open: false },
+    vehicleSim: { vehicleId: null, preview: false, showZones: true, override: null, open: false },
 
     // Habits
     habitEditId: null,

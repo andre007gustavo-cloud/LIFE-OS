@@ -168,6 +168,7 @@
 /* ----- Simulador ----- */
 .veh-sim-root{margin-top:8px;text-align:left}
 .veh-sim-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px}
+.veh-sim-toggles{display:flex;flex-wrap:wrap;gap:6px 14px}
 .veh-sim-toggle{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer}
 .veh-sim-legend{font-size:12px;color:var(--text2);overflow-wrap:anywhere}
 .veh-sim{margin-top:8px;padding:8px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm)}

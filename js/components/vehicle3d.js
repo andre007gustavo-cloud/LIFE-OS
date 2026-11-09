@@ -26,7 +26,7 @@ const Vehicle3D = (() => {
   let starting = null;
   let session = null;
   let host = null;
-  let options = { zoneStates: {}, selectedZone: null, onZoneSelect: null, look: null };
+  let options = { zoneStates: {}, selectedZone: null, onZoneSelect: null, look: null, showZones: true };
 
   // ===== Suporte e carga =====
 
@@ -178,7 +178,7 @@ const Vehicle3D = (() => {
     const state = options.zoneStates[zoneId] || ZONE_STATE.NEUTRAL;
     const selected = zoneId === options.selectedZone;
     return {
-      visible: selected || state !== ZONE_STATE.NEUTRAL,
+      visible: options.showZones && (selected || state !== ZONE_STATE.NEUTRAL),
       color: SCENE.HIGHLIGHT_COLORS[state],
       opacity: selected ? SCENE.HIGHLIGHT_OPACITY_SELECTED : SCENE.HIGHLIGHT_OPACITY
     };
@@ -475,7 +475,7 @@ const Vehicle3D = (() => {
   /**
    * Põe o carro no host (síncrono se o canvas já existe). options: zoneStates
    * { [zoneId]: 'symptom'|'planned'|'neutral' }, selectedZone, onZoneSelect(zoneId), look
-   * (aparência, como em applyLook).
+   * (aparência, como em applyLook), showZones (false esconde todas as marcas de região).
    * Devolve uma promessa: true quando o 3D está na tela, false quando está indisponível,
    * null quando a Garagem saiu da tela antes de terminar (nada a avisar).
    */
@@ -496,6 +496,12 @@ const Vehicle3D = (() => {
     applyHighlights();
   }
 
+  /** Liga ou desliga as marcas de região, para ver o carro limpo; a câmera e a zona escolhida não mudam. */
+  function setZonesVisible(visible) {
+    options.showZones = visible;
+    applyHighlights();
+  }
+
   /** Marca a zona e leva a câmera até ela; null limpa a marca e volta ao enquadramento geral. */
   function focusZone(zoneId) {
     options.selectedZone = zoneId || null;
@@ -510,5 +516,5 @@ const Vehicle3D = (() => {
     return true;
   }
 
-  return { isSupported, mount, usesRealModel, originalColors, setZoneStates, focusZone, applyLook, releaseIfDetached };
+  return { isSupported, mount, usesRealModel, originalColors, setZoneStates, setZonesVisible, focusZone, applyLook, releaseIfDetached };
 })();

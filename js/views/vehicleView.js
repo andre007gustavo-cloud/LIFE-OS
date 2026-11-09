@@ -238,6 +238,7 @@ const VehicleView = (() => {
       zoneStates: VehicleSceneService.getZoneStates(vehicle.id),
       selectedZone: selectedZoneOf(vehicle),
       look: VehicleSimulator.lookFor(vehicle.id),
+      showZones: VehicleSimulator.showsZones(vehicle.id),
       onZoneSelect: zoneId => selectZone(vehicle.id, zoneId)
     }).then(mounted => {
       if (mounted) {
