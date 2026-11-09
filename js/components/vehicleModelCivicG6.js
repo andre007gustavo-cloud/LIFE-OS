@@ -17,6 +17,8 @@ const VehicleModelCivicG6 = (() => {
   const ROLE_LABELS = { paint: 'a pintura', wheels: 'o aro das rodas', glass: 'os vidros' };
 
   let loaderPromise = null;
+  // Arquivo com conteúdo que não serve (papel ou nó ausente): lembrado até recarregar a página, para não baixar e ler 4,4 MB à toa a cada visita.
+  let contentError = null;
 
   /** Import memoizado; se a biblioteca não baixa, a próxima chamada tenta de novo. */
   function loadGltfLoader() {
@@ -65,11 +67,13 @@ const VehicleModelCivicG6 = (() => {
       return model;
     } catch (error) {
       root.traverse(VehicleModelProcedural.disposeObject);
+      contentError = error;
       throw error;
     }
   }
 
   async function load(THREE) {
+    if (contentError) throw contentError;
     const GLTFLoader = await loadGltfLoader();
     const gltf = await new GLTFLoader().loadAsync(MODEL_URL);
     return describe(THREE, gltf.scene);
