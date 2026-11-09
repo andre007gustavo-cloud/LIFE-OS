@@ -193,15 +193,15 @@ const Constants = (() => {
     ],
     // box: caixa normalizada no carro [x -0,5 traseira...+0,5 frente, y 0 chão...1 teto, z -0,5 esquerda...+0,5 direita];
     // view: de onde a câmera olha (azimute 0 = de frente, 90 = pela direita; elevação em graus).
-    // As caixas externas não se sobrepõem: a faixa baixa (y < 0,24) é eixos + embaixo; acima dela, frente, capô, laterais, vidros e traseira.
+    // As caixas externas não se sobrepõem nem deixam vão (as laterais vão até a traseira, em x = -0,36): a faixa baixa (y < 0,24) é eixos + embaixo; acima dela, frente, capô, laterais, vidros e traseira.
     ZONES: [
       { id: 'engine', label: 'Motor', box: [[0.10, 0.24, -0.3], [0.30, 0.62, 0.3]], view: { azimuth: 35, elevation: 55 } },
       { id: 'front', label: 'Dianteira', box: [[0.30, 0.24, -0.5], [0.5, 0.62, 0.5]], view: { azimuth: 25, elevation: 12 } },
       { id: 'rear', label: 'Traseira', box: [[-0.5, 0.24, -0.5], [-0.36, 0.64, 0.5]], view: { azimuth: 155, elevation: 12 } },
       { id: 'front-axle', label: 'Eixo dianteiro', box: [[0.16, 0, -0.5], [0.5, 0.24, 0.5]], view: { azimuth: -50, elevation: 4 } },
       { id: 'rear-axle', label: 'Eixo traseiro', box: [[-0.5, 0, -0.5], [-0.16, 0.24, 0.5]], view: { azimuth: -130, elevation: 4 } },
-      { id: 'left-side', label: 'Lateral esquerda', box: [[-0.30, 0.24, -0.5], [0.30, 0.55, -0.3]], view: { azimuth: -90, elevation: 8 } },
-      { id: 'right-side', label: 'Lateral direita', box: [[-0.30, 0.24, 0.3], [0.30, 0.55, 0.5]], view: { azimuth: 90, elevation: 8 } },
+      { id: 'left-side', label: 'Lateral esquerda', box: [[-0.36, 0.24, -0.5], [0.30, 0.55, -0.3]], view: { azimuth: -90, elevation: 8 } },
+      { id: 'right-side', label: 'Lateral direita', box: [[-0.36, 0.24, 0.3], [0.30, 0.55, 0.5]], view: { azimuth: 90, elevation: 8 } },
       { id: 'roof-glass', label: 'Teto e vidros', box: [[-0.36, 0.55, -0.3], [0.10, 1, 0.3]], view: { azimuth: -60, elevation: 30 } },
       { id: 'interior', label: 'Interior', box: [[-0.36, 0.24, -0.3], [0.10, 0.55, 0.3]], view: { azimuth: -60, elevation: 40 } },
       { id: 'underbody', label: 'Embaixo', box: [[-0.16, 0, -0.5], [0.16, 0.24, 0.5]], view: { azimuth: -90, elevation: 3 } }
