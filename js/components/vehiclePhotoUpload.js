@@ -26,14 +26,33 @@ const VehiclePhotoUpload = (() => {
   let running = false;
   let batch = { done: 0, failed: 0 };
 
+  const dirtyVehicles = new Set();
+  let flushScheduled = false;
+  const nextFrame = typeof requestAnimationFrame === 'function' ? requestAnimationFrame : callback => setTimeout(callback, 0);
+
   /** Um redesenho que falha não pode travar a fila nem recontar um item já enviado. */
-  function notify(vehicleId) {
-    if (typeof VehicleView === 'undefined') return;
+  function redraw(vehicleId) {
     try {
       VehicleView.photosChanged(vehicleId);
     } catch (err) {
       console.error('Falha ao atualizar as fotos na tela', err);
     }
+  }
+
+  function flushNotifications() {
+    flushScheduled = false;
+    const vehicleIds = [...dirtyVehicles];
+    dirtyVehicles.clear();
+    vehicleIds.forEach(redraw);
+  }
+
+  /** Cada mudança de status marca o veículo; o redesenho acontece uma vez por quadro e por veículo. */
+  function notify(vehicleId) {
+    if (typeof VehicleView === 'undefined') return;
+    dirtyVehicles.add(vehicleId);
+    if (flushScheduled) return;
+    flushScheduled = true;
+    nextFrame(flushNotifications);
   }
 
   const toast = (text, type) => {
@@ -187,14 +206,32 @@ const VehiclePhotoUpload = (() => {
     };
   }
 
-  /** Entrada testável: enfileira até MAX_PER_UPLOAD arquivos e devolve quantos entraram. */
-  function enqueue(vehicleId, files, opts = {}) {
-    const list = [...files];
-    const accepted = list.slice(0, PHOTO.MAX_PER_UPLOAD);
-    if (!accepted.length) return 0;
-    if (list.length > accepted.length) {
+  /** Quantas fotos ainda cabem no veículo, contando as já salvas e as em envio (as que falharam não ocupam vaga). */
+  function roomLeft(vehicleId) {
+    const saved = VehicleService.listPhotos(vehicleId);
+    const stored = saved.erro ? 0 : saved.length;
+    const inFlight = items.filter(i => i.vehicleId === vehicleId && i.status !== STATUS.FAILED).length;
+    return Math.max(0, PHOTO.MAX_PER_VEHICLE - stored - inFlight);
+  }
+
+  function pickAccepted(vehicleId, list) {
+    const room = roomLeft(vehicleId);
+    const accepted = list.slice(0, Math.min(PHOTO.MAX_PER_UPLOAD, room));
+    if (list.length > PHOTO.MAX_PER_UPLOAD) {
       toast(`Só ${PHOTO.MAX_PER_UPLOAD} fotos por vez; as outras ficaram de fora`, 'warn');
     }
+    if (Math.min(list.length, PHOTO.MAX_PER_UPLOAD) > room) {
+      toast(`Limite de ${PHOTO.MAX_PER_VEHICLE} fotos por veículo: ${accepted.length ? `só ${accepted.length} ${accepted.length === 1 ? 'coube' : 'couberam'}` : 'nenhuma coube'}. Exclua fotos antigas para enviar novas.`, 'warn');
+    }
+    return accepted;
+  }
+
+  /** Entrada testável: enfileira o que cabe (MAX_PER_UPLOAD por vez e MAX_PER_VEHICLE no total) e devolve quantos entraram. */
+  function enqueue(vehicleId, files, opts = {}) {
+    const list = [...files];
+    if (!list.length) return 0;
+    const accepted = pickAccepted(vehicleId, list);
+    if (!accepted.length) return 0;
     accepted.forEach(file => {
       const item = newItem(vehicleId, file, opts);
       items.push(item);
@@ -224,7 +261,7 @@ const VehiclePhotoUpload = (() => {
     const failed = item.status === STATUS.FAILED;
     const text = failed ? `Falhou: ${item.reason}` : LABELS[item.status];
     const dismissButton = failed
-      ? `<button type="button" class="veh-photo-dismiss" onclick="VehiclePhotoUpload.dismiss('${attr(item.id)}')">Dispensar</button>`
+      ? `<button type="button" class="veh-photo-dismiss" data-focus-key="dismiss-${attr(item.id)}" onclick="VehiclePhotoUpload.dismiss('${attr(item.id)}')">Dispensar</button>`
       : '';
     return `<div class="veh-photo-tile veh-photo-pending${failed ? ' veh-photo-error' : ''}" role="status">
       <img src="${attr(item.previewUrl)}" alt="Prévia da foto em envio" draggable="false">

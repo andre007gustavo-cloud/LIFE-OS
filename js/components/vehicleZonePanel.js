@@ -63,7 +63,7 @@ const VehicleZonePanel = (() => {
     const context = VehicleBoardService.getZoneContext(vehicleId, zoneId);
     if (photos.erro || context.erro) return '';
     if (!photos.length) return context.openCards.length || context.history.length ? '' : EMPTY_HTML;
-    const row = VehiclePhotoImages.rowHtml(vehicleId, photos, { limit: PHOTO.ZONE_PANEL, scope: 'zone', scopeId: zoneId });
+    const row = VehiclePhotoImages.rowHtml(vehicleId, photos, { limit: PHOTO.ZONE_PANEL, scope: PHOTO.SCOPE.ZONE, scopeId: zoneId });
     return sectionHtml('Fotos', row);
   }
 

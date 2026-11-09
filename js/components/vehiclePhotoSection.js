@@ -10,9 +10,8 @@
 const VehiclePhotoSection = (() => {
 
   const REGION = 'record';
-  const SCOPE_RECORD = 'record';
   const REGION_SELECTOR = '.veh-photo-region';
-  const { ROLE, COMPARE_START } = Constants.VEHICLE.PHOTO;
+  const { ROLE, COMPARE_START, SCOPE } = Constants.VEHICLE.PHOTO;
   const attr = Utils.escapeAttr;
 
   // ===== Comparador =====
@@ -70,7 +69,7 @@ const VehiclePhotoSection = (() => {
     if (photos.erro) return '';
     const pair = VehiclePhotoService.comparisonPair(vehicleId, recordId);
     const pending = VehiclePhotoUpload.pendingHtml(vehicleId, { maintenanceId: recordId });
-    const row = photos.length ? VehiclePhotoImages.rowHtml(vehicleId, photos, { scope: SCOPE_RECORD, scopeId: recordId }) : '';
+    const row = photos.length ? VehiclePhotoImages.rowHtml(vehicleId, photos, { scope: SCOPE.RECORD, scopeId: recordId }) : '';
     return (pair ? compareHtml(pair) : '') + row
       + (pending ? `<div class="veh-photo-grid veh-photo-pending-grid">${pending}</div>` : '')
       + buttonsHtml(vehicleId, recordId);

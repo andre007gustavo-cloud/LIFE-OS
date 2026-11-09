@@ -9,7 +9,7 @@
 const VehiclePhotoGallery = (() => {
 
   const REGION = 'gallery';
-  const SCOPE_ALL = 'all';
+  const { SCOPE } = Constants.VEHICLE.PHOTO;
   const esc = Utils.escapeHtml;
   const attr = Utils.escapeAttr;
 
@@ -37,7 +37,7 @@ const VehiclePhotoGallery = (() => {
 
   function monthSectionHtml(vehicleId, { month, photos }) {
     const titleId = `veh-gallery-${attr(month)}`;
-    const tiles = photos.map(photo => VehiclePhotoImages.tileHtml(vehicleId, photo, { badge: true, scope: SCOPE_ALL })).join('');
+    const tiles = photos.map(photo => VehiclePhotoImages.tileHtml(vehicleId, photo, { badge: true, scope: SCOPE.ALL })).join('');
     return `<section class="veh-gallery-month" aria-labelledby="${titleId}">
       <h3 class="veh-gallery-month-title" id="${titleId}">${esc(monthTitle(month))}</h3>
       <div class="veh-photo-grid">${tiles}</div>

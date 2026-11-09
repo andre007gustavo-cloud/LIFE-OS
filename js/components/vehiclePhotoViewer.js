@@ -16,15 +16,16 @@ const VehiclePhotoViewer = (() => {
   const el = id => document.getElementById(id);
   const root = () => el(VIEWER_ID);
 
-  const state = { vehicleId: null, photoId: null, scope: 'all', scopeId: '', opener: null, region: null, editing: false, shown: null };
+  const { SCOPE } = Constants.VEHICLE.PHOTO;
+  const state = { vehicleId: null, photoId: null, scope: SCOPE.ALL, scopeId: '', opener: null, region: null, editing: false, shown: null };
 
   const isOpen = () => state.photoId !== null;
 
   // ===== Lista =====
 
   function scopeFilter() {
-    if (state.scope === 'zone') return { zone: state.scopeId };
-    if (state.scope === 'record') return { maintenanceId: state.scopeId };
+    if (state.scope === SCOPE.ZONE) return { zone: state.scopeId };
+    if (state.scope === SCOPE.RECORD) return { maintenanceId: state.scopeId };
     return {};
   }
 
@@ -41,8 +42,8 @@ const VehiclePhotoViewer = (() => {
 
   // ===== Avisos para fora =====
 
-  const notifyChanged = () => {
-    if (typeof VehicleView !== 'undefined') VehicleView.photosChanged(state.vehicleId);
+  const notifyChanged = (vehicleId = state.vehicleId) => {
+    if (typeof VehicleView !== 'undefined') VehicleView.photosChanged(vehicleId);
   };
 
   const toast = (text, type) => {
@@ -167,27 +168,24 @@ const VehiclePhotoViewer = (() => {
     if (!root().contains(event.target)) el('veh-viewer-close').focus();
   }
 
-  /** Sem o tile de origem (última foto excluída), um botão estável da região de onde o visualizador abriu. */
-  function regionFallback(region) {
-    if (!region || !region.isConnected) return null;
-    return region.querySelector('[data-focus-key]') || region.querySelector('button');
-  }
+  const regionFallback = region => (region && region.isConnected ? VehiclePhotoImages.stableTarget(region) : null);
 
   function restoreFocus({ opener, photoId, region }) {
     if (opener && opener.isConnected) return opener.focus();
-    const tile = [...document.querySelectorAll('.veh-photo-tile')].find(t => t.dataset.photoId === photoId);
+    const scope = region && region.isConnected ? region : document;
+    const tile = [...scope.querySelectorAll('.veh-photo-tile')].find(t => t.dataset.photoId === photoId);
     (tile || regionFallback(region))?.focus();
   }
 
   // ===== Abrir e fechar =====
 
-  function open(vehicleId, photoId, scope = 'all', scopeId = '') {
+  function open(vehicleId, photoId, scope = SCOPE.ALL, scopeId = '') {
     if (isOpen()) return;
     const photo = VehicleService.getPhoto(vehicleId, photoId);
     if (photo.erro) return;
     const opener = document.activeElement;
     Object.assign(state, {
-      vehicleId, scope: scope || 'all', scopeId: scopeId || '', opener,
+      vehicleId, scope: scope || SCOPE.ALL, scopeId: scopeId || '', opener,
       region: opener && opener.closest ? opener.closest('[data-veh-photo-region]') : null
     });
     root().hidden = false;
@@ -239,7 +237,15 @@ const VehiclePhotoViewer = (() => {
 
   function finishEdit() {
     setEditing(false);
-    el('veh-viewer-edit').focus();
+    if (isOpen()) el('veh-viewer-edit').focus();
+  }
+
+  /** A foto salva pode ter saído do escopo (outra zona, sem vínculo): aí o visualizador já fechou sozinho. */
+  function afterSaved(vehicleId, photo) {
+    finishEdit();
+    if (isOpen()) el('veh-viewer-img').alt = VehiclePhotoImages.altOf(photo);
+    toast('Foto atualizada', 'success');
+    notifyChanged(vehicleId);
   }
 
   function startEdit() {
@@ -247,13 +253,9 @@ const VehiclePhotoViewer = (() => {
     const photo = VehicleService.getPhoto(state.vehicleId, state.photoId);
     if (photo.erro) return close();
     setEditing(true);
-    VehiclePhotoForm.show(el('veh-viewer-info'), state.vehicleId, photo, {
-      onSaved: () => {
-        finishEdit();
-        el('veh-viewer-img').alt = VehiclePhotoImages.altOf(VehicleService.getPhoto(state.vehicleId, state.photoId));
-        toast('Foto atualizada', 'success');
-        notifyChanged();
-      },
+    const vehicleId = state.vehicleId;
+    VehiclePhotoForm.show(el('veh-viewer-info'), vehicleId, photo, {
+      onSaved: saved => afterSaved(vehicleId, saved),
       onCancel: finishEdit
     });
   }

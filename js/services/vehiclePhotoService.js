@@ -38,12 +38,12 @@ const VehiclePhotoService = (() => {
     return before && after ? { before, after } : null;
   }
 
-  /** O que preencher numa foto nova ligada ao registro: data, km e zonas dele (campos vazios ficam de fora). */
+  /** O que preencher numa foto nova ligada ao registro: data, km e zonas dele (campos vazios ou data futura ficam de fora). */
   function suggestionFor(vehicleId, maintenanceId) {
     const record = VehicleService.getMaintenance(vehicleId, maintenanceId);
     if (record.erro) return { zones: [] };
     return {
-      ...(record.date && { date: record.date }),
+      ...(record.date && record.date <= Utils.today() && { date: record.date }),
       ...(Number.isInteger(record.km) && { km: record.km }),
       zones: [...record.zones]
     };

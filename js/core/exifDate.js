@@ -1,7 +1,7 @@
 /**
  * ===================== EXIF DATE =====================
  * Lê a data em que a foto foi tirada (EXIF) de um JPEG, sem DOM.
- * Depende só de Utils (validação e "hoje"). Nunca lança: qualquer erro vira null.
+ * Depende só de Utils (validação e "hoje") e Constants (ano mínimo). Nunca lança: qualquer erro vira null.
  */
 const ExifDate = (() => {
   const TAG_EXIF_POINTER = 0x8769;
@@ -83,7 +83,8 @@ const ExifDate = (() => {
     const match = /^(\d{4}):(\d{2}):(\d{2})$/.exec(text || '');
     if (!match) return null;
     const iso = `${match[1]}-${match[2]}-${match[3]}`;
-    if (iso < '0001-01-01' || Utils.toISO(Utils.parseISO(iso)) !== iso) return null;
+    if (Utils.toISO(Utils.parseISO(iso)) !== iso) return null;
+    if (Number(match[1]) < Constants.VEHICLE.PHOTO.EXIF_MIN_YEAR) return null;
     return iso > Utils.today() ? null : iso;
   }
 

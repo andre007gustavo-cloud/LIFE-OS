@@ -308,7 +308,7 @@ const VehicleService = (() => {
     });
   }
 
-  /** Só depois de gravar: se a gravação falhar, as imagens continuam referenciadas. No conector (sem ImageService) ficam órfãs. */
+  /** Chamado logo após o persist (grava local e agenda a nuvem), como nas notas. No conector (sem ImageService) as imagens ficam órfãs. */
   function _discardImages(ids) {
     if (ids.length && typeof ImageService !== 'undefined') ImageService.removeMany(ids);
   }
@@ -557,6 +557,8 @@ const VehicleService = (() => {
   function addPhoto(vehicleId, dto = {}) {
     return _guard(() => {
       const vehicle = _requireVehicle(vehicleId);
+      const max = Constants.VEHICLE.PHOTO.MAX_PER_VEHICLE;
+      if (_photos(vehicle).length >= max) _fail(`Limite de ${max} fotos por veículo atingido. Exclua fotos antigas para enviar novas.`);
       const photo = _normalizePhoto(vehicle, dto);
       vehicle.photos = [..._photos(vehicle), photo];
       _touch(vehicle);

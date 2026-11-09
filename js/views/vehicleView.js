@@ -122,8 +122,14 @@ const VehicleView = (() => {
     const focusSelector = focusedSelectorIn(container);
     container.innerHTML = htmlOf(container.dataset.vehicleId, container);
     VehiclePhotoImages.hydrate(container);
-    if (focusSelector) container.querySelector(focusSelector)?.focus();
+    if (focusSelector) (container.querySelector(focusSelector) || VehiclePhotoImages.stableTarget(container))?.focus();
   }
+
+  /** Região dentro de um modal fechado não precisa de redesenho: ao reabrir, o modal a desenha de novo. */
+  const isInClosedModal = container => {
+    const overlay = container.closest('.overlay');
+    return Boolean(overlay) && !overlay.classList.contains('open');
+  };
 
   /**
    * Estado das fotos mudou: troca só as áreas de fotos deste veículo que estão no documento
@@ -131,7 +137,7 @@ const VehicleView = (() => {
    */
   function photosChanged(vehicleId) {
     document.querySelectorAll('[data-veh-photo-region]').forEach(container => {
-      if (container.dataset.vehicleId === vehicleId) redrawPhotoRegion(container);
+      if (container.dataset.vehicleId === vehicleId && !isInClosedModal(container)) redrawPhotoRegion(container);
     });
     if (typeof VehiclePhotoViewer !== 'undefined') VehiclePhotoViewer.refresh();
   }
@@ -369,7 +375,7 @@ const VehicleView = (() => {
         <span>Fotos</span>
         <button type="button" class="btn btn-ghost btn-sm" data-focus-key="garage-all" onclick="setProjTab('photos')">Ver todas (${photos.length})</button>
       </div>
-      ${VehiclePhotoImages.rowHtml(vehicleId, photos.slice(0, PHOTO.GARAGE_STRIP), { scope: 'all' })}
+      ${VehiclePhotoImages.rowHtml(vehicleId, photos.slice(0, PHOTO.GARAGE_STRIP), { scope: PHOTO.SCOPE.ALL })}
     </div>`;
   }
 

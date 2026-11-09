@@ -313,7 +313,11 @@ const Constants = (() => {
       FULL_STEPS: [{ maxDim: 1600, quality: 0.8 }, { maxDim: 1600, quality: 0.6 }, { maxDim: 1280, quality: 0.6 }],
       MAX_DATAURL_CHARS: 900000,
       EXIF_SCAN_BYTES: 131072,
+      // Câmera com relógio zerado grava 1970; antes deste ano a data do EXIF é descartada
+      EXIF_MIN_YEAR: 1990,
       MAX_PER_UPLOAD: 10,
+      // ~420 bytes por foto (até 552 com legenda máxima) no documento principal, que tem teto de 1 MiB
+      MAX_PER_VEHICLE: 500,
       CAPTION_MAX: 200,
       GARAGE_STRIP: 8,
       ZONE_PANEL: 6,
@@ -322,7 +326,9 @@ const Constants = (() => {
       LAZY_ROOT_MARGIN: '200px',
       COMPARE_START: 50,
       ROLES: [{ id: 'before', label: 'Antes' }, { id: 'after', label: 'Depois' }],
-      ROLE: { BEFORE: 'before', AFTER: 'after' }
+      ROLE: { BEFORE: 'before', AFTER: 'after' },
+      // Recorte de fotos que o visualizador percorre
+      SCOPE: { ALL: 'all', RECORD: 'record', ZONE: 'zone' }
     }
   };
 

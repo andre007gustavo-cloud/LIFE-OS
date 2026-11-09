@@ -112,6 +112,11 @@ const VehiclePhotoImages = (() => {
     return `<div class="veh-photo-row">${tiles.join('')}</div>`;
   }
 
+  /** Botão estável de uma região (sem os de "Dispensar", que somem) para devolver o foco quando o elemento focado sumiu. */
+  function stableTarget(region) {
+    return region.querySelector('[data-focus-key]:not([data-focus-key^="dismiss-"])') || region.querySelector('button');
+  }
+
   function openViewer(button) {
     if (typeof VehiclePhotoViewer === 'undefined') return;
     const { vid, photoId, scope, scopeId } = button.dataset;
@@ -178,5 +183,5 @@ const VehiclePhotoImages = (() => {
     });
   }
 
-  return { tileHtml, rowHtml, hydrate, loadThumb, loadFull, remember, forget, altOf, openViewer, KIND };
+  return { tileHtml, rowHtml, hydrate, loadThumb, loadFull, remember, forget, altOf, openViewer, stableTarget, KIND };
 })();
