@@ -148,8 +148,8 @@ const VehicleModelProcedural = (() => {
     return wheel;
   }
 
-  /** Mancha escura em degradê sob o carro: sombra falsa, sem custo de sombra em tempo real. */
-  function buildShadow(T) {
+  /** Mancha escura em degradê sob o carro: sombra falsa, sem custo de sombra em tempo real. Também usada pelo modelo real. */
+  function buildShadow(T, planeSize = SHADOW.planeSize) {
     const { texturePx: size, innerRadiusPx } = SHADOW;
     const canvas = document.createElement('canvas');
     canvas.width = size;
@@ -161,7 +161,7 @@ const VehicleModelProcedural = (() => {
     context.fillStyle = gradient;
     context.fillRect(0, 0, size, size);
     const material = new T.MeshBasicMaterial({ map: new T.CanvasTexture(canvas), transparent: true, depthWrite: false });
-    return part(T, new T.PlaneGeometry(...SHADOW.planeSize), material, [0, SHADOW.lift, 0], [-QUARTER_TURN, 0, 0]);
+    return part(T, new T.PlaneGeometry(...planeSize), material, [0, SHADOW.lift, 0], [-QUARTER_TURN, 0, 0]);
   }
 
   function buildWheels(T, mats, suspended, root) {
@@ -183,5 +183,5 @@ const VehicleModelProcedural = (() => {
     return { root, paint: [mats.paint], wheels: [mats.wheel], glass: [mats.glass], suspended, cmPerUnit: CM_PER_UNIT };
   }
 
-  return { id: 'civic-sedan-procedural', load };
+  return { id: 'civic-sedan-procedural', load, buildShadow };
 })();

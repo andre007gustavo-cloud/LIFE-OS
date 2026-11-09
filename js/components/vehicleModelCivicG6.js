@@ -6,7 +6,7 @@
  * O arquivo já vem na convenção do app: metros, frente em +X, teto em +Y, direita
  * em +Z, rodas em y = 0. Os materiais que a aparência muda são achados pelo nome
  * (papel); os demais ficam como vieram. Licença CC BY-NC 4.0: o crédito aparece na
- * Garagem (Constants.VEHICLE.MODEL_CREDIT).
+ * Garagem (Constants.VEHICLE.MODEL_CREDIT). A sombra sob o carro vem do modelo procedural.
  */
 
 const VehicleModelCivicG6 = (() => {
@@ -14,6 +14,7 @@ const VehicleModelCivicG6 = (() => {
   const { MODEL_URL, CM_PER_UNIT } = Constants.VEHICLE.SCENE;
   const MATERIAL_ROLES = { paint: ['paint'], wheels: ['wheel_rim'], glass: ['glass_tinted', 'glass_tinted_side'] };
   const SUSPENDED_NODE = 'body';
+  const SHADOW_PLANE_M = [5.4, 3.1];
   // Sem mapa de ambiente, metal puro (metalness 1) só reflete as luzes e o aro fica escuro: o teto deixa a cor escolhida aparecer.
   const RIM_MAX_METALNESS = 0.5;
   const ROLE_LABELS = { paint: 'a pintura', wheels: 'o aro das rodas', glass: 'os vidros' };
@@ -69,19 +70,21 @@ const VehicleModelCivicG6 = (() => {
     });
   }
 
-  function describe(root) {
+  function describe(THREE, root) {
     try {
-      return { root, ...pickRoles(root), suspended: pickSuspended(root), cmPerUnit: CM_PER_UNIT };
+      const model = { root, ...pickRoles(root), suspended: pickSuspended(root), cmPerUnit: CM_PER_UNIT };
+      root.add(VehicleModelProcedural.buildShadow(THREE, SHADOW_PLANE_M));
+      return model;
     } catch (error) {
       disposeScene(root);
       throw error;
     }
   }
 
-  async function load() {
+  async function load(THREE) {
     const GLTFLoader = await loadGltfLoader();
     const gltf = await new GLTFLoader().loadAsync(MODEL_URL);
-    return describe(gltf.scene);
+    return describe(THREE, gltf.scene);
   }
 
   return { id: 'civic-g6', load };
