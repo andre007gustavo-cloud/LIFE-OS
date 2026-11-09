@@ -8,6 +8,9 @@
  * imagem vira 1 doc, ficando bem abaixo do limite de 1 MiB por documento;
  * o doc principal do usuário fica pequeno porque a nota só guarda o ID.
  *
+ * A subcoleção `noteImages` guarda também as fotos do veículo (miniatura e
+ * foto cheia, uma imagem por doc).
+ *
  * A compressão é responsabilidade do chamador (Utils.compressImage).
  */
 

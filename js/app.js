@@ -343,6 +343,8 @@
     window.VehiclePayment          = VehiclePayment;
     window.VehicleHistory          = VehicleHistory;
     window.VehicleParts            = VehicleParts;
+    window.VehiclePhotoImages      = VehiclePhotoImages;
+    window.VehiclePhotoUpload      = VehiclePhotoUpload;
     window.VehicleMaintenanceModal = VehicleMaintenanceModal;
     window.VehicleCardModal        = VehicleCardModal;
     window.VehicleBoard            = VehicleBoard;

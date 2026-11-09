@@ -99,6 +99,12 @@ const VehicleView = (() => {
     AreasView.renderWorkspace();
   }
 
+  /** Estado das fotos mudou: redesenha a aba só se este veículo está aberto na tela de projetos. */
+  function photosChanged(vehicleId) {
+    const viewActive = document.getElementById('view-areas')?.classList.contains('active');
+    if (viewActive && VehicleService.getByProject(AppState.ui.activeProjectId)?.id === vehicleId) refresh();
+  }
+
   function saveResult(result) {
     if (result.erro) return Feedback.toast(result.erro, 'error');
     Feedback.toast('Ficha salva', 'success');
@@ -421,6 +427,6 @@ const VehicleView = (() => {
 
   return {
     renderGarage, renderBoard, renderMaintenances, renderParts, refresh,
-    saveSheet, clearSheetColor, setFinanceCategory, updateKm, removeReading, selectZone, clearZone
+    photosChanged, saveSheet, clearSheetColor, setFinanceCategory, updateKm, removeReading, selectZone, clearZone
   };
 })();

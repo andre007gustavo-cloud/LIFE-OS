@@ -1361,6 +1361,9 @@
 <!-- ========== JS MODULES ========== -->
 <!-- Order matters: config → core → services → ui → components → views → bootstrap -->
 
+<!-- Fora da tela mas não display:none: no iOS o click() programático falha em input escondido assim -->
+<input type="file" id="veh-photo-input" class="veh-visually-hidden" accept="image/*" multiple aria-hidden="true" tabindex="-1" onchange="VehiclePhotoUpload.onFilesChosen(this)">
+
 <script src="js/config/constants.js"></script>
 <script src="js/core/utils.js"></script>
 <script src="js/core/quickParser.js"></script>
@@ -1415,6 +1418,8 @@
 <script src="js/components/vehicleBoard.js"></script>
 <script src="js/components/vehicleHistory.js"></script>
 <script src="js/components/vehicleParts.js"></script>
+<script src="js/components/vehiclePhotoImages.js"></script>
+<script src="js/components/vehiclePhotoUpload.js"></script>
 <script src="js/components/imageResize.js"></script>
 <script src="js/components/noteEditor.js"></script>
 <script src="js/components/fileHandler.js"></script>
