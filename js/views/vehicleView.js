@@ -244,7 +244,7 @@ const VehicleView = (() => {
         VehicleSimulator.showOriginals();
         showSheetOriginal();
       }
-      else VehicleSimulator.showUnavailable();
+      else if (mounted === false) VehicleSimulator.showUnavailable();
       showModelCredit();
     });
   }

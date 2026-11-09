@@ -17,6 +17,8 @@ const Vehicle3D = (() => {
   const Geometry = VehicleZoneGeometry;
   const { disposeObject } = VehicleModelProcedural;
   const HOST_READY_CLASS = 'is-3d';
+  // Resultado de mount quando a Garagem saiu da tela no meio da montagem: não é falha, ninguém deve mostrar aviso.
+  const ABORTED = null;
   const CANVAS_LABEL = 'Carro em 3D. Toque numa região para ver os detalhes dela; os botões de zona abaixo fazem o mesmo pelo teclado.';
 
   let libsPromise = null;
@@ -456,7 +458,7 @@ const Vehicle3D = (() => {
         return giveUp(error, false);
       }
       try {
-        if (!await buildSession(libs)) return false;
+        if (!await buildSession(libs)) return ABORTED;
       } catch (error) {
         return giveUp(error, true);
       }
@@ -465,7 +467,7 @@ const Vehicle3D = (() => {
     }
     if (attach()) return true;
     disposeSession();
-    return false;
+    return ABORTED;
   }
 
   // ===== API pública =====
@@ -474,12 +476,13 @@ const Vehicle3D = (() => {
    * Põe o carro no host (síncrono se o canvas já existe). options: zoneStates
    * { [zoneId]: 'symptom'|'planned'|'neutral' }, selectedZone, onZoneSelect(zoneId), look
    * (aparência, como em applyLook).
-   * Devolve uma promessa: true quando o 3D está na tela.
+   * Devolve uma promessa: true quando o 3D está na tela, false quando está indisponível,
+   * null quando a Garagem saiu da tela antes de terminar (nada a avisar).
    */
   function mount(newHost, newOptions = {}) {
     host = newHost;
     options = { ...options, ...newOptions };
-    if (session) return Promise.resolve(attach());
+    if (session) return Promise.resolve(attach() || ABORTED);
     if (!isSupported()) return Promise.resolve(false);
     starting ??= start();
     return starting;
