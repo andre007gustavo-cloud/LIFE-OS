@@ -50,6 +50,7 @@ const PRECACHE = [
   '/js/config/constants.js',
   '/js/core/utils.js',
   '/js/core/quickParser.js',
+  '/js/core/exifDate.js',
   '/js/core/firebase.js',
   '/js/core/storage.js',
   '/js/core/state.js',
