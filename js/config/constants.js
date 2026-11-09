@@ -239,7 +239,8 @@ const Constants = (() => {
     },
     ZONE_STATE: { SYMPTOM: 'symptom', PLANNED: 'planned', NEUTRAL: 'neutral' },
     SCENE: {
-      MODEL_URL: '/models/civic-g6-v1.glb',
+      // A versão fica no nome: o cache de assets do service worker nunca baixa de novo um arquivo que já tem.
+      MODEL_URL: '/models/civic-g6-v2.glb',
       LENGTH_M: 4.3,
       WIDTH_M: 1.82,
       HEIGHT_M: 1.38,
