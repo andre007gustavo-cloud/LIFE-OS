@@ -16,7 +16,7 @@ const VehiclePhotoViewer = (() => {
   const el = id => document.getElementById(id);
   const root = () => el(VIEWER_ID);
 
-  const state = { vehicleId: null, photoId: null, scope: 'all', scopeId: '', opener: null, editing: false, shown: null };
+  const state = { vehicleId: null, photoId: null, scope: 'all', scopeId: '', opener: null, region: null, editing: false, shown: null };
 
   const isOpen = () => state.photoId !== null;
 
@@ -167,10 +167,16 @@ const VehiclePhotoViewer = (() => {
     if (!root().contains(event.target)) el('veh-viewer-close').focus();
   }
 
-  function restoreFocus(opener, photoId) {
+  /** Sem o tile de origem (última foto excluída), um botão estável da região de onde o visualizador abriu. */
+  function regionFallback(region) {
+    if (!region || !region.isConnected) return null;
+    return region.querySelector('[data-focus-key]') || region.querySelector('button');
+  }
+
+  function restoreFocus({ opener, photoId, region }) {
     if (opener && opener.isConnected) return opener.focus();
     const tile = [...document.querySelectorAll('.veh-photo-tile')].find(t => t.dataset.photoId === photoId);
-    if (tile) tile.focus();
+    (tile || regionFallback(region))?.focus();
   }
 
   // ===== Abrir e fechar =====
@@ -179,7 +185,11 @@ const VehiclePhotoViewer = (() => {
     if (isOpen()) return;
     const photo = VehicleService.getPhoto(vehicleId, photoId);
     if (photo.erro) return;
-    Object.assign(state, { vehicleId, scope: scope || 'all', scopeId: scopeId || '', opener: document.activeElement });
+    const opener = document.activeElement;
+    Object.assign(state, {
+      vehicleId, scope: scope || 'all', scopeId: scopeId || '', opener,
+      region: opener && opener.closest ? opener.closest('[data-veh-photo-region]') : null
+    });
     root().hidden = false;
     document.body.classList.add(OPEN_CLASS);
     document.addEventListener('keydown', onKeydown);
@@ -190,15 +200,15 @@ const VehiclePhotoViewer = (() => {
 
   function close() {
     if (!isOpen()) return;
-    const { opener, photoId } = state;
+    const closing = { opener: state.opener, photoId: state.photoId, region: state.region };
     document.removeEventListener('keydown', onKeydown);
     document.removeEventListener('focusin', onFocusIn);
     root().hidden = true;
     document.body.classList.remove(OPEN_CLASS);
     el('veh-viewer-img').removeAttribute('src');
-    Object.assign(state, { photoId: null, editing: false, shown: null, opener: null });
+    Object.assign(state, { photoId: null, editing: false, shown: null, opener: null, region: null });
     notifyChanged();
-    restoreFocus(opener, photoId);
+    restoreFocus(closing);
     state.vehicleId = null;
   }
 

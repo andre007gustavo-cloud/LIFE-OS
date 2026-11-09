@@ -244,10 +244,31 @@ body.veh-viewer-open{overflow:hidden}
 .veh-pf .btn{min-height:44px}
 .veh-pf .filter-chip{min-height:36px}
 .veh-pf-error{min-height:1em;margin:0 0 8px;font-size:13px;color:var(--red)}
-.veh-pf-actions{display:flex;gap:8px;flex-wrap:wrap}
+.veh-pf-actions{display:flex;gap:8px;flex-wrap:wrap;position:sticky;bottom:0;z-index:1;margin:0 -16px;padding:10px 16px;background:var(--bg2);border-top:1px solid var(--border)}
 @media(min-width:900px){
   .veh-viewer{display:grid;grid-template-columns:minmax(0,1fr) 360px;grid-template-rows:auto minmax(0,1fr)}
   .veh-viewer[hidden]{display:none}
   .veh-viewer-bar{grid-column:1 / -1}
   .veh-viewer-info{max-height:none;border-top:0;border-left:1px solid var(--border)}
 }
+
+/* Fotos dentro do registro (modais da manutenção e do card) */
+.veh-photos-note{margin:0 0 8px;font-size:13px;color:var(--text2)}
+.veh-photo-region .veh-photo-row{margin-bottom:8px}
+.veh-photo-pending-grid{margin-bottom:8px}
+.veh-photo-actions{display:flex;flex-wrap:wrap;gap:8px}
+.veh-photo-actions .btn{min-height:44px}
+.veh-compare{--pos:50;position:relative;width:100%;max-width:520px;aspect-ratio:4/3;margin-bottom:10px;overflow:hidden;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);touch-action:pan-y;user-select:none}
+.veh-compare-layer{position:absolute;inset:0;display:block}
+.veh-compare-layer img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.veh-compare-layer img:not([src]){visibility:hidden}
+.veh-compare-after{clip-path:inset(0 calc(100% - var(--pos) * 1%) 0 0)}
+.veh-compare-label{position:absolute;top:6px;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;color:#fff;background:rgba(0,0,0,.78);pointer-events:none}
+.veh-compare-label-after{left:6px;background:rgba(14,98,64,.92)}
+.veh-compare-label-before{right:6px}
+.veh-compare-handle{position:absolute;top:0;bottom:0;left:calc(var(--pos) * 1%);width:3px;margin-left:-1.5px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.5);pointer-events:none}
+.veh-compare-range{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:ew-resize}
+.veh-compare-range:focus-visible{opacity:1;appearance:none;-webkit-appearance:none;background:transparent;outline:2px solid var(--accent);outline-offset:-2px}
+.veh-compare-range:focus-visible::-webkit-slider-runnable-track{background:transparent}
+.veh-compare-range:focus-visible::-webkit-slider-thumb{-webkit-appearance:none;width:0;height:0}
+.veh-compare-range:focus-visible::-moz-range-thumb{width:0;height:0;border:0}

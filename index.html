@@ -1132,6 +1132,15 @@
       <label class="form-label" for="veh-m-notes">Observações</label>
       <textarea class="form-textarea" id="veh-m-notes"></textarea>
     </div>
+    <div class="form-group veh-photos" id="veh-m-photos" hidden>
+      <span class="form-label" id="veh-m-photos-label">Fotos</span>
+      <div class="veh-photo-region" role="group" aria-labelledby="veh-m-photos-label"></div>
+    </div>
+    <div class="form-group veh-photos" id="veh-m-photos-new" hidden>
+      <span class="form-label">Fotos</span>
+      <p class="veh-photos-note">Salve para anexar fotos</p>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="VehicleMaintenanceModal.saveAndAttachPhotos()"><i class="ti ti-photo-plus" aria-hidden="true"></i> Salvar e anexar fotos</button>
+    </div>
     <div class="veh-modal-actions">
       <button class="btn btn-ghost" id="veh-m-remove" style="color:var(--red)" onclick="VehicleMaintenanceModal.remove()">Excluir</button>
       <button class="btn btn-ghost" onclick="closeModal('veh-maint-modal')">Cancelar</button>
@@ -1182,6 +1191,15 @@
     <div class="form-group">
       <label class="form-label" for="veh-c-notes">Observações</label>
       <textarea class="form-textarea" id="veh-c-notes"></textarea>
+    </div>
+    <div class="form-group veh-photos" id="veh-c-photos" hidden>
+      <span class="form-label" id="veh-c-photos-label">Fotos</span>
+      <div class="veh-photo-region" role="group" aria-labelledby="veh-c-photos-label"></div>
+    </div>
+    <div class="form-group veh-photos" id="veh-c-photos-new" hidden>
+      <span class="form-label">Fotos</span>
+      <p class="veh-photos-note">Salve para anexar fotos</p>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="VehicleCardModal.saveAndAttachPhotos()"><i class="ti ti-photo-plus" aria-hidden="true"></i> Salvar e anexar fotos</button>
     </div>
     <div class="form-group veh-symptom-edit" id="veh-c-symptom-edit" hidden>
       <label class="form-label" for="veh-c-resolver">Resolvido por…</label>
@@ -1440,6 +1458,7 @@
 <script src="js/components/vehiclePhotoUpload.js"></script>
 <script src="js/components/vehiclePhotoForm.js"></script>
 <script src="js/components/vehiclePhotoGallery.js"></script>
+<script src="js/components/vehiclePhotoSection.js"></script>
 <script src="js/components/vehiclePhotoViewer.js"></script>
 <script src="js/components/imageResize.js"></script>
 <script src="js/components/noteEditor.js"></script>

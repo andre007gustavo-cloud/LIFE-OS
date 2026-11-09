@@ -195,6 +195,13 @@ const VehicleMaintenanceModal = (() => {
     estimate.textContent = estimate.hidden ? '' : `Estimado no quadro: ${Utils.formatBRL(maintenance.estimateCentavos)}`;
   }
 
+  /** Registro existente mostra as fotos; registro novo só avisa (nenhuma imagem é criada antes de ele existir). */
+  function applyPhotos(maintenance) {
+    el('veh-m-photos-new').hidden = Boolean(maintenance);
+    if (maintenance) VehiclePhotoSection.render('veh-m-photos', vehicleId, maintenance.id);
+    else VehiclePhotoSection.clear('veh-m-photos');
+  }
+
   function show(vehicle, maintenance, { retryPayment = false, complete = false } = {}) {
     vehicleId = vehicle;
     completing = complete;
@@ -205,6 +212,7 @@ const VehicleMaintenanceModal = (() => {
     VehiclePayment.start(vehicle, editId, retryPayment || complete ? { adding: true } : undefined);
     fillForm(complete ? { ...maintenance, date: Utils.today() } : maintenance);
     applyMode(maintenance);
+    applyPhotos(maintenance);
     Modal.open(MODAL_ID);
     el('veh-m-title').focus();
   }
@@ -248,18 +256,25 @@ const VehicleMaintenanceModal = (() => {
     };
   }
 
-  /** Se o pagamento falhar, a manutenção já está salva: o modal reabre em edição para nova tentativa. */
-  function finishSave(maintenanceId) {
+  function reopenSaved(maintenanceId, options) {
+    show(vehicleId, VehicleService.getById(vehicleId).maintenances.find(m => m.id === maintenanceId), options);
+  }
+
+  /**
+   * Se o pagamento falhar, a manutenção já está salva: o modal reabre em edição para nova tentativa.
+   * Com `reopen`, o modal também reabre em edição quando tudo deu certo (para anexar fotos).
+   */
+  function finishSave(maintenanceId, reopen) {
     const savedLabel = completing ? 'Manutenção concluída' : 'Manutenção salva';
     const payment = VehiclePayment.apply(vehicleId, maintenanceId);
     VehicleView.refresh();
-    if (!payment.erro) {
-      Modal.close(MODAL_ID);
-      return Feedback.toast(savedLabel, 'success');
+    if (payment.erro) {
+      Feedback.toast(`${savedLabel}, mas o pagamento falhou: ${payment.erro}`, 'error');
+      return reopenSaved(maintenanceId, { retryPayment: true });
     }
-    Feedback.toast(`${savedLabel}, mas o pagamento falhou: ${payment.erro}`, 'error');
-    const saved = VehicleService.getById(vehicleId).maintenances.find(m => m.id === maintenanceId);
-    show(vehicleId, saved, { retryPayment: true });
+    Feedback.toast(savedLabel, 'success');
+    if (reopen) reopenSaved(maintenanceId);
+    else Modal.close(MODAL_ID);
   }
 
   function persist(dto) {
@@ -269,19 +284,22 @@ const VehicleMaintenanceModal = (() => {
       : VehicleService.addMaintenance(vehicleId, dto);
   }
 
-  function save() {
+  function save(reopen = false) {
     const paymentCheck = VehiclePayment.validate();
     if (paymentCheck.erro) return Feedback.toast(paymentCheck.erro, 'error');
     const dto = readForm();
     if (dto.parts.some(hasInvalidPrice)) return Feedback.toast('Preço inválido na peça', 'error');
     const result = persist(dto);
     if (result.erro) return Feedback.toast(result.erro, 'error');
-    finishSave(result.id);
+    finishSave(result.id, reopen);
   }
+
+  /** Grava a manutenção nova e reabre o mesmo registro em edição, já com a seção de fotos. */
+  const saveAndAttachPhotos = () => save(true);
 
   function remove() {
     if (!editId) return;
-    const message = 'Excluir esta manutenção? Os lançamentos vinculados continuam nas Finanças.';
+    const message = 'Excluir esta manutenção? Os lançamentos vinculados continuam nas Finanças, e as fotos dela ficam na galeria, sem vínculo.';
     if (!confirm(message)) return;
     const result = VehicleService.removeMaintenance(vehicleId, editId);
     if (result.erro) return Feedback.toast(result.erro, 'error');
@@ -291,7 +309,7 @@ const VehicleMaintenanceModal = (() => {
   }
 
   return {
-    openNew, open, openComplete, save, remove,
+    openNew, open, openComplete, save, saveAndAttachPhotos, remove,
     addPartRow, removePartRow, updateTotal, toggleZone, fillPartFromNotebook
   };
 })();

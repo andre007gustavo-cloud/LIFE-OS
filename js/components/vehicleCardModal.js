@@ -134,6 +134,13 @@ const VehicleCardModal = (() => {
     if (symptomMode && isEdit) fillResolverOptions(card);
   }
 
+  /** Card existente mostra as fotos; card novo só avisa (nenhuma imagem é criada antes de ele existir). */
+  function applyPhotos(isEdit) {
+    el('veh-c-photos-new').hidden = isEdit;
+    if (isEdit) VehiclePhotoSection.render('veh-c-photos', vehicleId, editId);
+    else VehiclePhotoSection.clear('veh-c-photos');
+  }
+
   function show(vehicle, card, isEdit) {
     vehicleId = vehicle;
     editId = isEdit ? card.id : null;
@@ -141,6 +148,7 @@ const VehicleCardModal = (() => {
     fillStaticOptions();
     fillForm(card);
     applyMode(isEdit, card);
+    applyPhotos(isEdit);
     Modal.open(MODAL_ID);
     el('veh-c-title').focus();
   }
@@ -219,13 +227,22 @@ const VehicleCardModal = (() => {
     if (persist()) Feedback.toast(symptomMode ? 'Sintoma salvo' : 'Card salvo', 'success');
   }
 
+  /** Grava o card novo e reabre o mesmo card em edição, já com a seção de fotos. */
+  function saveAndAttachPhotos() {
+    const card = saveForm();
+    if (!card) return;
+    VehicleView.refresh();
+    Feedback.toast(symptomMode ? 'Sintoma salvo' : 'Card salvo', 'success');
+    show(vehicleId, card, true);
+  }
+
   function saveAndDiagnose() {
     const card = persist();
     if (card) copyAndOpenJarvis(diagnosisFor(card));
   }
 
   function remove() {
-    if (!editId || !confirm(symptomMode ? 'Excluir este sintoma?' : 'Excluir este card?')) return;
+    if (!editId || !confirm(`Excluir este ${symptomMode ? 'sintoma' : 'card'}? As fotos dele ficam na galeria, sem vínculo.`)) return;
     const result = VehicleService.removeMaintenance(vehicleId, editId);
     if (result.erro) return Feedback.toast(result.erro, 'error');
     Modal.close(MODAL_ID);
@@ -256,7 +273,7 @@ const VehicleCardModal = (() => {
   }
 
   return {
-    openNew, openNewMod, openNewSymptom, openNewInZone, syncVisual, open, save, saveAndDiagnose, remove, toggleZone,
+    openNew, openNewMod, openNewSymptom, openNewInZone, syncVisual, open, save, saveAndAttachPhotos, saveAndDiagnose, remove, toggleZone,
     convertToService, resolve
   };
 })();

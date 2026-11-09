@@ -101,19 +101,31 @@ const VehicleView = (() => {
 
   /** Região de fotos -> HTML interno dela. Cada área de fotos na tela é um contêiner marcado com data-veh-photo-region. */
   const PHOTO_REGIONS = {
-    gallery: vehicleId => VehiclePhotoGallery.html(vehicleId)
+    gallery: vehicleId => VehiclePhotoGallery.html(vehicleId),
+    record: (vehicleId, container) => VehiclePhotoSection.html(vehicleId, container.dataset.recordId)
   };
+
+  /** Seletor do elemento da região que tem o foco (botão com data-focus-key ou tile da foto), ou null. */
+  function focusedSelectorIn(container) {
+    const active = document.activeElement;
+    if (!active || !container.contains(active)) return null;
+    if (active.dataset.focusKey) return `[data-focus-key="${CSS.escape(active.dataset.focusKey)}"]`;
+    if (active.dataset.photoId) return `[data-photo-id="${CSS.escape(active.dataset.photoId)}"]`;
+    return null;
+  }
 
   function redrawPhotoRegion(container) {
     const htmlOf = PHOTO_REGIONS[container.dataset.vehPhotoRegion];
     if (!htmlOf) return;
-    container.innerHTML = htmlOf(container.dataset.vehicleId);
+    const focusSelector = focusedSelectorIn(container);
+    container.innerHTML = htmlOf(container.dataset.vehicleId, container);
     VehiclePhotoImages.hydrate(container);
+    if (focusSelector) container.querySelector(focusSelector)?.focus();
   }
 
   /**
-   * Estado das fotos mudou: troca só as áreas de fotos deste veículo que estão na tela.
-   * Nunca refaz a aba inteira (apagaria texto digitado e fecharia a ficha da Garagem).
+   * Estado das fotos mudou: troca só as áreas de fotos deste veículo que estão no documento
+   * (aba, modais abertos). Nunca refaz a aba inteira (apagaria texto digitado e fecharia a ficha da Garagem).
    */
   function photosChanged(vehicleId) {
     document.querySelectorAll('[data-veh-photo-region]').forEach(container => {

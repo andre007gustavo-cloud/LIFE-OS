@@ -77,6 +77,8 @@
       // lançamentos logo após criados).
       Storage.listenForChanges((data) => {
         AppState.applyRemote(data, renderActiveViews);
+        // Foto aberta apagada em outro aparelho: fecha o visualizador (não depende da aba ativa)
+        if (typeof VehiclePhotoViewer !== 'undefined') VehiclePhotoViewer.refresh();
       });
 
     } else {
@@ -347,6 +349,7 @@
     window.VehiclePhotoUpload      = VehiclePhotoUpload;
     window.VehiclePhotoForm        = VehiclePhotoForm;
     window.VehiclePhotoViewer      = VehiclePhotoViewer;
+    window.VehiclePhotoSection     = VehiclePhotoSection;
     window.VehicleMaintenanceModal = VehicleMaintenanceModal;
     window.VehicleCardModal        = VehicleCardModal;
     window.VehicleBoard            = VehicleBoard;

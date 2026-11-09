@@ -23,7 +23,7 @@ const VehiclePhotoGallery = (() => {
 
   // O clique chama pick() direto: no iOS o input só abre se nada assíncrono vier antes.
   function addButtonHtml(vehicleId) {
-    return `<button type="button" class="btn btn-primary btn-sm" onclick="VehiclePhotoUpload.pick('${attr(vehicleId)}')">
+    return `<button type="button" class="btn btn-primary btn-sm" data-focus-key="add" onclick="VehiclePhotoUpload.pick('${attr(vehicleId)}')">
       <i class="ti ti-photo-plus" aria-hidden="true"></i> Adicionar fotos
     </button>`;
   }
