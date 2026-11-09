@@ -38,8 +38,8 @@ const Vehicle3D = (() => {
    * Se o download falha (rede), a promessa é descartada para a próxima montagem tentar de novo.
    */
   function loadLibs() {
-    libsPromise ??= Promise.all([import('three'), import('three/addons/controls/OrbitControls.js')])
-      .then(([THREE, controls]) => ({ THREE, OrbitControls: controls.OrbitControls }))
+    libsPromise ??= Promise.all([import('three'), import('three/addons/controls/OrbitControls.js'), import('three/addons/environments/RoomEnvironment.js')])
+      .then(([THREE, controls, environment]) => ({ THREE, OrbitControls: controls.OrbitControls, RoomEnvironment: environment.RoomEnvironment }))
       .catch(error => {
         libsPromise = null;
         throw error;
@@ -66,6 +66,18 @@ const Vehicle3D = (() => {
     const fill = new THREE.DirectionalLight(FILL.color, FILL.intensity);
     fill.position.set(...FILL.position);
     scene.add(sky, sun, fill);
+  }
+
+  /** Ambiente de estúdio gerado uma vez: dá o que a pintura metálica e o verniz refletem. Devolve o alvo a liberar no fim. */
+  function addEnvironment({ THREE, RoomEnvironment }, renderer, scene) {
+    const generator = new THREE.PMREMGenerator(renderer);
+    const room = new RoomEnvironment();
+    const target = generator.fromScene(room, SCENE.ENV_BLUR_SIGMA);
+    room.dispose();
+    generator.dispose();
+    scene.environment = target.texture;
+    scene.environmentIntensity = SCENE.ENV_INTENSITY;
+    return target;
   }
 
   /** Uma caixa translúcida por zona, sempre à vista (depthTest off): marca onde está o sintoma ou o plano. */
@@ -116,14 +128,15 @@ const Vehicle3D = (() => {
     }
   }
 
-  function assembleSession({ THREE, OrbitControls }, model, renderer) {
+  function assembleSession(libs, model, renderer) {
+    const { THREE, OrbitControls } = libs;
     const scene = new THREE.Scene();
     const zoneGroup = new THREE.Group();
     addLights(THREE, scene);
     scene.add(model.root, zoneGroup);
     const camera = new THREE.PerspectiveCamera(SCENE.FOV_DEG, 1, SCENE.CAMERA_NEAR, SCENE.CAMERA_FAR);
     const s = {
-      renderer, scene, camera, model, canvas: renderer.domElement, raycaster: new THREE.Raycaster(),
+      renderer, scene, envTarget: addEnvironment(libs, renderer, scene), camera, model, canvas: renderer.domElement, raycaster: new THREE.Raycaster(),
       base: captureBase(model),
       controls: createControls(OrbitControls, camera, renderer.domElement),
       zoneMeshes: buildZoneMeshes(THREE, zoneGroup),
@@ -345,6 +358,7 @@ const Vehicle3D = (() => {
     s.cleanups.forEach(cleanup => cleanup());
     s.controls.dispose();
     s.scene.traverse(disposeObject);
+    s.envTarget.dispose();
     s.renderer.dispose();
     s.renderer.forceContextLoss();
     s.canvas.remove();

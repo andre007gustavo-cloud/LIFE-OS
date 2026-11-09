@@ -260,12 +260,14 @@ const Constants = (() => {
       DEG_TO_RAD: Math.PI / 180,
       ZONE_RENDER_ORDER: 10,
       DAMPING_FACTOR: 0.1,
+      ENV_INTENSITY: 0.7,
+      ENV_BLUR_SIGMA: 0.04,
       CAMERA_NEAR: 0.1,
       CAMERA_FAR: 100,
       LIGHTS: {
-        SKY: { color: '#ffffff', ground: '#59606d', intensity: 1.5 },
-        SUN: { color: '#ffffff', intensity: 2.4, position: [4, 6, 3] },
-        FILL: { color: '#cfd8ff', intensity: 0.9, position: [-5, 3, -4] }
+        SKY: { color: '#ffffff', ground: '#59606d', intensity: 0.2 },
+        SUN: { color: '#ffffff', intensity: 0.9, position: [4, 6, 3] },
+        FILL: { color: '#cfd8ff', intensity: 0.3, position: [-5, 3, -4] }
       }
     },
     KM_MAX: 2000000,

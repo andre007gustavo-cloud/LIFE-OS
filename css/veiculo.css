@@ -150,7 +150,7 @@
 
 /* ----- Carro 3D ----- */
 .veh-3d-host{margin:14px auto 10px;max-width:340px}
-.veh-3d-host.is-3d{display:flex;align-items:center;justify-content:center;max-width:560px;height:280px}
+.veh-3d-host.is-3d{display:flex;align-items:center;justify-content:center;max-width:560px;height:280px;border-radius:var(--radius-sm);background:radial-gradient(ellipse at 50% 62%,var(--bg4) 0,transparent 70%)}
 .veh-3d-canvas{display:block;width:100%;height:100%;border-radius:var(--radius-sm);outline-offset:2px}
 @media(min-width:900px){.veh-3d-host.is-3d{height:360px}}
 .veh-3d-credit{margin:0 auto 10px;max-width:560px;text-align:center;font-size:11px;line-height:1.4;color:var(--text2)}
