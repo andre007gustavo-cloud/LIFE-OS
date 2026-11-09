@@ -192,6 +192,47 @@ const VehicleService = (() => {
     });
   }
 
+  // ===== Fotos: normalização =====
+
+  const _hasMaintenance = (vehicle, id) => vehicle.maintenances.some(m => m.id === id);
+
+  function _requiredId(value, label) {
+    return _isBlank(value) ? _fail(`${label} é obrigatório`) : String(value);
+  }
+
+  /** Vínculo (manutenção, card ou sintoma do mesmo veículo) e papel; o papel só existe com vínculo. */
+  function _normalizePhotoLink(vehicle, raw) {
+    const maintenanceId = _text(raw.maintenanceId);
+    if (maintenanceId && !_hasMaintenance(vehicle, maintenanceId)) _fail('Manutenção não encontrada neste veículo');
+    const role = _isBlank(raw.role) ? undefined : _oneOf(raw.role, Constants.VEHICLE.PHOTO.ROLES, 'Papel', 'inválido');
+    if (role && !maintenanceId) _fail('Antes/Depois só vale para foto ligada a uma manutenção');
+    return { maintenanceId, role };
+  }
+
+  function _photoDate(value) {
+    const date = _requiredDate(value, 'Data da foto');
+    if (date > Utils.today()) _fail('A data da foto não pode ser no futuro');
+    return date;
+  }
+
+  /** `existing` fixa id, imagens e criação (imutáveis); sem ele a foto é nova. */
+  function _normalizePhoto(vehicle, raw, existing) {
+    const now = Date.now();
+    const source = existing || raw;
+    return _compact({
+      id: existing ? existing.id : Utils.uid(),
+      thumbImageId: _requiredId(source.thumbImageId, 'A miniatura da foto'),
+      fullImageId: _requiredId(source.fullImageId, 'A imagem da foto'),
+      date: _photoDate(raw.date),
+      km: _km(raw.km),
+      caption: _text(raw.caption, Constants.VEHICLE.PHOTO.CAPTION_MAX),
+      zones: _normalizeZones(raw.zones),
+      ..._normalizePhotoLink(vehicle, raw),
+      createdAt: existing ? existing.createdAt : now,
+      updatedAt: now
+    });
+  }
+
   // ===== Acesso =====
 
   const _vehicles = () => AppState.getDB().vehicles;
@@ -207,6 +248,9 @@ const VehicleService = (() => {
 
   /** Manutenções que contam como histórico; todas as consultas de custo e km passam por aqui. */
   const _history = vehicle => vehicle.maintenances.filter(isHistory);
+
+  /** Leitura nunca grava: a primeira foto é que cria a chave `photos`. */
+  const _photos = vehicle => vehicle.photos || [];
 
   function list() {
     return _vehicles();
@@ -264,11 +308,20 @@ const VehicleService = (() => {
     });
   }
 
+  /** Só depois de gravar: se a gravação falhar, as imagens continuam referenciadas. No conector (sem ImageService) ficam órfãs. */
+  function _discardImages(ids) {
+    if (ids.length && typeof ImageService !== 'undefined') ImageService.removeMany(ids);
+  }
+
+  const _imageIdsOf = photo => [photo.thumbImageId, photo.fullImageId];
+
   function removeByProject(projectId) {
     const db = AppState.getDB();
-    const before = db.vehicles.length;
+    const removed = db.vehicles.filter(v => v.projectId === projectId);
+    if (!removed.length) return;
     db.vehicles = db.vehicles.filter(v => v.projectId !== projectId);
-    if (db.vehicles.length !== before) AppState.persist();
+    AppState.persist();
+    _discardImages(removed.flatMap(v => _photos(v).flatMap(_imageIdsOf)));
   }
 
   // ===== Odômetro =====
@@ -442,11 +495,21 @@ const VehicleService = (() => {
     });
   }
 
+  /** As fotos ficam na galeria, sem vínculo nem papel. */
+  function _unlinkPhotosOf(vehicle, maintenanceId) {
+    _photos(vehicle).filter(p => p.maintenanceId === maintenanceId).forEach(photo => {
+      delete photo.maintenanceId;
+      delete photo.role;
+      photo.updatedAt = Date.now();
+    });
+  }
+
   function removeMaintenance(vehicleId, id) {
     return _guard(() => {
       const vehicle = _requireVehicle(vehicleId);
       _findMaintenance(vehicle, id);
       _reopenSymptomsResolvedBy(vehicle, id);
+      _unlinkPhotosOf(vehicle, id);
       vehicle.maintenances = vehicle.maintenances.filter(m => m.id !== id);
       _touch(vehicle);
       return true;
@@ -465,6 +528,71 @@ const VehicleService = (() => {
     return _guard(() => _requireVehicle(vehicleId).maintenances
       .filter(m => (!status || statusOf(m) === status) && (!type || typeOf(m) === type) && (!zone || m.zones.includes(zone)))
       .sort(_recentlyUpdated));
+  }
+
+  // ===== Fotos =====
+
+  /** Vínculo pendurado (registro que não existe mais) é lido como sem vínculo; a próxima edição o limpa. */
+  function _withoutDanglingLink(vehicle, photo) {
+    if (!photo.maintenanceId || _hasMaintenance(vehicle, photo.maintenanceId)) return photo;
+    const { maintenanceId, role, ...rest } = photo;
+    return rest;
+  }
+
+  function _findPhoto(vehicle, photoId) {
+    return _photos(vehicle).find(p => p.id === photoId) || _fail('Foto não encontrada');
+  }
+
+  function listPhotos(vehicleId, { zone, maintenanceId } = {}) {
+    return _query(vehicleId, vehicle => _photos(vehicle)
+      .map(p => _withoutDanglingLink(vehicle, p))
+      .filter(p => (!zone || p.zones.includes(zone)) && (!maintenanceId || p.maintenanceId === maintenanceId))
+      .sort(_newestFirst));
+  }
+
+  function getPhoto(vehicleId, photoId) {
+    return _query(vehicleId, vehicle => _withoutDanglingLink(vehicle, _findPhoto(vehicle, photoId)));
+  }
+
+  function addPhoto(vehicleId, dto = {}) {
+    return _guard(() => {
+      const vehicle = _requireVehicle(vehicleId);
+      const photo = _normalizePhoto(vehicle, dto);
+      vehicle.photos = [..._photos(vehicle), photo];
+      _touch(vehicle);
+      return photo;
+    });
+  }
+
+  /** Id, imagens e criação não mudam por patch; `maintenanceId` vazio desvincula e leva o papel junto. */
+  function _photoPatch(patch) {
+    const { id, thumbImageId, fullImageId, createdAt, ...allowed } = patch;
+    const unlinks = 'maintenanceId' in allowed && _isBlank(allowed.maintenanceId);
+    if (unlinks && !('role' in allowed)) allowed.role = null;
+    return allowed;
+  }
+
+  function updatePhoto(vehicleId, photoId, patch = {}) {
+    return _guard(() => {
+      const vehicle = _requireVehicle(vehicleId);
+      const current = _findPhoto(vehicle, photoId);
+      const next = _normalizePhoto(vehicle, { ..._withoutDanglingLink(vehicle, current), ..._photoPatch(patch) }, current);
+      Object.keys(current).forEach(k => delete current[k]);
+      Object.assign(current, next);
+      _touch(vehicle);
+      return current;
+    });
+  }
+
+  function removePhoto(vehicleId, photoId) {
+    return _guard(() => {
+      const vehicle = _requireVehicle(vehicleId);
+      const photo = _findPhoto(vehicle, photoId);
+      vehicle.photos = vehicle.photos.filter(p => p.id !== photoId);
+      _touch(vehicle);
+      _discardImages(_imageIdsOf(photo));
+      return photo;
+    });
   }
 
   // ===== Consultas derivadas (nada é guardado) =====
@@ -654,6 +782,11 @@ const VehicleService = (() => {
     addMaintenance,
     updateMaintenance,
     removeMaintenance,
+    listPhotos,
+    getPhoto,
+    addPhoto,
+    updatePhoto,
+    removePhoto,
     listMaintenances,
     maintenanceTotal,
     getSummary,

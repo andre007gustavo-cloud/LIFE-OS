@@ -308,7 +308,7 @@
       write: false,
       schema: {
         name: 'get_vehicle',
-        description: 'Ficha do veículo (apelido, marca, modelo, anos, placa), km atual, resumo de gastos em reais (total, no ano, custo por km e por 1.000 km), oficinas e as últimas manutenções. "quadro" resume os sintomas abertos e os cards (ideias, a fazer, fazendo) com o planejado em reais.',
+        description: 'Ficha do veículo (apelido, marca, modelo, anos, placa), km atual, resumo de gastos em reais (total, no ano, custo por km e por 1.000 km), oficinas e as últimas manutenções. "quadro" resume os sintomas abertos e os cards (ideias, a fazer, fazendo) com o planejado em reais. "fotos" é só a quantidade de fotos da galeria: você não acessa as imagens.',
         input_schema: { type: 'object', properties: { veiculo: veiculoParam } }
       },
       run({ veiculo }) {
@@ -316,7 +316,7 @@
         const v = r.veiculo;
         const resumo = VehicleService.getSummary(v.id);
         return {
-          ficha: _fichaSaida(v), kmAtual: resumo.currentKm, resumo: _resumoSaida(resumo), quadro: _quadroResumo(v.id),
+          ficha: _fichaSaida(v), kmAtual: resumo.currentKm, resumo: _resumoSaida(resumo), quadro: _quadroResumo(v.id), fotos: VehicleService.listPhotos(v.id).length,
           oficinas: VehicleService.getShops(v.id).map(o => ({ nome: o.name, visitas: o.visits, ultimaVisita: o.lastVisit, totalReais: toReais(o.totalCentavos) })),
           ultimasManutencoes: VehicleService.listMaintenances(v.id).slice(0, RECENT_MAINTENANCES).map(m => _manutencaoSaida(m, resumo.currentKm))
         };
@@ -496,7 +496,7 @@
       write: true,
       schema: {
         name: 'delete_maintenance',
-        description: 'Exclui uma manutenção ou card. Apagar uma manutenção reabre (volta para A fazer) os sintomas que ela resolvia. Os lançamentos vinculados continuam nas Finanças (só o vínculo se perde). Confirme com o André antes.',
+        description: 'Exclui uma manutenção ou card. Apagar uma manutenção reabre (volta para A fazer) os sintomas que ela resolvia. Os lançamentos vinculados continuam nas Finanças (só o vínculo se perde). As fotos ligadas a ela continuam na galeria, sem vínculo. Confirme com o André antes.',
         input_schema: {
           type: 'object',
           properties: { veiculo: veiculoParam, manutencaoId: { type: 'string' } },
@@ -506,10 +506,11 @@
       run({ veiculo, manutencaoId }) {
         const r = _resolveManutencao(veiculo, manutencaoId); if (r.erro) return r;
         const vinculados = r.manutencao.transactionIds.length;
+        const fotosDesvinculadas = VehicleService.listPhotos(r.veiculo.id, { maintenanceId: manutencaoId }).length;
         const feito = VehicleService.removeMaintenance(r.veiculo.id, manutencaoId);
         if (feito.erro) return feito;
         const aviso = vinculados ? `${vinculados} lançamento(s) vinculado(s) continuam nas Finanças; apague-os por lá se for o caso.` : null;
-        return { ok: true, excluida: r.manutencao.title, lancamentosVinculados: vinculados, aviso };
+        return { ok: true, excluida: r.manutencao.title, lancamentosVinculados: vinculados, fotosDesvinculadas, aviso };
       }
     }
   };

@@ -478,7 +478,7 @@
       write: true,
       schema: {
         name: 'delete_project',
-        description: 'Exclui um projeto e TODAS as notas dele (num projeto de veículo, também a ficha e o histórico de manutenções; os lançamentos vinculados continuam nas Finanças). As tarefas continuam, sem projeto. Confirme com o usuário antes.',
+        description: 'Exclui um projeto e TODAS as notas dele (num projeto de veículo, também a ficha, o histórico de manutenções e as fotos; os lançamentos vinculados continuam nas Finanças). As tarefas continuam, sem projeto. Confirme com o usuário antes.',
         input_schema: {
           type: 'object',
           properties: { projeto: { type: 'string', description: 'Id ou nome do projeto' } },
@@ -491,8 +491,9 @@
         const veiculo = VehicleService.getByProject(r.proj.id);
         const historico = veiculo ? veiculo.maintenances.filter(VehicleService.isHistory).length : 0;
         const cards = veiculo ? veiculo.maintenances.length - historico : 0;
+        const fotos = veiculo ? VehicleService.listPhotos(veiculo.id).length : 0;
         ProjectService.remove(r.proj.id);
-        return { ok: true, excluido: r.proj.name, notasExcluidas: notas, ...(veiculo && { veiculoExcluido: true, manutencoesExcluidas: historico, cardsExcluidos: cards }) };
+        return { ok: true, excluido: r.proj.name, notasExcluidas: notas, ...(veiculo && { veiculoExcluido: true, manutencoesExcluidas: historico, cardsExcluidos: cards, fotosExcluidas: fotos }) };
       }
     },
 

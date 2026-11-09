@@ -65,6 +65,7 @@ const PRECACHE = [
   '/js/services/vehicleFinanceService.js',
   '/js/services/vehicleBoardService.js',
   '/js/services/vehicleSceneService.js',
+  '/js/services/vehiclePhotoService.js',
   '/js/services/ofxService.js',
   '/js/services/importService.js',
   '/js/services/pomodoroService.js',
