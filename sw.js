@@ -101,6 +101,7 @@ const PRECACHE = [
   '/js/components/vehiclePhotoImages.js',
   '/js/components/vehiclePhotoUpload.js',
   '/js/components/vehiclePhotoForm.js',
+  '/js/components/vehiclePhotoGallery.js',
   '/js/components/vehiclePhotoViewer.js',
   '/js/components/imageResize.js',
   '/js/components/noteEditor.js',

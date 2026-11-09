@@ -157,7 +157,7 @@ const Constants = (() => {
   /** Modelos de projeto: definem quais abas o projeto mostra. */
   const PROJECT_TEMPLATES = {
     generic: { label: 'Genérico', icon: '📁', tabs: ['overview', 'tasks', 'notes', 'files'] },
-    vehicle: { label: 'Veículo', icon: '🚗', tabs: ['garage', 'board', 'maintenances', 'parts', 'tasks', 'notes', 'files'] }
+    vehicle: { label: 'Veículo', icon: '🚗', tabs: ['garage', 'board', 'maintenances', 'photos', 'parts', 'tasks', 'notes', 'files'] }
   };
 
   /** Rótulo (pt-BR) e ícone Tabler de cada aba de projeto. */
@@ -169,6 +169,7 @@ const Constants = (() => {
     garage: { label: 'Garagem', icon: 'car' },
     board: { label: 'Quadro', icon: 'layout-kanban' },
     maintenances: { label: 'Manutenções', icon: 'tool' },
+    photos: { label: 'Fotos', icon: 'photo' },
     parts: { label: 'Peças e oficinas', icon: 'package' }
   };
 
@@ -317,6 +318,7 @@ const Constants = (() => {
       GARAGE_STRIP: 8,
       ZONE_PANEL: 6,
       FULL_CACHE_MAX: 6,
+      THUMB_CACHE_MAX: 300,
       LAZY_ROOT_MARGIN: '200px',
       COMPARE_START: 50,
       ROLES: [{ id: 'before', label: 'Antes' }, { id: 'after', label: 'Depois' }],

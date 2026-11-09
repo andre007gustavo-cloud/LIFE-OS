@@ -99,10 +99,27 @@ const VehicleView = (() => {
     AreasView.renderWorkspace();
   }
 
-  /** Estado das fotos mudou: redesenha a aba só se este veículo está aberto na tela de projetos. */
+  /** Região de fotos -> HTML interno dela. Cada área de fotos na tela é um contêiner marcado com data-veh-photo-region. */
+  const PHOTO_REGIONS = {
+    gallery: vehicleId => VehiclePhotoGallery.html(vehicleId)
+  };
+
+  function redrawPhotoRegion(container) {
+    const htmlOf = PHOTO_REGIONS[container.dataset.vehPhotoRegion];
+    if (!htmlOf) return;
+    container.innerHTML = htmlOf(container.dataset.vehicleId);
+    VehiclePhotoImages.hydrate(container);
+  }
+
+  /**
+   * Estado das fotos mudou: troca só as áreas de fotos deste veículo que estão na tela.
+   * Nunca refaz a aba inteira (apagaria texto digitado e fecharia a ficha da Garagem).
+   */
   function photosChanged(vehicleId) {
-    const viewActive = document.getElementById('view-areas')?.classList.contains('active');
-    if (viewActive && VehicleService.getByProject(AppState.ui.activeProjectId)?.id === vehicleId) refresh();
+    document.querySelectorAll('[data-veh-photo-region]').forEach(container => {
+      if (container.dataset.vehicleId === vehicleId) redrawPhotoRegion(container);
+    });
+    if (typeof VehiclePhotoViewer !== 'undefined') VehiclePhotoViewer.refresh();
   }
 
   function saveResult(result) {
@@ -419,6 +436,13 @@ const VehicleView = (() => {
     else renderEmptyTab(Constants.PROJECT_TABS.maintenances.icon, NO_SHEET_MESSAGE);
   }
 
+  function renderPhotos(project) {
+    const vehicle = VehicleService.getByProject(project.id);
+    if (!vehicle) return renderEmptyTab(Constants.PROJECT_TABS.photos.icon, NO_SHEET_MESSAGE);
+    VehiclePhotoGallery.render(vehicle);
+    VehiclePhotoImages.hydrate(document.getElementById('proj-tab-content'));
+  }
+
   function renderParts(project) {
     const vehicle = VehicleService.getByProject(project.id);
     if (vehicle) VehicleParts.render(vehicle);
@@ -426,7 +450,7 @@ const VehicleView = (() => {
   }
 
   return {
-    renderGarage, renderBoard, renderMaintenances, renderParts, refresh,
+    renderGarage, renderBoard, renderMaintenances, renderPhotos, renderParts, refresh,
     photosChanged, saveSheet, clearSheetColor, setFinanceCategory, updateKm, removeReading, selectZone, clearZone
   };
 })();

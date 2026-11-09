@@ -26,9 +26,15 @@ const VehiclePhotoUpload = (() => {
   let running = false;
   let batch = { done: 0, failed: 0 };
 
-  const notify = vehicleId => {
-    if (typeof VehicleView !== 'undefined') VehicleView.photosChanged(vehicleId);
-  };
+  /** Um redesenho que falha não pode travar a fila nem recontar um item já enviado. */
+  function notify(vehicleId) {
+    if (typeof VehicleView === 'undefined') return;
+    try {
+      VehicleView.photosChanged(vehicleId);
+    } catch (err) {
+      console.error('Falha ao atualizar as fotos na tela', err);
+    }
+  }
 
   const toast = (text, type) => {
     if (typeof Feedback !== 'undefined') Feedback.toast(text, type);

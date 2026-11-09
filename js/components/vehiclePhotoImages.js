@@ -7,7 +7,7 @@
 
 const VehiclePhotoImages = (() => {
 
-  const { FULL_CACHE_MAX, LAZY_ROOT_MARGIN, ROLES } = Constants.VEHICLE.PHOTO;
+  const { FULL_CACHE_MAX, THUMB_CACHE_MAX, LAZY_ROOT_MARGIN, ROLES } = Constants.VEHICLE.PHOTO;
   const KIND = { THUMB: 'thumb', FULL: 'full' };
   const UNAVAILABLE_TEXT = 'Imagem indisponível';
   const esc = Utils.escapeHtml;
@@ -16,26 +16,28 @@ const VehiclePhotoImages = (() => {
   const thumbs = new Map();
   const fulls = new Map();
   const inFlight = new Map();
+  const observed = new Set();
   let observer = null;
 
   // ===== Cache =====
 
-  function cachedFull(imageId) {
-    const dataUrl = fulls.get(imageId);
+  const cacheOf = kind => (kind === KIND.FULL ? fulls : thumbs);
+  const limitOf = kind => (kind === KIND.FULL ? FULL_CACHE_MAX : THUMB_CACHE_MAX);
+
+  function cached(imageId, kind) {
+    const cache = cacheOf(kind);
+    const dataUrl = cache.get(imageId);
     if (dataUrl === undefined) return null;
-    fulls.delete(imageId); // reinsere no fim: o mais recente
-    fulls.set(imageId, dataUrl);
+    cache.delete(imageId); // reinsere no fim: o mais recente
+    cache.set(imageId, dataUrl);
     return dataUrl;
   }
 
-  const cached = (imageId, kind) =>
-    kind === KIND.FULL ? cachedFull(imageId) : thumbs.get(imageId) || null;
-
   function remember(imageId, dataUrl, kind) {
-    if (kind === KIND.THUMB) return void thumbs.set(imageId, dataUrl);
-    fulls.delete(imageId);
-    fulls.set(imageId, dataUrl);
-    while (fulls.size > FULL_CACHE_MAX) fulls.delete(fulls.keys().next().value);
+    const cache = cacheOf(kind);
+    cache.delete(imageId);
+    cache.set(imageId, dataUrl);
+    while (cache.size > limitOf(kind)) cache.delete(cache.keys().next().value);
   }
 
   function forget(ids) {
@@ -135,24 +137,43 @@ const VehiclePhotoImages = (() => {
       .catch(() => { if (img.isConnected) markUnavailable(img); });
   }
 
+  /** Imagens que saíram da tela (redesenho) não ficam presas no observador. */
+  function pruneDetached() {
+    observed.forEach(img => {
+      if (img.isConnected) return;
+      observer.unobserve(img);
+      observed.delete(img);
+    });
+  }
+
+  function onIntersect(entries) {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      observer.unobserve(entry.target);
+      observed.delete(entry.target);
+      showImage(entry.target);
+    });
+    pruneDetached();
+  }
+
   function getObserver() {
-    if (!observer) {
-      observer = new IntersectionObserver(entries => entries.forEach(entry => {
-        if (!entry.isIntersecting) return;
-        observer.unobserve(entry.target);
-        showImage(entry.target);
-      }), { rootMargin: LAZY_ROOT_MARGIN });
-    }
+    if (!observer) observer = new IntersectionObserver(onIntersect, { rootMargin: LAZY_ROOT_MARGIN });
     return observer;
+  }
+
+  function observe(img) {
+    getObserver().observe(img);
+    observed.add(img);
   }
 
   /** Cache primeiro (sem busca); o resto só quando chega perto da tela. */
   function hydrate(root) {
     const useObserver = typeof IntersectionObserver !== 'undefined';
+    if (observer) pruneDetached();
     root.querySelectorAll('img[data-thumb-id], img[data-full-id]').forEach(img => {
       const hit = cached(img.dataset.thumbId || img.dataset.fullId, img.dataset.thumbId ? KIND.THUMB : KIND.FULL);
       if (hit) img.src = hit;
-      else if (useObserver) getObserver().observe(img);
+      else if (useObserver) observe(img);
       else showImage(img);
     });
   }
