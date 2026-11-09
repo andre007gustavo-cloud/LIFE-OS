@@ -193,6 +193,18 @@ const VehicleView = (() => {
 
   const clearZone = vehicleId => selectZone(vehicleId, null);
 
+  /** Crédito da licença do modelo real: nasce escondido e só aparece quando o carro real está na tela. */
+  function modelCreditHtml() {
+    const { before, linkLabel, linkUrl, after } = Constants.VEHICLE.MODEL_CREDIT;
+    return `<p class="veh-3d-credit" id="veh-3d-credit" hidden>${esc(before)}<a href="${attr(linkUrl)}" target="_blank" rel="noopener"
+      title="Abre em nova aba">${esc(linkLabel)}</a>${esc(after)}</p>`;
+  }
+
+  function showModelCredit() {
+    const credit = document.getElementById('veh-3d-credit');
+    if (credit) credit.hidden = !Vehicle3D.usesRealModel();
+  }
+
   /** Põe o carro 3D no host que acabou de ser desenhado; sem 3D, a silhueta fica e o simulador explica. */
   function mountCar(vehicle) {
     VehicleSimulator.setup(vehicle.id);
@@ -201,7 +213,10 @@ const VehicleView = (() => {
       selectedZone: selectedZoneOf(vehicle),
       look: VehicleSimulator.lookFor(vehicle.id),
       onZoneSelect: zoneId => selectZone(vehicle.id, zoneId)
-    }).then(mounted => { if (!mounted) VehicleSimulator.showUnavailable(); });
+    }).then(mounted => {
+      if (!mounted) VehicleSimulator.showUnavailable();
+      showModelCredit();
+    });
   }
 
   function garageHeaderHtml(vehicle) {
@@ -211,6 +226,7 @@ const VehicleView = (() => {
       <div class="veh-nickname">${esc(vehicleTitle(vehicle))}</div>
       <div class="veh-details">${esc(details)}</div>
       <div class="veh-3d-host${Vehicle3D.isSupported() ? ' is-3d' : ''}" id="veh-3d-host">${CAR_SILHOUETTE}</div>
+      ${modelCreditHtml()}
       <div class="veh-sim-root" id="veh-sim-root">${VehicleSimulator.html(vehicle.id)}</div>
       <div class="veh-zone-chips">${zoneChipsHtml(vehicle, selectedZone)}</div>
       <div id="veh-zone-panel" aria-live="polite">${selectedZone ? VehicleZonePanel.html(vehicle.id, selectedZone) : ''}</div>
