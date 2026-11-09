@@ -57,8 +57,19 @@ const ProjectModal = (() => {
     }
   }
 
+  /** Projeto Veículo leva junto a ficha, o histórico e as fotos do carro: a confirmação diz isso. */
+  function removeConfirmText(id) {
+    const vehicle = typeof VehicleService !== 'undefined' ? VehicleService.getByProject(id) : null;
+    if (!vehicle) return 'Excluir projeto? As tarefas vinculadas perderão o projeto.';
+    const count = VehicleService.listPhotos(vehicle.id).length;
+    const erased = count
+      ? `A ficha, o histórico de manutenções e ${count === 1 ? 'a 1 foto' : `as ${count} fotos`} do carro`
+      : 'A ficha e o histórico de manutenções';
+    return `Excluir o projeto? ${erased} também serão apagados. As tarefas vinculadas perderão o projeto.`;
+  }
+
   function remove(id) {
-    if (!confirm('Excluir projeto? As tarefas vinculadas perderão o projeto.')) return;
+    if (!confirm(removeConfirmText(id))) return;
     ProjectService.remove(id);
     if (AppState.ui.activeProjectId === id) {
       AppState.ui.activeProjectId = null;

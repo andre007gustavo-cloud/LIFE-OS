@@ -8,7 +8,7 @@
 
 const VehicleZonePanel = (() => {
 
-  const { CARD_STATUSES, CARD_TYPE, ZONES, SCENE } = Constants.VEHICLE;
+  const { CARD_STATUSES, CARD_TYPE, ZONES, SCENE, PHOTO } = Constants.VEHICLE;
   const esc = Utils.escapeHtml;
   const attr = Utils.escapeAttr;
 
@@ -54,6 +54,25 @@ const VehicleZonePanel = (() => {
     return sectionHtml('Últimas manutenções', recent.map(m => historyItem(vehicleId, m)).join('') + rest);
   }
 
+  /**
+   * Fotos da zona (conteúdo da região que photosChanged troca) e, quando a zona não tem nada
+   * (nem registros nem fotos), o aviso de vazio.
+   */
+  function photosHtml(vehicleId, zoneId) {
+    const photos = VehicleService.listPhotos(vehicleId, { zone: zoneId });
+    const context = VehicleBoardService.getZoneContext(vehicleId, zoneId);
+    if (photos.erro || context.erro) return '';
+    if (!photos.length) return context.openCards.length || context.history.length ? '' : EMPTY_HTML;
+    const row = VehiclePhotoImages.rowHtml(vehicleId, photos, { limit: PHOTO.ZONE_PANEL, scope: 'zone', scopeId: zoneId });
+    return sectionHtml('Fotos', row);
+  }
+
+  const EMPTY_HTML = '<div class="text-muted">Nada registrado nesta zona ainda.</div>';
+
+  function photosRegionHtml(vehicleId, zoneId) {
+    return `<div class="veh-zone-photos" data-veh-photo-region="zone" data-vehicle-id="${attr(vehicleId)}" data-zone-id="${attr(zoneId)}">${photosHtml(vehicleId, zoneId)}</div>`;
+  }
+
   function actionsHtml(vehicleId, zoneId) {
     const args = `'${attr(vehicleId)}','${attr(zoneId)}'`;
     return `<div class="veh-zone-actions">
@@ -67,7 +86,6 @@ const VehicleZonePanel = (() => {
     const zone = ZONES.find(z => z.id === zoneId);
     const context = zone && VehicleBoardService.getZoneContext(vehicleId, zoneId);
     if (!context || context.erro) return '';
-    const empty = !context.openCards.length && !context.history.length;
     return `<section class="veh-zone-panel" aria-label="Zona ${attr(zone.label)}">
       <div class="veh-zone-head">
         <h3 class="veh-zone-name">${esc(zone.label)}</h3>
@@ -77,10 +95,10 @@ const VehicleZonePanel = (() => {
       </div>
       ${openCardsHtml(vehicleId, context.openCards)}
       ${historyHtml(vehicleId, context.history)}
-      ${empty ? '<div class="text-muted">Nada registrado nesta zona ainda.</div>' : ''}
+      ${photosRegionHtml(vehicleId, zoneId)}
       ${actionsHtml(vehicleId, zoneId)}
     </section>`;
   }
 
-  return { html };
+  return { html, photosHtml };
 })();

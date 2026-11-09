@@ -8,7 +8,7 @@
 
 const VehicleView = (() => {
 
-  const { RECENT_MAINTENANCES, MIN_COST_PER_KM_CENTAVOS, ZONE_STATE } = Constants.VEHICLE;
+  const { RECENT_MAINTENANCES, MIN_COST_PER_KM_CENTAVOS, ZONE_STATE, PHOTO } = Constants.VEHICLE;
   const SHEET_ID_PREFIX = 'veh-f-';
 
   const SHEET_FIELDS = [
@@ -102,7 +102,9 @@ const VehicleView = (() => {
   /** Região de fotos -> HTML interno dela. Cada área de fotos na tela é um contêiner marcado com data-veh-photo-region. */
   const PHOTO_REGIONS = {
     gallery: vehicleId => VehiclePhotoGallery.html(vehicleId),
-    record: (vehicleId, container) => VehiclePhotoSection.html(vehicleId, container.dataset.recordId)
+    record: (vehicleId, container) => VehiclePhotoSection.html(vehicleId, container.dataset.recordId),
+    garage: vehicleId => garagePhotosHtml(vehicleId),
+    zone: (vehicleId, container) => VehicleZonePanel.photosHtml(vehicleId, container.dataset.zoneId)
   };
 
   /** Seletor do elemento da região que tem o foco (botão com data-focus-key ou tile da foto), ou null. */
@@ -245,7 +247,10 @@ const VehicleView = (() => {
   function selectZone(vehicleId, zoneId) {
     AppState.ui.vehicleZone = { vehicleId, zoneId };
     const panel = document.getElementById('veh-zone-panel');
-    if (panel) panel.innerHTML = zoneId ? VehicleZonePanel.html(vehicleId, zoneId) : '';
+    if (panel) {
+      panel.innerHTML = zoneId ? VehicleZonePanel.html(vehicleId, zoneId) : '';
+      VehiclePhotoImages.hydrate(panel);
+    }
     document.querySelectorAll('.veh-zone-chips [data-zone]').forEach(chip => {
       chip.setAttribute('aria-pressed', String(chip.dataset.zone === zoneId));
     });
@@ -353,6 +358,25 @@ const VehicleView = (() => {
     </div>`;
   }
 
+  // ===== Garagem: faixa de fotos =====
+
+  /** Últimas fotos do carro; vazio (a região não ocupa espaço) quando não há nenhuma. */
+  function garagePhotosHtml(vehicleId) {
+    const photos = VehicleService.listPhotos(vehicleId);
+    if (photos.erro || !photos.length) return '';
+    return `<div class="card veh-garage-photos">
+      <div class="card-title veh-recent-head">
+        <span>Fotos</span>
+        <button type="button" class="btn btn-ghost btn-sm" data-focus-key="garage-all" onclick="setProjTab('photos')">Ver todas (${photos.length})</button>
+      </div>
+      ${VehiclePhotoImages.rowHtml(vehicleId, photos.slice(0, PHOTO.GARAGE_STRIP), { scope: 'all' })}
+    </div>`;
+  }
+
+  function garagePhotosRegionHtml(vehicleId) {
+    return `<div data-veh-photo-region="garage" data-vehicle-id="${attr(vehicleId)}">${garagePhotosHtml(vehicleId)}</div>`;
+  }
+
   // ===== Garagem: listas e ficha =====
 
   function recentItemHtml(vehicleId, maintenance) {
@@ -418,12 +442,14 @@ const VehicleView = (() => {
   function renderGarage(project) {
     const vehicle = VehicleService.getByProject(project.id);
     document.getElementById('proj-tab-content').innerHTML = vehicle
-      ? garageHeaderHtml(vehicle) + garageStatsHtml(vehicle, project.id) + garageRecentHtml(vehicle) + garageSheetHtml(vehicle, project.id)
+      ? garageHeaderHtml(vehicle) + garageStatsHtml(vehicle, project.id) + garagePhotosRegionHtml(vehicle.id) + garageRecentHtml(vehicle) + garageSheetHtml(vehicle, project.id)
       : `<div class="card">
           <div class="card-title">Preencha a ficha do seu veículo</div>
           ${sheetFormHtml(null, project.id)}
         </div>`;
-    if (vehicle) mountCar(vehicle);
+    if (!vehicle) return;
+    mountCar(vehicle);
+    VehiclePhotoImages.hydrate(document.getElementById('proj-tab-content'));
   }
 
   function renderEmptyTab(icon, message) {

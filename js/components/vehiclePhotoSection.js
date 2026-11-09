@@ -17,7 +17,7 @@ const VehiclePhotoSection = (() => {
 
   // ===== Comparador =====
 
-  const valueText = percent => `Mostrando ${percent}% do depois`;
+  const valueText = percent => `Mostrando ${percent}% do antes`;
 
   /** Miniatura por baixo (reserva) e foto cheia por cima; as duas entram pela hidratação da VehiclePhotoImages. */
   function layerHtml(photo, label, extraClass) {
@@ -29,10 +29,10 @@ const VehiclePhotoSection = (() => {
 
   function compareHtml(pair) {
     return `<div class="veh-compare" style="--pos:${COMPARE_START}">
-      ${layerHtml(pair.before, 'Antes', '')}
-      ${layerHtml(pair.after, 'Depois', ' veh-compare-after')}
-      <span class="veh-compare-label veh-compare-label-after" aria-hidden="true">Depois</span>
+      ${layerHtml(pair.after, 'Depois', '')}
+      ${layerHtml(pair.before, 'Antes', ' veh-compare-before')}
       <span class="veh-compare-label veh-compare-label-before" aria-hidden="true">Antes</span>
+      <span class="veh-compare-label veh-compare-label-after" aria-hidden="true">Depois</span>
       <span class="veh-compare-handle" aria-hidden="true"></span>
       <input type="range" class="veh-compare-range" min="0" max="100" step="1" value="${COMPARE_START}"
         aria-label="Comparar antes e depois" aria-valuetext="${valueText(COMPARE_START)}"
