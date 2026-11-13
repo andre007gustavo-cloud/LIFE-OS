@@ -10,7 +10,7 @@
  * Para publicar nova versão: incremente CACHE_VERSION.
  */
 
-const CACHE_VERSION = 'v20261109-172328';
+const CACHE_VERSION = 'v20261113-113935';
 const CACHE_NAME = `lifeos-${CACHE_VERSION}`;
 const ASSET_CACHE = 'lifeos-assets-v1';
 const ASSET_PATHS = ['/vendor/', '/models/'];
