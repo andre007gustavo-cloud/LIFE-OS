@@ -36,7 +36,7 @@ const DashboardView = (() => {
 
   function renderAlertas() {
     const card = document.getElementById('dash-alertas-card');
-    if (!card || !window.FinanceAlertas) return;
+    if (!card || typeof FinanceAlertas === 'undefined') return;
     const html = FinanceAlertas.dashHtml();
     card.style.display = html ? '' : 'none';
     document.getElementById('dash-alertas').innerHTML = html;
@@ -46,7 +46,7 @@ const DashboardView = (() => {
 
   function renderPossoGastar() {
     const card = document.getElementById('dash-posso-card');
-    if (!card || !window.FinancePossoGastar) return;
+    if (!card || typeof FinancePossoGastar === 'undefined') return;
     const html = FinancePossoGastar.dashHtml();
     card.style.display = html ? '' : 'none';
     document.getElementById('dash-posso').innerHTML = html;
@@ -56,7 +56,7 @@ const DashboardView = (() => {
 
   function renderProjecao() {
     const card = document.getElementById('dash-projecao-card');
-    if (!card || !window.FinanceProjecao) return;
+    if (!card || typeof FinanceProjecao === 'undefined') return;
     const html = FinanceProjecao.dashHtml();
     card.style.display = html ? '' : 'none';
     document.getElementById('dash-projecao').innerHTML = html;
