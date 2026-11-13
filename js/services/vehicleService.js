@@ -167,15 +167,27 @@ const VehicleService = (() => {
     return effect;
   }
 
+  /** Só modificação concluída pode ser desfeita; a data não vem antes da própria modificação nem do futuro. */
+  function _normalizeRemovedOn(raw, kind, date) {
+    const removedOn = _date(raw.removedOn, 'Data em que foi desfeita');
+    if (!removedOn) return undefined;
+    const doneMod = kind.type === CARD_TYPE.MOD && kind.status === CARD_STATUS.DONE;
+    if (!doneMod) _fail('Só uma modificação concluída pode ser marcada como desfeita');
+    if (removedOn < date) _fail('A modificação não pode ter sido desfeita antes de ser feita');
+    if (removedOn > Utils.today()) _fail('A data em que a modificação foi desfeita não pode ser no futuro');
+    return removedOn;
+  }
+
   function _normalizeMaintenance(raw) {
     const title = _text(raw.title);
     if (!title) _fail('O título da manutenção é obrigatório');
     const category = _isBlank(raw.category) ? 'other' : _oneOf(raw.category, Constants.VEHICLE.CATEGORIES, 'Categoria');
     const kind = _normalizeKind(raw);
     const open = kind.status !== CARD_STATUS.DONE;
+    const date = open ? _date(raw.date, 'Data') : _requiredDate(raw.date, 'Data');
     return _compact({
       id: raw.id || Utils.uid(),
-      date: open ? _date(raw.date, 'Data') : _requiredDate(raw.date, 'Data'),
+      date,
       km: _km(raw.km),
       title,
       ...kind,
@@ -187,6 +199,7 @@ const VehicleService = (() => {
       estimateCentavos: _int(raw.estimateCentavos, 'Estimativa', 0, Constants.VEHICLE.CENTAVOS_MAX),
       resolvedById: _resolvedById(raw, kind),
       visualEffect: _normalizeVisualEffect(raw.visualEffect, kind.type),
+      removedOn: _normalizeRemovedOn(raw, kind, date),
       notes: _text(raw.notes, Constants.VEHICLE.NOTES_MAX),
       transactionIds: open ? [] : [...(raw.transactionIds || [])]
     });

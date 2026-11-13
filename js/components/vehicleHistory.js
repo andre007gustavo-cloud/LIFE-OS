@@ -92,8 +92,10 @@ const VehicleHistory = (() => {
       <span>${esc(labelOf(CATEGORIES, m.category))}</span>${shop}${km}</span>`;
   }
 
+  const removedBadgeHtml = m => (m.removedOn ? `<span class="badge">Desfeita em ${Utils.fmtDateFull(m.removedOn)}</span>` : '');
+
   const modBadgeHtml = m => (VehicleService.typeOf(m) === CARD_TYPE.MOD
-    ? `<span class="badge time">${esc(labelOf(CARD_TYPES, CARD_TYPE.MOD))}</span>` : '');
+    ? `<span class="badge time">${esc(labelOf(CARD_TYPES, CARD_TYPE.MOD))}</span>${removedBadgeHtml(m)}` : '');
 
   /** Títulos dos sintomas resolvidos, indexados pela manutenção que os resolveu (uma consulta por render). */
   function resolvedTitlesByMaintenance(vehicleId) {

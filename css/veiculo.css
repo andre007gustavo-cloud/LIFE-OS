@@ -166,6 +166,20 @@
 .veh-visual-color input[type=color]{width:44px;height:34px;padding:0;border:1px solid var(--border);border-radius:var(--radius-sm);background:transparent;cursor:pointer}
 
 /* ----- Simulador ----- */
+/* ----- Máquina do tempo ----- */
+.veh-time{margin:10px auto 0;max-width:560px;text-align:left;padding:8px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm)}
+.veh-time-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13px}
+.veh-time-label{font-weight:600;color:var(--text2)}
+.veh-time-date{color:var(--accent2);font-variant-numeric:tabular-nums}
+.veh-time-row{display:flex;align-items:center;gap:6px;margin:6px 0}
+.veh-time-range{flex:1;min-width:0;height:28px;accent-color:var(--accent);touch-action:pan-y}
+.veh-time-range:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.veh-time-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px}
+.veh-time-info{font-size:12px;color:var(--text2);overflow-wrap:anywhere}
+.veh-time-actions{display:flex;flex-wrap:wrap;gap:6px}
+.veh-time-actions[hidden]{display:none}
+.veh-sim.is-paused{opacity:.55}
+
 .veh-sim-root{margin-top:8px;text-align:left}
 .veh-sim-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px}
 .veh-sim-toggles{display:flex;flex-wrap:wrap;gap:6px 14px}

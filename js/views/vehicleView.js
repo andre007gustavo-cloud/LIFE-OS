@@ -304,6 +304,7 @@ const VehicleView = (() => {
       <div class="veh-details">${esc(details)}</div>
       <div class="veh-3d-host${Vehicle3D.isSupported() ? ' is-3d' : ''}" id="veh-3d-host">${CAR_SILHOUETTE}</div>
       ${modelCreditHtml()}
+      ${VehicleTimeMachine.html(vehicle.id)}
       <div class="veh-sim-root" id="veh-sim-root">${VehicleSimulator.html(vehicle.id)}</div>
       <div class="veh-zone-chips">${zoneChipsHtml(vehicle, selectedZone)}</div>
       <div id="veh-zone-panel" aria-live="polite">${selectedZone ? VehicleZonePanel.html(vehicle.id, selectedZone) : ''}</div>
@@ -366,15 +367,24 @@ const VehicleView = (() => {
 
   // ===== Garagem: faixa de fotos =====
 
-  /** Últimas fotos do carro; vazio (a região não ocupa espaço) quando não há nenhuma. */
+  /** Cabeçalho da faixa: no presente leva à aba Fotos; no passado (máquina do tempo), ao mês das fotos daquela época. */
+  function garagePhotosHeadHtml(vehicleId, count, at) {
+    const title = at ? `Fotos até ${Utils.fmtDateFull(at)}` : 'Fotos';
+    const action = at ? `VehicleTimeMachine.openPhotos('${attr(vehicleId)}')` : "setProjTab('photos')";
+    const label = at ? 'Ver fotos do período' : `Ver todas (${count})`;
+    return `<div class="card-title veh-recent-head">
+        <span>${esc(title)}</span>
+        <button type="button" class="btn btn-ghost btn-sm" data-focus-key="garage-all" onclick="${action}">${label}</button>
+      </div>`;
+  }
+
+  /** Últimas fotos do carro (até a data da máquina do tempo); vazio (a região não ocupa espaço) quando não há nenhuma. */
   function garagePhotosHtml(vehicleId) {
-    const photos = VehicleService.listPhotos(vehicleId);
+    const at = VehicleTimeMachine.dateFor(vehicleId);
+    const photos = at ? VehicleTimelineService.photosUntil(vehicleId, at) : VehicleService.listPhotos(vehicleId);
     if (photos.erro || !photos.length) return '';
     return `<div class="card veh-garage-photos">
-      <div class="card-title veh-recent-head">
-        <span>Fotos</span>
-        <button type="button" class="btn btn-ghost btn-sm" data-focus-key="garage-all" onclick="setProjTab('photos')">Ver todas (${photos.length})</button>
-      </div>
+      ${garagePhotosHeadHtml(vehicleId, photos.length, at)}
       ${VehiclePhotoImages.rowHtml(vehicleId, photos.slice(0, PHOTO.GARAGE_STRIP), { scope: PHOTO.SCOPE.ALL })}
     </div>`;
   }
@@ -485,6 +495,8 @@ const VehicleView = (() => {
     if (!vehicle) return renderEmptyTab(Constants.PROJECT_TABS.photos.icon, NO_SHEET_MESSAGE);
     VehiclePhotoGallery.render(vehicle);
     VehiclePhotoImages.hydrate(document.getElementById('proj-tab-content'));
+    VehiclePhotoGallery.focusMonth(AppState.ui.vehiclePhotoMonth);
+    AppState.ui.vehiclePhotoMonth = null;
   }
 
   function renderParts(project) {

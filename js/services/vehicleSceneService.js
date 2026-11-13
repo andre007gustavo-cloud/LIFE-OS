@@ -42,11 +42,20 @@ const VehicleSceneService = (() => {
   const _byDate = (a, b) => (a.date || '').localeCompare(b.date || '') || (a.createdAt || 0) - (b.createdAt || 0);
   const _byCreation = (a, b) => (a.createdAt || 0) - (b.createdAt || 0);
 
-  /** Modificações com efeito: as concluídas em ordem de data; com prévia, as abertas entram depois. */
-  function _lookSources(vehicleId, preview) {
+  /** Uma modificação desfeita deixa de valer no próprio dia em que saiu do carro. */
+  const _removedBy = (card, day) => Boolean(card.removedOn) && card.removedOn <= day;
+
+  /** Com `at` (máquina do tempo) só vale o que já tinha sido feito e ainda estava no carro naquele dia. */
+  function _onTheCar(card, at) {
+    if (!at) return !_removedBy(card, Utils.today());
+    return card.date <= at && !_removedBy(card, at);
+  }
+
+  /** Modificações com efeito: as concluídas em ordem de data; com prévia (só no presente), as abertas entram depois. */
+  function _lookSources(vehicleId, { preview, at }) {
     const mods = VehicleService.listCards(vehicleId, { type: CARD_TYPE.MOD }).filter(card => card.visualEffect);
-    const done = mods.filter(VehicleService.isDone).sort(_byDate);
-    const open = preview ? mods.filter(card => !VehicleService.isDone(card)).sort(_byCreation) : [];
+    const done = mods.filter(VehicleService.isDone).filter(card => _onTheCar(card, at)).sort(_byDate);
+    const open = preview && !at ? mods.filter(card => !VehicleService.isDone(card)).sort(_byCreation) : [];
     return [...done, ...open];
   }
 
@@ -73,16 +82,17 @@ const VehicleSceneService = (() => {
    * Aparência do carro (null = original do modelo): ficha (cor da pintura) + efeitos das modificações concluídas
    * + (com preview) das abertas + o override da simulação, que vem por último.
    * `applied` diz quem mexeu no visual; `simulated`, se o override mexeu.
+   * Com `at` (YYYY-MM-DD) devolve o carro como estava naquele dia: sem prévia nem simulação.
    */
-  function getLook(vehicleId, { preview = false, override } = {}) {
+  function getLook(vehicleId, { preview = false, override, at } = {}) {
     const vehicle = VehicleService.getById(vehicleId);
     const look = { ...VISUAL.BASE, paint: vehicle?.paintHex || VISUAL.BASE.paint, applied: [], simulated: false };
     if (!vehicle) return look;
-    _lookSources(vehicleId, preview).forEach(card => {
+    _lookSources(vehicleId, { preview, at }).forEach(card => {
       _applyEffect(look, card.visualEffect);
       look.applied.push({ id: card.id, title: card.title, planned: !VehicleService.isDone(card) });
     });
-    look.simulated = override ? _applyEffect(look, _safeOverride(override)) : false;
+    look.simulated = override && !at ? _applyEffect(look, _safeOverride(override)) : false;
     return look;
   }
 

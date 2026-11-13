@@ -39,7 +39,7 @@ const VehiclePhotoGallery = (() => {
     const titleId = `veh-gallery-${attr(month)}`;
     const tiles = photos.map(photo => VehiclePhotoImages.tileHtml(vehicleId, photo, { badge: true, scope: SCOPE.ALL })).join('');
     return `<section class="veh-gallery-month" aria-labelledby="${titleId}">
-      <h3 class="veh-gallery-month-title" id="${titleId}">${esc(monthTitle(month))}</h3>
+      <h3 class="veh-gallery-month-title" id="${titleId}" tabindex="-1">${esc(monthTitle(month))}</h3>
       <div class="veh-photo-grid">${tiles}</div>
     </section>`;
   }
@@ -70,5 +70,13 @@ const VehiclePhotoGallery = (() => {
       `<div class="veh-gallery" data-veh-photo-region="${REGION}" data-vehicle-id="${attr(vehicle.id)}">${html(vehicle.id)}</div>`;
   }
 
-  return { render, html, REGION };
+  /** Leva a tela (e o foco) até o mês pedido pela máquina do tempo; sem mês ou sem a seção, não faz nada. */
+  function focusMonth(month) {
+    const title = month ? document.getElementById(`veh-gallery-${month}`) : null;
+    if (!title) return;
+    title.scrollIntoView({ block: 'start' });
+    title.focus({ preventScroll: true });
+  }
+
+  return { render, html, focusMonth, REGION };
 })();

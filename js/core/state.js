@@ -47,6 +47,9 @@ const AppState = (() => {
     // Veículo: zona aberta na Garagem e simulador do carro 3D (só de tela)
     vehicleZone: { vehicleId: null, zoneId: null },
     vehicleSim: { vehicleId: null, preview: false, showZones: true, override: null, open: false },
+    // Veículo: máquina do tempo da Garagem (date null = hoje) e mês em que a aba Fotos deve abrir
+    vehicleTime: { vehicleId: null, date: null },
+    vehiclePhotoMonth: null,
 
     // Habits
     habitEditId: null,

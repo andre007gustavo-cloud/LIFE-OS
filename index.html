@@ -1115,6 +1115,10 @@
       <div class="veh-zone-toggles" id="veh-m-zones" role="group" aria-labelledby="veh-m-zones-label"></div>
     </div>
     <div class="form-group veh-visual" id="veh-m-visual" hidden></div>
+    <div class="form-group" id="veh-m-removed-group" hidden>
+      <label class="form-label" for="veh-m-removed">Desfeita em (deixe vazio se a modificação continua no carro)</label>
+      <input class="form-input" type="date" id="veh-m-removed">
+    </div>
     <div class="veh-parts-head">
       <span class="form-label">Peças</span>
       <button type="button" class="btn btn-ghost btn-sm" onclick="VehicleMaintenanceModal.addPartRow()">
@@ -1421,6 +1425,7 @@
 <script src="js/services/vehicleBoardService.js"></script>
 <script src="js/services/vehicleSceneService.js"></script>
 <script src="js/services/vehiclePhotoService.js"></script>
+<script src="js/services/vehicleTimelineService.js"></script>
 <script src="js/services/ofxService.js"></script>
 <script src="js/services/importService.js"></script>
 <script src="js/services/pomodoroService.js"></script>
@@ -1447,6 +1452,7 @@
 <script src="js/components/vehicle3d.js"></script>
 <script src="js/components/vehicleZonePanel.js"></script>
 <script src="js/components/vehicleVisualFields.js"></script>
+<script src="js/components/vehicleTimeMachine.js"></script>
 <script src="js/components/vehicleSimulator.js"></script>
 <script src="js/components/vehiclePayment.js"></script>
 <script src="js/components/vehicleMaintenanceModal.js"></script>

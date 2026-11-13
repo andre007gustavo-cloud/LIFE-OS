@@ -121,7 +121,7 @@ const AiTools = (() => {
   // Os services confiam no que recebem (quem valida é a tela). Aqui barramos o
   // que o modelo pode errar: reais não numéricos e datas/horas fora do formato.
 
-  const _CAMPOS_DATA = ['data', 'de', 'ate', 'dataFim', 'dataInicio', 'dataObjetivo', 'prazo', 'garantiaAte', 'dataCompra'];
+  const _CAMPOS_DATA = ['data', 'de', 'ate', 'dataFim', 'dataInicio', 'dataObjetivo', 'prazo', 'garantiaAte', 'dataCompra', 'desfeitaEm'];
   const _CAMPOS_HORA = ['inicio', 'fim'];
   const _CAMPOS_MES = ['mes', 'competencia'];
 

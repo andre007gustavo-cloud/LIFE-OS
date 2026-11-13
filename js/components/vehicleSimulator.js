@@ -6,6 +6,8 @@
  * recolhível "Simular" (cor, rodas, película, altura), que age ao vivo e NUNCA
  * grava. "Salvar como ideia" abre o modal de card como Modificação em Ideias
  * com o efeito; "Descartar" volta ao que está registrado.
+ * Quando a máquina do tempo está numa data do passado, mostra o carro daquele
+ * dia e pausa a prévia e a simulação.
  * O estado (prévia ligada, regiões à vista, simulação, painel aberto) vive só na tela, em AppState.ui.vehicleSim.
  */
 
@@ -28,28 +30,50 @@ const VehicleSimulator = (() => {
 
   const showsZones = vehicleId => stateFor(vehicleId).showZones;
 
-  /** Aparência a mostrar agora: registrado + prévia (se ligada) + simulação. */
+  /** Data do passado que a máquina do tempo está mostrando (null = hoje). */
+  const pastDate = vehicleId => VehicleTimeMachine.dateFor(vehicleId);
+
+  /** Aparência a mostrar agora: registrado + prévia (se ligada) + simulação; no passado, o carro daquele dia. */
   const lookFor = vehicleId => {
+    const at = pastDate(vehicleId);
+    if (at) return VehicleSceneService.getLook(vehicleId, { at });
     const { preview, override } = stateFor(vehicleId);
     return VehicleSceneService.getLook(vehicleId, { preview, override: override || undefined });
   };
 
-  function legendText(look) {
+  function legendText(look, at) {
     const parts = look.applied.map(a => (a.planned ? `${a.title} (planejada)` : a.title));
     if (look.simulated) parts.push('sua simulação');
+    if (at) return `Em ${Utils.fmtDateFull(at)}: ${parts.length ? parts.join(' · ') : 'sem modificações visuais'}`;
     return `Mostrando: ${parts.length ? parts.join(' · ') : 'o carro como está registrado'}`;
   }
 
-  function refreshLegend(look) {
+  function refreshLegend(look, at) {
     const legend = el('veh-sim-legend');
-    if (legend) legend.textContent = legendText(look);
+    if (legend) legend.textContent = legendText(look, at);
   }
 
   /** Aplica a aparência no 3D e na legenda; não grava nada. */
   function applyNow(vehicleId) {
     const look = lookFor(vehicleId);
     Vehicle3D.applyLook(look);
-    refreshLegend(look);
+    refreshLegend(look, pastDate(vehicleId));
+  }
+
+  /** No passado a prévia e a simulação ficam pausadas (não fazem sentido numa data que já foi). */
+  function syncPaused(vehicleId) {
+    const paused = Boolean(pastDate(vehicleId));
+    const preview = el('veh-sim-preview');
+    const panel = el('veh-sim');
+    if (preview) preview.disabled = paused;
+    if (panel) panel.inert = paused;
+    if (panel) panel.classList.toggle('is-paused', paused);
+  }
+
+  /** A máquina do tempo mudou de data: o carro, a legenda e a pausa acompanham. */
+  function timeChanged(vehicleId) {
+    applyNow(vehicleId);
+    syncPaused(vehicleId);
   }
 
   // ===== Ações =====
@@ -110,7 +134,7 @@ const VehicleSimulator = (() => {
           <label class="veh-sim-toggle"><input type="checkbox" id="veh-sim-zones"${showZones ? ' checked' : ''}
             onchange="VehicleSimulator.setShowZones('${attr(vehicleId)}', this.checked)"> Mostrar regiões</label>
         </div>
-        <div class="veh-sim-legend" id="veh-sim-legend" aria-live="polite">${esc(legendText(lookFor(vehicleId)))}</div>
+        <div class="veh-sim-legend" id="veh-sim-legend" aria-live="polite">${esc(legendText(lookFor(vehicleId), pastDate(vehicleId)))}</div>
       </div>
       <details class="veh-sim" id="veh-sim"${open ? ' open' : ''} ontoggle="VehicleSimulator.setOpen(this.open)">
         <summary>Simular</summary>${controlsHtml(vehicleId)}
@@ -125,6 +149,7 @@ const VehicleSimulator = (() => {
     if (!el('veh-sim-fields')) return;
     VehicleVisualFields.render('veh-sim-fields', FIELDS_PREFIX, 'VehicleSimulator.update()');
     VehicleVisualFields.fill(FIELDS_PREFIX, stateFor(vehicleId).override);
+    syncPaused(vehicleId);
   }
 
   /** O 3D subiu: os seletores de cor sem escolha mostram a cor original do modelo. */
@@ -138,5 +163,5 @@ const VehicleSimulator = (() => {
     if (root) root.innerHTML = unavailableHtml();
   }
 
-  return { lookFor, showsZones, html, setup, showOriginals, showUnavailable, setPreview, setShowZones, setOpen, update, discard, saveAsIdea };
+  return { lookFor, timeChanged, showsZones, html, setup, showOriginals, showUnavailable, setPreview, setShowZones, setOpen, update, discard, saveAsIdea };
 })();

@@ -65,7 +65,8 @@
     obs: { type: 'string' },
     tipo: { type: 'string', description: 'Serviço (padrão) ou Modificação. Para sintoma use add_vehicle_card.' },
     estimativaReais: { type: 'number', description: 'Quanto se esperava gastar, em reais (não entra nos totais)' },
-    efeitoVisual: efeitoVisualSchema
+    efeitoVisual: efeitoVisualSchema,
+    desfeitaEm: { type: ['string', 'null'], description: 'Só em Modificação concluída: data YYYY-MM-DD em que ela saiu do carro (a máquina do tempo deixa de mostrá-la a partir desse dia). null limpa.' }
   };
 
   // ===== Conversões =====
@@ -157,7 +158,8 @@
       titulo: m.title, categoria: _label(CATEGORIES, m.category), zonas: m.zones.map(z => _label(ZONES, z)),
       oficina: m.shop || null, pecas: m.parts.map(_pecaSaida),
       maoDeObraReais: toReais(m.laborCentavos), totalReais: toReais(VehicleService.maintenanceTotal(m)),
-      obs: m.notes || null, lancamentosVinculados: m.transactionIds.length, ..._comEfeito(m)
+      obs: m.notes || null, lancamentosVinculados: m.transactionIds.length, ..._comEfeito(m),
+      ...(m.removedOn && { desfeitaEm: m.removedOn })
     };
   }
 
@@ -276,6 +278,7 @@
     if (efeito.erro) return efeito;
     const dto = {
       date: input.data, km: input.km, title: input.titulo, shop: input.oficina, notes: input.obs,
+      removedOn: input.desfeitaEm,
       ...extras, ...tipo, ...efeito,
       estimateCentavos: _definido(input.estimativaReais) ? toCentavos(input.estimativaReais) : undefined,
       parts: Array.isArray(input.pecas) ? input.pecas.map(_pecaEntrada) : input.pecas,
