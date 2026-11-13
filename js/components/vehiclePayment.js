@@ -1,14 +1,31 @@
 /**
  * ===================== VEHICLE PAYMENT =====================
- * Seção de pagamento dentro de #veh-maint-modal: vincula a manutenção a um
- * lançamento existente, lança um novo (conta ou cartão) ou não lança nada.
- * A escolha só é aplicada quando o modal salva a manutenção (apply).
- * Desvincular, na edição, vale na hora. Renderiza em #veh-m-payment.
+ * Seção de pagamento dos modais do veículo (manutenção e abastecimento):
+ * vincula o registro a um lançamento existente, lança um novo (conta ou
+ * cartão) ou não lança nada. A escolha só é aplicada quando o modal salva o
+ * registro (apply). Desvincular, na edição, vale na hora.
+ * Um modal por vez: start() escolhe o alvo e esvazia a seção do outro.
  */
 
 const VehiclePayment = (() => {
 
-  const ROOT_ID = 'veh-m-payment';
+  // Onde a seção é desenhada e quais operações do VehicleFinanceService valem para cada tipo de registro.
+  const TARGETS = {
+    maintenance: {
+      rootId: 'veh-m-payment',
+      linked: (vehicleId, id) => VehicleFinanceService.getLinkedTransactions(vehicleId, id),
+      link: (vehicleId, id, transactionId) => VehicleFinanceService.link(vehicleId, id, transactionId),
+      unlink: (vehicleId, id, transactionId) => VehicleFinanceService.unlink(vehicleId, id, transactionId),
+      launch: (vehicleId, id, dto) => VehicleFinanceService.launchPayment(vehicleId, id, dto)
+    },
+    fueling: {
+      rootId: 'veh-f-payment',
+      linked: (vehicleId, id) => VehicleFinanceService.getFuelingTransactions(vehicleId, id),
+      link: (vehicleId, id, transactionId) => VehicleFinanceService.linkFueling(vehicleId, id, transactionId),
+      unlink: (vehicleId, id, transactionId) => VehicleFinanceService.unlinkFueling(vehicleId, id, transactionId),
+      launch: (vehicleId, id, dto) => VehicleFinanceService.launchFuelPayment(vehicleId, id, dto)
+    }
+  };
   const { CARD_PREFIX } = Constants.VEHICLE;
   const MODES = [
     { id: 'link', label: 'Vincular existente' },
@@ -20,6 +37,7 @@ const VehiclePayment = (() => {
   const attr = Utils.escapeAttr;
 
   let state = null;
+  let target = TARGETS.maintenance;
   let suggestions = [];
 
   function freshState(vehicleId, maintenanceId, adding) {
@@ -31,8 +49,21 @@ const VehiclePayment = (() => {
     };
   }
 
-  /** Zera a seção ao abrir o modal. `adding` mostra as opções já abertas (nova manutenção ou nova tentativa). */
-  function start(vehicleId, maintenanceId, { adding = !maintenanceId } = {}) {
+  /** As duas seções usam os mesmos ids de campo: só a do modal aberto pode ter conteúdo. */
+  function clearRoots() {
+    Object.values(TARGETS).forEach(({ rootId }) => {
+      const root = el(rootId);
+      if (root) root.innerHTML = '';
+    });
+  }
+
+  /**
+   * Zera a seção ao abrir o modal. `adding` mostra as opções já abertas (registro novo ou nova tentativa);
+   * `target` diz de quem é o pagamento: 'maintenance' (padrão) ou 'fueling'.
+   */
+  function start(vehicleId, maintenanceId, { adding = !maintenanceId, target: targetName = 'maintenance' } = {}) {
+    target = TARGETS[targetName];
+    clearRoots();
     state = freshState(vehicleId, maintenanceId, adding);
     suggestions = [];
     state.categoriaId = VehicleFinanceService.defaultCategoryId(VehicleService.getById(vehicleId));
@@ -42,7 +73,7 @@ const VehiclePayment = (() => {
 
   function linkedList() {
     if (!state.maintenanceId) return [];
-    const linked = VehicleFinanceService.getLinkedTransactions(state.vehicleId, state.maintenanceId);
+    const linked = target.linked(state.vehicleId, state.maintenanceId);
     return linked.erro ? [] : linked;
   }
 
@@ -163,7 +194,7 @@ const VehiclePayment = (() => {
   }
 
   function render(focusId) {
-    const root = el(ROOT_ID);
+    const root = el(target.rootId);
     if (!root || !state) return;
     const linked = linkedList();
     root.hidden = !hasTotal() && !linked.length;
@@ -211,7 +242,7 @@ const VehiclePayment = (() => {
   }
 
   function unlink(transactionId) {
-    const result = VehicleFinanceService.unlink(state.vehicleId, state.maintenanceId, transactionId);
+    const result = target.unlink(state.vehicleId, state.maintenanceId, transactionId);
     if (result.erro) return Feedback.toast(result.erro, 'error');
     loadSuggestions();
     render();
@@ -230,7 +261,7 @@ const VehiclePayment = (() => {
     };
   }
 
-  /** Confere a escolha antes de salvar a manutenção, para não deixar o pagamento pela metade. */
+  /** Confere a escolha antes de salvar o registro, para não deixar o pagamento pela metade. */
   function validate() {
     if (!state || !optionsVisible()) return {};
     if (state.mode === 'link' && !state.selectedId) {
@@ -243,11 +274,11 @@ const VehiclePayment = (() => {
     return launchDto().valorCentavos > 0 ? {} : { erro: 'Informe um valor de pagamento maior que zero' };
   }
 
-  /** Aplica a escolha à manutenção já salva. Devolve { erro } se falhar; a manutenção não é desfeita. */
+  /** Aplica a escolha ao registro já salvo. Devolve { erro } se falhar; o registro não é desfeito. */
   function apply(vehicleId, maintenanceId) {
     if (!state || !optionsVisible()) return {};
-    if (state.mode === 'link') return VehicleFinanceService.link(vehicleId, maintenanceId, state.selectedId);
-    if (state.mode === 'launch') return VehicleFinanceService.launchPayment(vehicleId, maintenanceId, launchDto());
+    if (state.mode === 'link') return target.link(vehicleId, maintenanceId, state.selectedId);
+    if (state.mode === 'launch') return target.launch(vehicleId, maintenanceId, launchDto());
     return {};
   }
 

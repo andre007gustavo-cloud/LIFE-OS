@@ -157,7 +157,7 @@ const Constants = (() => {
   /** Modelos de projeto: definem quais abas o projeto mostra. */
   const PROJECT_TEMPLATES = {
     generic: { label: 'Genérico', icon: '📁', tabs: ['overview', 'tasks', 'notes', 'files'] },
-    vehicle: { label: 'Veículo', icon: '🚗', tabs: ['garage', 'board', 'health', 'maintenances', 'photos', 'parts', 'tasks', 'notes', 'files'] }
+    vehicle: { label: 'Veículo', icon: '🚗', tabs: ['garage', 'board', 'health', 'maintenances', 'fuel', 'photos', 'parts', 'tasks', 'notes', 'files'] }
   };
 
   /** Rótulo (pt-BR) e ícone Tabler de cada aba de projeto. */
@@ -170,6 +170,7 @@ const Constants = (() => {
     board: { label: 'Quadro', icon: 'layout-kanban' },
     health: { label: 'Saúde', icon: 'heartbeat' },
     maintenances: { label: 'Manutenções', icon: 'tool' },
+    fuel: { label: 'Abastecimento', icon: 'gas-station' },
     photos: { label: 'Fotos', icon: 'photo' },
     parts: { label: 'Peças e oficinas', icon: 'package' }
   };
@@ -313,6 +314,22 @@ const Constants = (() => {
     DIAGNOSIS_TEMPLATE: 'Jarvis, meu carro {nickname} (veículo {vehicleId}) está com um sintoma: {description} — zona {zone}. Card {cardId}. Consulte get_zone_context dessa zona, cruze com o histórico, as peças, o km e a garantia, me diga as causas prováveis e atualize o card.',
     CARD_PREFIX: 'card:',
     LINK: { WINDOW_DAYS: 10, WIDE_WINDOW_DAYS: 45, MAX_SUGGESTIONS: 5 },
+    // Abastecimento: o volume é guardado em mL inteiros; o consumo é medido de tanque cheio a tanque cheio.
+    FUEL: {
+      TYPES: [
+        { id: 'gasoline', label: 'Gasolina comum', aliases: ['gasolina'] },
+        { id: 'gasoline-additive', label: 'Gasolina aditivada', aliases: ['aditivada'] },
+        { id: 'gasoline-premium', label: 'Gasolina premium', aliases: ['premium'] },
+        { id: 'ethanol', label: 'Etanol', aliases: ['alcool'] }
+      ],
+      DEFAULT_TYPE: 'gasoline',
+      ML_PER_LITER: 1000,
+      VOLUME_ML_MAX: 500000,
+      // Casas decimais na tela: litros, preço por litro (a bomba mostra 3) e km/L.
+      LITER_DECIMALS: 2,
+      PRICE_DECIMALS: 3,
+      KM_PER_LITER_DECIMALS: 1
+    },
     // Saúde: plano preventivo (o que fazer a cada tantos km ou meses), janelas de aviso e previsão pelo km rodado.
     HEALTH: {
       STATUS: { OVERDUE: 'overdue', SOON: 'soon', UNKNOWN: 'unknown', OK: 'ok' },
@@ -418,7 +435,7 @@ const Constants = (() => {
     faturaPagamentos: [],
     // Finanças Fase 7e: histórico das revisões financeiras mensais
     revisoesFinanceiras: [],
-    // Modelo Veículo: fichas, odômetro, manutenções, fotos e plano preventivo (um item por projeto Veículo)
+    // Modelo Veículo: fichas, odômetro, manutenções, fotos, plano preventivo e abastecimentos (um item por projeto Veículo)
     vehicles: []
   };
 

@@ -360,6 +360,8 @@
     window.VehicleTimeMachine      = VehicleTimeMachine;
     window.VehicleHealth           = VehicleHealth;
     window.VehiclePlanModal        = VehiclePlanModal;
+    window.VehicleFuelModal        = VehicleFuelModal;
+    window.VehicleFuel             = VehicleFuel;
     window.openProject         = AreasView.openProject;
     window.setProjTab          = AreasView.setProjTab;
     window.pSaveField          = AreasView.saveField;

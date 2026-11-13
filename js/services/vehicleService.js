@@ -262,6 +262,9 @@ const VehicleService = (() => {
   /** Manutenções que contam como histórico; todas as consultas de custo e km passam por aqui. */
   const _history = vehicle => vehicle.maintenances.filter(isHistory);
 
+  /** Abastecimentos (escritos pelo VehicleFuelService); aqui só entram no km e nos gastos. Leitura nunca grava. */
+  const _fuelings = vehicle => vehicle.fuelings || [];
+
   /** Leitura nunca grava: a primeira foto é que cria a chave `photos`. */
   const _photos = vehicle => vehicle.photos || [];
 
@@ -345,16 +348,21 @@ const VehicleService = (() => {
       plain: 'Remova essa leitura na ficha (Leituras de km) se ela estiver errada.',
       blank: 'Remova essa leitura na ficha (Leituras de km) se ela estiver errada, ou deixe o km deste registro em branco.'
     },
-    purchase: { plain: 'Corrija o km da compra na ficha.', blank: 'Corrija o km da compra na ficha.' }
+    purchase: { plain: 'Corrija o km da compra na ficha.', blank: 'Corrija o km da compra na ficha.' },
+    fueling: { plain: 'Corrija o km desse abastecimento.', blank: 'Corrija o km desse abastecimento ou deixe o km deste registro em branco.' }
   };
   const _fmtKm = km => km.toLocaleString('pt-BR');
 
-  /** Todos os km conhecidos do veículo (leituras, manutenções com km, compra), com a descrição para a mensagem de erro. */
+  const _fuelingPoint = f => ({ type: 'fueling', km: f.km, date: f.date,
+    text: `há um abastecimento de ${_fmtKm(f.km)} km em ${Utils.fmtDateFull(f.date)}` });
+
+  /** Todos os km conhecidos do veículo (leituras, manutenções e abastecimentos com km, compra), com a descrição para a mensagem de erro. */
   function _kmPoints(vehicle, readings, exceptMaintenanceId) {
     const points = readings.map(r => ({ type: 'reading', km: r.km, date: r.date,
       text: `em ${Utils.fmtDateFull(r.date)} o odômetro marcava ${_fmtKm(r.km)} km` }));
     _history(vehicle).filter(m => Number.isInteger(m.km) && m.id !== exceptMaintenanceId).forEach(m => points.push({
       type: 'maintenance', km: m.km, date: m.date, text: `há uma manutenção de ${_fmtKm(m.km)} km em ${Utils.fmtDateFull(m.date)}` }));
+    _fuelings(vehicle).filter(f => Number.isInteger(f.km) && f.id !== exceptMaintenanceId).forEach(f => points.push(_fuelingPoint(f)));
     if (vehicle.purchaseDate && Number.isInteger(vehicle.purchaseKm)) {
       points.push({ type: 'purchase', km: vehicle.purchaseKm, date: vehicle.purchaseDate,
         text: `a compra registrou ${_fmtKm(vehicle.purchaseKm)} km em ${Utils.fmtDateFull(vehicle.purchaseDate)}` });
@@ -380,7 +388,7 @@ const VehicleService = (() => {
     }, km, false);
   }
 
-  /** Km da manutenção precisa caber entre o que veio antes e o que veio depois; no mesmo dia, manutenções não se restringem. */
+  /** Km da manutenção (ou do abastecimento) precisa caber entre o que veio antes e o que veio depois; no mesmo dia, esses registros não se restringem. */
   function _assertMaintenanceKm(vehicle, maintenance) {
     if (!Number.isInteger(maintenance.km)) return;
     const { date } = maintenance;
@@ -414,11 +422,12 @@ const VehicleService = (() => {
     });
   }
 
-  /** Maior km conhecido entre leituras, manutenções e km da compra (null se nenhum). */
+  /** Maior km conhecido entre leituras, manutenções, abastecimentos e km da compra (null se nenhum). */
   function getCurrentKm(vehicle) {
     const kms = [
       ...vehicle.odometer.map(r => r.km),
       ..._history(vehicle).map(m => m.km),
+      ..._fuelings(vehicle).map(f => f.km),
       vehicle.purchaseKm
     ].filter(Number.isInteger);
     return kms.length ? Math.max(...kms) : null;
@@ -686,15 +695,22 @@ const VehicleService = (() => {
     };
   }
 
+  /** Gastos do veículo: manutenções concluídas + combustível (o custo por km usa a soma dos dois). */
   function getSummary(vehicleId) {
     return _query(vehicleId, vehicle => {
       const history = _history(vehicle);
       const currentKm = getCurrentKm(vehicle);
       const byYear = _sumBy(history, m => m.date.slice(0, 4));
-      const totalCentavos = _sum(history, maintenanceTotal);
+      const year = Utils.today().slice(0, 4);
+      const fuelings = _fuelings(vehicle);
+      const maintenanceCentavos = _sum(history, maintenanceTotal);
+      const fuelCentavos = _sum(fuelings, f => f.totalCentavos);
+      const totalCentavos = maintenanceCentavos + fuelCentavos;
       return {
         totalCentavos,
-        yearCentavos: byYear[Utils.today().slice(0, 4)] || 0,
+        maintenanceCentavos,
+        fuelCentavos,
+        yearCentavos: (byYear[year] || 0) + _sum(fuelings.filter(f => f.date.startsWith(year)), f => f.totalCentavos),
         byCategory: _sumBy(history, m => m.category),
         byYear,
         count: history.length,
@@ -786,11 +802,11 @@ const VehicleService = (() => {
       .sort((a, b) => a.date.localeCompare(b.date) || a.km - b.km));
   }
 
-  /** Validações e acesso compartilhados com os outros services que gravam no veículo (Saúde). */
+  /** Validações e acesso compartilhados com os outros services que gravam no veículo (Saúde, Abastecimento). */
   const rules = {
     fail: _fail, guard: _guard, isBlank: _isBlank, compact: _compact,
     text: _text, date: _date, requiredDate: _requiredDate, int: _int, km: _km, oneOf: _oneOf, zones: _normalizeZones,
-    requireVehicle: _requireVehicle, touch: _touch
+    requireVehicle: _requireVehicle, touch: _touch, assertRecordKm: _assertMaintenanceKm
   };
 
   return {

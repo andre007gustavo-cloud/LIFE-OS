@@ -144,6 +144,7 @@ const AreasView = (() => {
     board: p => VehicleView.renderBoard(p),
     health: p => VehicleView.renderHealth(p),
     maintenances: p => VehicleView.renderMaintenances(p),
+    fuel: p => VehicleView.renderFuel(p),
     photos: p => VehicleView.renderPhotos(p),
     parts: p => VehicleView.renderParts(p)
   };

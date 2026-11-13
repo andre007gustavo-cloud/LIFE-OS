@@ -140,7 +140,8 @@
 #veh-card-modal [hidden]{display:none!important}
 .veh-resolve-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
 .veh-resolve-row .form-select{flex:1;min-width:0}
-.veh-symptom-btn{margin-top:10px}
+
+.veh-hero-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:10px}
 .veh-chip-alert{background:var(--bg3);color:var(--red);border-color:var(--red);font-weight:600}
 .veh-chip-planned{background:var(--bg3);color:var(--accent);border-color:var(--accent)}
 .veh-col-symptoms{border-color:var(--red)}
@@ -320,7 +321,7 @@ body.veh-viewer-open{overflow:hidden}
 .veh-health-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .veh-health-row{flex-wrap:wrap}
 .veh-health-row .veh-zone-item-meta{flex:1 1 150px;text-align:right;overflow-wrap:anywhere}
-#veh-plan-modal .modal{max-width:560px}
+#veh-plan-modal .modal,#veh-fuel-modal .modal{max-width:560px}
 .veh-plan-hint{margin:-6px 0 12px}
 .veh-plan-toggle{margin-bottom:14px}
 
@@ -332,3 +333,8 @@ body.veh-viewer-open{overflow:hidden}
 .veh-dash-line{color:var(--text2);overflow-wrap:anywhere}
 .veh-dash-line strong{color:var(--text)}
 .veh-dash-more{font-size:12px;color:var(--text3)}
+
+/* ----- Abastecimento ----- */
+.veh-fuel-amounts{grid-template-columns:repeat(3,1fr)}
+@media(max-width:480px){.veh-fuel-amounts{grid-template-columns:1fr}}
+.veh-fuel-segment{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--accent2)}

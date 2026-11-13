@@ -1,8 +1,8 @@
 /**
  * ===================== VEHICLE VIEW =====================
  * Abas do modelo de projeto Veículo. A Garagem mostra a ficha, os números e
- * as últimas manutenções; Quadro, Saúde, Manutenções e Peças delegam a
- * VehicleBoard, VehicleHealth, VehicleHistory e VehicleParts.
+ * as últimas manutenções; Quadro, Saúde, Manutenções, Abastecimento e Peças
+ * delegam a VehicleBoard, VehicleHealth, VehicleHistory, VehicleFuel e VehicleParts.
  * Só lê dos services; qualquer gravação vem de um clique do usuário.
  */
 
@@ -310,9 +310,14 @@ const VehicleView = (() => {
       <div class="veh-sim-root" id="veh-sim-root">${VehicleSimulator.html(vehicle.id)}</div>
       <div class="veh-zone-chips">${zoneChipsHtml(vehicle, selectedZone)}</div>
       <div id="veh-zone-panel" aria-live="polite">${selectedZone ? VehicleZonePanel.html(vehicle.id, selectedZone) : ''}</div>
-      <button class="btn btn-ghost btn-sm veh-symptom-btn" onclick="VehicleCardModal.openNewSymptom('${vehicle.id}')">
-        <i class="ti ti-alert-triangle"></i> Descrever um sintoma
-      </button>
+      <div class="veh-hero-actions">
+        <button class="btn btn-ghost btn-sm" onclick="VehicleCardModal.openNewSymptom('${vehicle.id}')">
+          <i class="ti ti-alert-triangle"></i> Descrever um sintoma
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="VehicleFuelModal.openNew('${vehicle.id}')">
+          <i class="ti ti-gas-station"></i> Abastecer
+        </button>
+      </div>
     </div>`;
   }
 
@@ -354,15 +359,30 @@ const VehicleView = (() => {
     </div>`;
   }
 
+  /** Com combustível registrado, o gasto total mostra de onde vem cada parte. */
+  function totalHint(summary) {
+    if (!summary.fuelCentavos) return '';
+    return `manutenção ${Utils.formatBRL(summary.maintenanceCentavos)} · combustível ${Utils.formatBRL(summary.fuelCentavos)}`;
+  }
+
+  /** Consumo médio (km/L); só aparece quando há abastecimentos. */
+  function consumptionCardHtml(vehicleId) {
+    const fuel = VehicleFuelService.getStats(vehicleId);
+    if (!fuel.count) return '';
+    const hint = fuel.kmPerLiter == null ? 'complete o tanque duas vezes, com o km' : `último tanque: ${VehicleFuel.kmPerLiterText(fuel.lastKmPerLiter)}`;
+    return statCardHtml('Consumo médio', VehicleFuel.kmPerLiterText(fuel.kmPerLiter), hint);
+  }
+
   function garageStatsHtml(vehicle, projectId) {
     const summary = VehicleService.getSummary(vehicle.id);
     const cost = costPerKmText(summary);
     const last = summary.lastService;
     return `<div class="veh-stats">
       ${kmCardHtml(summary, projectId)}
-      ${statCardHtml('Gasto total', Utils.formatBRL(summary.totalCentavos))}
+      ${statCardHtml('Gasto total', Utils.formatBRL(summary.totalCentavos), totalHint(summary))}
       ${statCardHtml('Custo por km', cost.value, cost.hint)}
       ${statCardHtml('Gasto no ano', Utils.formatBRL(summary.yearCentavos))}
+      ${consumptionCardHtml(vehicle.id)}
       ${statCardHtml('Último serviço', last ? agoText(last.daysAgo, last.kmAgo) : '—', last?.title)}
     </div>`;
   }
@@ -498,6 +518,12 @@ const VehicleView = (() => {
     else renderEmptyTab(Constants.PROJECT_TABS.maintenances.icon, NO_SHEET_MESSAGE);
   }
 
+  function renderFuel(project) {
+    const vehicle = VehicleService.getByProject(project.id);
+    if (vehicle) VehicleFuel.render(vehicle);
+    else renderEmptyTab(Constants.PROJECT_TABS.fuel.icon, NO_SHEET_MESSAGE);
+  }
+
   function renderPhotos(project) {
     const vehicle = VehicleService.getByProject(project.id);
     if (!vehicle) return renderEmptyTab(Constants.PROJECT_TABS.photos.icon, NO_SHEET_MESSAGE);
@@ -514,7 +540,7 @@ const VehicleView = (() => {
   }
 
   return {
-    renderGarage, renderBoard, renderHealth, renderMaintenances, renderPhotos, renderParts, refresh,
+    renderGarage, renderBoard, renderHealth, renderMaintenances, renderFuel, renderPhotos, renderParts, refresh,
     photosChanged, saveSheet, clearSheetColor, setFinanceCategory, updateKm, removeReading, selectZone, clearZone
   };
 })();

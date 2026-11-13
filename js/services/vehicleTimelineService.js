@@ -15,19 +15,20 @@ const VehicleTimelineService = (() => {
   const _sum = (items, pick) => items.reduce((total, item) => total + pick(item), 0);
   const _upTo = (items, date) => items.filter(item => item.date <= date);
 
-  /** Tudo o que o veículo tem com data: histórico, leituras de km e fotos. */
+  /** Tudo o que o veículo tem com data: histórico, abastecimentos, leituras de km e fotos. */
   function _records(vehicle) {
     const photos = VehicleService.listPhotos(vehicle.id);
     return {
       history: VehicleService.listMaintenances(vehicle.id),
       readings: vehicle.odometer,
+      fuelings: VehicleFuelService.listFuelings(vehicle.id),
       photos: photos.erro ? [] : photos
     };
   }
 
-  function _allDates(vehicle, { history, readings, photos }) {
+  function _allDates(vehicle, { history, readings, photos, fuelings }) {
     const removals = history.map(m => m.removedOn);
-    return [vehicle.purchaseDate, ...removals, ...[...history, ...readings, ...photos].map(item => item.date)].filter(Boolean);
+    return [vehicle.purchaseDate, ...removals, ...[...history, ...readings, ...photos, ...fuelings].map(item => item.date)].filter(Boolean);
   }
 
   /** Do primeiro dia conhecido (em geral a compra) até hoje; null quando não há passado para visitar. */
@@ -49,13 +50,13 @@ const VehicleTimelineService = (() => {
     return [...new Set(dates)].sort();
   }
 
-  /** Maior km conhecido até o dia (leituras, manutenções e a compra); null se nenhum. */
+  /** Maior km conhecido até o dia (leituras, manutenções, abastecimentos e a compra); null se nenhum. */
   function _kmAt(vehicleId, date) {
     const kms = _upTo(VehicleService.listKmPoints(vehicleId), date).map(point => point.km);
     return kms.length ? Math.max(...kms) : null;
   }
 
-  /** Retrato do veículo no dia: km, gasto acumulado, quantas manutenções e fotos existiam até ali. */
+  /** Retrato do veículo no dia: km, gasto acumulado (manutenções + combustível), quantas manutenções e fotos existiam até ali. */
   function getSnapshot(vehicleId, date) {
     const vehicle = VehicleService.getById(vehicleId);
     if (!vehicle) return { erro: 'Veículo não encontrado' };
@@ -64,7 +65,7 @@ const VehicleTimelineService = (() => {
     return {
       date,
       km: _kmAt(vehicleId, date),
-      totalCentavos: _sum(history, VehicleService.maintenanceTotal),
+      totalCentavos: _sum(history, VehicleService.maintenanceTotal) + _sum(_upTo(records.fuelings, date), f => f.totalCentavos),
       maintenanceCount: history.length,
       photoCount: _upTo(records.photos, date).length
     };

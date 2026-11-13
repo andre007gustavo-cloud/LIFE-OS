@@ -1,7 +1,8 @@
 /**
  * ===================== VEHICLE FINANCE SERVICE =====================
- * Liga manutenções do veículo a lançamentos de Finanças. O vínculo vive só em
- * maintenance.transactionIds; as transações não mudam de formato.
+ * Liga os gastos do veículo (manutenções e abastecimentos) a lançamentos de
+ * Finanças. O vínculo vive só no registro do carro (transactionIds); as
+ * transações não mudam de formato.
  *
  * Camada de serviço: ZERO DOM e nada de window/document no topo (o arquivo
  * também roda no vm do conector MCP). Erros de negócio voltam como { erro }.
@@ -30,11 +31,11 @@ const VehicleFinanceService = (() => {
 
   // ===== Transações vinculadas =====
 
-  /** transactionId -> id da manutenção a que está vinculada (qualquer veículo). */
-  function _linkedIdsByMaintenance() {
+  /** transactionId -> id do registro (manutenção ou abastecimento, de qualquer veículo) a que está vinculada. */
+  function _linkedIdsByRecord() {
     const linked = new Map();
-    VehicleService.list().forEach(vehicle => vehicle.maintenances.forEach(m => {
-      (m.transactionIds || []).forEach(id => linked.set(id, m.id));
+    VehicleService.list().forEach(vehicle => [...vehicle.maintenances, ...(vehicle.fuelings || [])].forEach(record => {
+      (record.transactionIds || []).forEach(id => linked.set(id, record.id));
     }));
     return linked;
   }
@@ -73,10 +74,10 @@ const VehicleFinanceService = (() => {
     return `${match}, ${_dayDistanceText(offset)}${origin}`;
   }
 
-  function _isCandidate(transaction, linked, excludedMaintenanceId) {
+  function _isCandidate(transaction, linked, excludedRecordId) {
     const owner = linked.get(transaction.id);
     return transaction.tipo === 'saida' && !transaction.pagamentoFatura
-      && (!owner || owner === excludedMaintenanceId);
+      && (!owner || owner === excludedRecordId);
   }
 
   function _rankedSuggestion(transaction, date, amounts, windowDays) {
@@ -90,11 +91,14 @@ const VehicleFinanceService = (() => {
     };
   }
 
-  /** Candidatos a vínculo a partir de valores puros (serve ao formulário ainda não salvo). */
+  /**
+   * Candidatos a vínculo a partir de valores puros (serve ao formulário ainda não salvo).
+   * `excludeMaintenanceId` é o id do registro em edição (manutenção ou abastecimento): os vínculos dele não o bloqueiam.
+   */
   function suggestLinks({ date, amountsCentavos = [], excludeMaintenanceId, wide = false } = {}) {
     if (!date || !amountsCentavos.length) return [];
     const windowDays = wide ? WIDE_WINDOW_DAYS : WINDOW_DAYS;
-    const linked = _linkedIdsByMaintenance();
+    const linked = _linkedIdsByRecord();
     return FinanceService.listTransactions()
       .filter(t => _isCandidate(t, linked, excludeMaintenanceId))
       .map(t => _rankedSuggestion(t, date, amountsCentavos, windowDays))
@@ -104,43 +108,65 @@ const VehicleFinanceService = (() => {
       .map(item => item.suggestion);
   }
 
-  // ===== Vincular =====
+  // ===== Alvos do vínculo: manutenção e abastecimento =====
 
-  function _findMaintenance(vehicleId, maintenanceId) {
+  const _vehicleLabel = vehicle => vehicle.nickname || vehicle.model;
+
+  /** Acha o veículo e o registro dele; `pick` devolve o registro ou null. */
+  function _findRecord(vehicleId, pick, notFound) {
     const vehicle = VehicleService.getById(vehicleId);
     if (!vehicle) return { erro: 'Veículo não encontrado' };
-    const maintenance = vehicle.maintenances.find(m => m.id === maintenanceId);
-    return maintenance ? { vehicle, maintenance } : { erro: 'Manutenção não encontrada' };
+    const record = pick(vehicle);
+    return record ? { vehicle, record } : { erro: notFound };
   }
 
-  function _saveIds(vehicleId, maintenanceId, transactionIds) {
-    const updated = VehicleService.updateMaintenance(vehicleId, maintenanceId, { transactionIds });
+  const MAINTENANCE = {
+    find: (vehicleId, id) => _findRecord(vehicleId, vehicle => vehicle.maintenances.find(m => m.id === id), 'Manutenção não encontrada'),
+    notPayableError: record => (VehicleService.isHistory(record) ? null : 'Pagamento só em manutenção concluída (Feito)'),
+    saveIds: (vehicleId, id, transactionIds) => VehicleService.updateMaintenance(vehicleId, id, { transactionIds }),
+    takenError: 'Esse lançamento já está vinculado a outra manutenção',
+    paidError: 'Esta manutenção já tem pagamento vinculado; para lançar outro, confirme que é um pagamento adicional',
+    describe: (vehicle, record) => `${_vehicleLabel(vehicle)} · ${record.title}`
+  };
+
+  const FUELING = {
+    find: (vehicleId, id) => _findRecord(vehicleId, vehicle => (vehicle.fuelings || []).find(f => f.id === id), 'Abastecimento não encontrado'),
+    notPayableError: () => null,
+    saveIds: (vehicleId, id, transactionIds) => VehicleFuelService.updateFueling(vehicleId, id, { transactionIds }),
+    takenError: 'Esse lançamento já está vinculado a outro registro do veículo',
+    paidError: 'Este abastecimento já tem pagamento vinculado; para lançar outro, confirme que é um pagamento adicional',
+    describe: (vehicle, record) => `${_vehicleLabel(vehicle)} · Combustível${record.station ? ` · ${record.station}` : ''}`
+  };
+
+  // ===== Vincular =====
+
+  function _saveIds(target, vehicleId, recordId, transactionIds) {
+    const updated = target.saveIds(vehicleId, recordId, transactionIds);
     return updated.erro ? updated : { transactionIds: updated.transactionIds };
   }
 
-  const NOT_PAYABLE_ERROR = 'Pagamento só em manutenção concluída (Feito)';
-
-  function link(vehicleId, maintenanceId, transactionId) {
-    const found = _findMaintenance(vehicleId, maintenanceId);
+  function _link(target, vehicleId, recordId, transactionId) {
+    const found = target.find(vehicleId, recordId);
     if (found.erro) return found;
-    if (!VehicleService.isHistory(found.maintenance)) return { erro: NOT_PAYABLE_ERROR };
+    const notPayable = target.notPayableError(found.record);
+    if (notPayable) return { erro: notPayable };
     if (!FinanceService.getTransacaoById(transactionId)) return { erro: 'Lançamento não encontrado' };
-    const owner = _linkedIdsByMaintenance().get(transactionId);
-    if (owner && owner !== maintenanceId) return { erro: 'Esse lançamento já está vinculado a outra manutenção' };
-    const ids = found.maintenance.transactionIds;
-    return ids.includes(transactionId) ? { transactionIds: ids } : _saveIds(vehicleId, maintenanceId, [...ids, transactionId]);
+    const owner = _linkedIdsByRecord().get(transactionId);
+    if (owner && owner !== recordId) return { erro: target.takenError };
+    const ids = found.record.transactionIds;
+    return ids.includes(transactionId) ? { transactionIds: ids } : _saveIds(target, vehicleId, recordId, [...ids, transactionId]);
   }
 
-  function unlink(vehicleId, maintenanceId, transactionId) {
-    const found = _findMaintenance(vehicleId, maintenanceId);
+  function _unlink(target, vehicleId, recordId, transactionId) {
+    const found = target.find(vehicleId, recordId);
     if (found.erro) return found;
-    return _saveIds(vehicleId, maintenanceId, found.maintenance.transactionIds.filter(id => id !== transactionId));
+    return _saveIds(target, vehicleId, recordId, found.record.transactionIds.filter(id => id !== transactionId));
   }
 
-  function getLinkedTransactions(vehicleId, maintenanceId) {
-    const found = _findMaintenance(vehicleId, maintenanceId);
+  function _linkedTransactions(target, vehicleId, recordId) {
+    const found = target.find(vehicleId, recordId);
     if (found.erro) return found;
-    return found.maintenance.transactionIds.map(id => {
+    return found.record.transactionIds.map(id => {
       const transaction = FinanceService.getTransacaoById(id);
       return transaction ? _describeTransaction(transaction) : { transactionId: id, missing: true };
     });
@@ -154,8 +180,6 @@ const VehicleFinanceService = (() => {
     return isCard ? { cartaoId: meio.slice(CARD_PREFIX.length) } : { contaId: meio };
   }
 
-  const _vehicleLabel = vehicle => vehicle.nickname || vehicle.model;
-
   function defaultCategoryId(vehicle) {
     const expenseCategories = FinanceService.listCategorias('despesa');
     if (expenseCategories.some(c => c.id === vehicle.financeCategoryId)) return vehicle.financeCategoryId;
@@ -164,30 +188,35 @@ const VehicleFinanceService = (() => {
     return byName ? byName.id : null;
   }
 
-  const ALREADY_PAID_ERROR = 'Esta manutenção já tem pagamento vinculado; para lançar outro, confirme que é um pagamento adicional';
+  /** Confere se o registro pode receber um lançamento novo; devolve { erro } ou o registro achado. */
+  function _payable(target, vehicleId, recordId, { meio, allowAdditional }) {
+    const found = target.find(vehicleId, recordId);
+    if (found.erro) return found;
+    const notPayable = target.notPayableError(found.record);
+    if (notPayable) return { erro: notPayable };
+    if (found.record.transactionIds.length && !allowAdditional) return { erro: target.paidError };
+    return !meio || meio === CARD_PREFIX ? { erro: 'Escolha uma conta ou um cartão' } : found;
+  }
 
   /**
-   * Cria a despesa (conta ou cartão) e já a vincula à manutenção. Sem
-   * `allowAdditional`, recusa quando a manutenção já tem pagamento (evita lançar em dobro).
+   * Cria a despesa (conta ou cartão) e já a vincula ao registro. Sem `allowAdditional`,
+   * recusa quando o registro já tem pagamento (evita lançar em dobro).
    * Se o vínculo falhar, a despesa recém-criada é desfeita.
    */
-  function launchPayment(vehicleId, maintenanceId, { meio, valorCentavos, parcelas, categoriaId, data, allowAdditional = false } = {}) {
-    const found = _findMaintenance(vehicleId, maintenanceId);
+  function _launch(target, vehicleId, recordId, { meio, valorCentavos, parcelas, categoriaId, data, allowAdditional = false } = {}) {
+    const found = _payable(target, vehicleId, recordId, { meio, allowAdditional });
     if (found.erro) return found;
-    if (!VehicleService.isHistory(found.maintenance)) return { erro: NOT_PAYABLE_ERROR };
-    if (found.maintenance.transactionIds.length && !allowAdditional) return { erro: ALREADY_PAID_ERROR };
-    if (!meio || meio === CARD_PREFIX) return { erro: 'Escolha uma conta ou um cartão' };
     const expense = FinanceService.addExpense({
       ..._splitMeans(meio),
       valorCentavos,
       parcelas,
-      descricao: `${_vehicleLabel(found.vehicle)} · ${found.maintenance.title}`,
+      descricao: target.describe(found.vehicle, found.record),
       categoriaId: categoriaId || defaultCategoryId(found.vehicle) || '',
       data,
       fonte: 'veiculo'
     });
     if (expense.erro) return expense;
-    const linked = link(vehicleId, maintenanceId, expense.id);
+    const linked = _link(target, vehicleId, recordId, expense.id);
     if (!linked.erro) return expense;
     FinanceService.deleteTransaction(expense.id);
     return linked;
@@ -196,10 +225,14 @@ const VehicleFinanceService = (() => {
   return {
     suggestLinks,
     defaultMaintenanceAmounts,
-    link,
-    unlink,
-    launchPayment,
-    getLinkedTransactions,
-    defaultCategoryId
+    defaultCategoryId,
+    link: (vehicleId, maintenanceId, transactionId) => _link(MAINTENANCE, vehicleId, maintenanceId, transactionId),
+    unlink: (vehicleId, maintenanceId, transactionId) => _unlink(MAINTENANCE, vehicleId, maintenanceId, transactionId),
+    launchPayment: (vehicleId, maintenanceId, options) => _launch(MAINTENANCE, vehicleId, maintenanceId, options),
+    getLinkedTransactions: (vehicleId, maintenanceId) => _linkedTransactions(MAINTENANCE, vehicleId, maintenanceId),
+    linkFueling: (vehicleId, fuelingId, transactionId) => _link(FUELING, vehicleId, fuelingId, transactionId),
+    unlinkFueling: (vehicleId, fuelingId, transactionId) => _unlink(FUELING, vehicleId, fuelingId, transactionId),
+    launchFuelPayment: (vehicleId, fuelingId, options) => _launch(FUELING, vehicleId, fuelingId, options),
+    getFuelingTransactions: (vehicleId, fuelingId) => _linkedTransactions(FUELING, vehicleId, fuelingId)
   };
 })();

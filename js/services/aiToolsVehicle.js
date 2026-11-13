@@ -1,10 +1,11 @@
 /**
  * ===================== AI TOOLS — VEHICLE =====================
  * Ferramentas do assistente para o veículo: ficha, manutenções, peças,
- * odômetro e vínculo de pagamentos. Registra-se no catálogo do AiTools.
+ * odômetro, plano preventivo, abastecimento e vínculo de pagamentos.
+ * Registra-se no catálogo do AiTools.
  * Dinheiro entra e sai em REAIS (números); por dentro são centavos inteiros.
  * Nenhuma ferramenta cria lançamento sozinha, exceto link_maintenance_payment
- * com acao "lancar" (pedida explicitamente). Knows nothing about the DOM.
+ * e link_fueling_payment com acao "lancar" (pedida explicitamente). Knows nothing about the DOM.
  */
 
 (() => {
@@ -13,7 +14,7 @@
     norm, toCentavos, toReais, resolveCategoria, resolveConta, resolveCartao, resolveProjeto, nomeProjeto
   } = AiTools.helpers;
 
-  const { CATEGORIES, ZONES, RECENT_MAINTENANCES, CARD_PREFIX, CARD_STATUSES, CARD_STATUS, CARD_TYPES, CARD_TYPE, VISUAL, HEALTH } = Constants.VEHICLE;
+  const { CATEGORIES, ZONES, RECENT_MAINTENANCES, CARD_PREFIX, CARD_STATUSES, CARD_STATUS, CARD_TYPES, CARD_TYPE, VISUAL, HEALTH, FUEL } = Constants.VEHICLE;
   const AVISO_SEM_LANCAMENTO = 'Nenhum lançamento foi criado nas Finanças. Pergunte ao André se alguma sugestão de vínculo é o pagamento, ou se quer lançar agora (link_maintenance_payment).';
 
   const veiculoParam = { type: 'string', description: 'Id do veículo, id ou nome do projeto. Opcional se houver só um veículo.' };
@@ -189,7 +190,7 @@
   function _resumoSaida(resumo) {
     const ultimo = resumo.lastService;
     return {
-      totalReais: toReais(resumo.totalCentavos), noAnoReais: toReais(resumo.yearCentavos), quantidade: resumo.count,
+      totalReais: toReais(resumo.totalCentavos), manutencaoReais: toReais(resumo.maintenanceCentavos), combustivelReais: toReais(resumo.fuelCentavos), noAnoReais: toReais(resumo.yearCentavos), quantidade: resumo.count,
       custoPorKmReais: toReais(resumo.costPerKmCentavos), custoPor1000KmReais: toReais(resumo.costPer1000KmCentavos),
       porCategoriaReais: Object.fromEntries(Object.entries(resumo.byCategory).map(([id, c]) => [_label(CATEGORIES, id), toReais(c)])),
       ultimoServico: ultimo && { titulo: ultimo.title, data: ultimo.date, haDias: ultimo.daysAgo, haKm: ultimo.kmAgo }
@@ -311,7 +312,7 @@
       write: false,
       schema: {
         name: 'get_vehicle',
-        description: 'Ficha do veículo (apelido, marca, modelo, anos, placa), km atual, resumo de gastos em reais (total, no ano, custo por km e por 1.000 km), oficinas e as últimas manutenções. "quadro" resume os sintomas abertos e os cards (ideias, a fazer, fazendo) com o planejado em reais. "saude" resume o plano preventivo (atrasados, em breve e os alertas; detalhes em get_vehicle_health). "fotos" é só a quantidade de fotos da galeria: você não acessa as imagens.',
+        description: 'Ficha do veículo (apelido, marca, modelo, anos, placa), km atual, resumo de gastos em reais (total = manutenção + combustível, no ano, custo por km e por 1.000 km), oficinas e as últimas manutenções. "quadro" resume os sintomas abertos e os cards (ideias, a fazer, fazendo) com o planejado em reais. "combustivel" resume os abastecimentos (consumo médio em km/L; detalhes em list_fuelings). "saude" resume o plano preventivo (atrasados, em breve e os alertas; detalhes em get_vehicle_health). "fotos" é só a quantidade de fotos da galeria: você não acessa as imagens.',
         input_schema: { type: 'object', properties: { veiculo: veiculoParam } }
       },
       run({ veiculo }) {
@@ -319,7 +320,7 @@
         const v = r.veiculo;
         const resumo = VehicleService.getSummary(v.id);
         return {
-          ficha: _fichaSaida(v), kmAtual: resumo.currentKm, resumo: _resumoSaida(resumo), quadro: _quadroResumo(v.id), saude: _saudeResumo(v.id), fotos: VehicleService.listPhotos(v.id).length,
+          ficha: _fichaSaida(v), kmAtual: resumo.currentKm, resumo: _resumoSaida(resumo), quadro: _quadroResumo(v.id), saude: _saudeResumo(v.id), combustivel: _combustivelResumo(v.id), fotos: VehicleService.listPhotos(v.id).length,
           oficinas: VehicleService.getShops(v.id).map(o => ({ nome: o.name, visitas: o.visits, ultimaVisita: o.lastVisit, totalReais: toReais(o.totalCentavos) })),
           ultimasManutencoes: VehicleService.listMaintenances(v.id).slice(0, RECENT_MAINTENANCES).map(m => _manutencaoSaida(m, resumo.currentKm))
         };
@@ -924,5 +925,229 @@
     }
   };
 
-  AiTools.register({ ...LEITURA, ...QUADRO, ...SAUDE, ...ESCRITA_FICHA, ...MANUTENCOES, ...ESCRITA_QUADRO, ...VINCULO });
+  // ===== Abastecimento =====
+
+  const listaCombustiveis = FUEL.TYPES.map(t => t.label).join(', ');
+  const AVISO_POSTO = 'Nenhum lançamento foi criado nas Finanças. Pergunte ao André se alguma sugestão de vínculo é o pagamento do posto, ou se quer lançar agora (link_fueling_payment).';
+  const _casas = (valor, casas) => (valor == null ? null : Number(valor.toFixed(casas)));
+  const _litros = volumeMl => _casas(volumeMl / FUEL.ML_PER_LITER, FUEL.LITER_DECIMALS);
+  const _kmPorLitro = valor => _casas(valor, FUEL.KM_PER_LITER_DECIMALS);
+
+  const abastecimentoProps = {
+    data: { type: 'string', description: 'Data YYYY-MM-DD (padrão hoje)' },
+    km: { type: ['integer', 'null'], description: 'Km do odômetro na hora de abastecer (alimenta o km atual e o consumo)' },
+    litros: { type: 'number', description: 'Litros abastecidos (ex.: 32.5)' },
+    valorReais: { type: 'number', description: 'Valor total pago, em reais' },
+    precoLitroReais: { type: 'number', description: 'Preço por litro, em reais (ex.: 5.899). Informe dois entre litros, valorReais e precoLitroReais; o terceiro é calculado.' },
+    combustivel: { type: 'string', description: `Id ou nome: ${listaCombustiveis} (padrão Gasolina comum)` },
+    tanqueCheio: { type: 'boolean', description: 'true (padrão) se completou o tanque. O consumo é medido de tanque cheio a tanque cheio.' },
+    posto: { type: 'string' },
+    obs: { type: 'string' }
+  };
+  const CAMPOS_ABASTECIMENTO = Object.keys(abastecimentoProps);
+
+  /** Dos três (litros, valor total, preço por litro) bastam dois; o que faltar é calculado. Devolve só o que dá para saber. */
+  function _volumeEValor({ litros, valorReais, precoLitroReais }) {
+    const temPreco = _definido(precoLitroReais) && precoLitroReais > 0;
+    const total = _definido(valorReais) ? valorReais : (temPreco && _definido(litros) ? litros * precoLitroReais : undefined);
+    const volume = _definido(litros) ? litros : (temPreco && _definido(valorReais) ? valorReais / precoLitroReais : undefined);
+    return {
+      ...(volume !== undefined && { volumeMl: Math.round(volume * FUEL.ML_PER_LITER) }),
+      ...(total !== undefined && { totalCentavos: toCentavos(total) })
+    };
+  }
+
+  function _dtoAbastecimento(input) {
+    const dto = { date: input.data, km: input.km, full: input.tanqueCheio, station: input.posto, notes: input.obs, ..._volumeEValor(input) };
+    if (_definido(input.combustivel)) {
+      const tipo = _resolveOpcao(input.combustivel, FUEL.TYPES, 'Combustível'); if (tipo.erro) return tipo;
+      dto.fuel = tipo.id;
+    }
+    return Object.fromEntries(Object.entries(dto).filter(([, v]) => v !== undefined));
+  }
+
+  function _abastecimentoSaida(a, trecho) {
+    return {
+      id: a.id, data: a.date, km: a.km ?? null, litros: _litros(a.volumeMl), valorReais: toReais(a.totalCentavos),
+      precoLitroReais: _casas(a.totalCentavos / 100 / (a.volumeMl / FUEL.ML_PER_LITER), FUEL.PRICE_DECIMALS),
+      combustivel: _label(FUEL.TYPES, a.fuel), tanqueCheio: a.full, posto: a.station || null, obs: a.notes || null,
+      lancamentosVinculados: a.transactionIds.length,
+      ...(trecho && { trecho: { kmRodados: trecho.distanceKm, litros: _litros(trecho.volumeMl), kmPorLitro: _kmPorLitro(trecho.kmPerLiter) } })
+    };
+  }
+
+  function _consumoSaida(numeros) {
+    return {
+      abastecimentos: numeros.count, totalReais: toReais(numeros.totalCentavos), litros: _litros(numeros.volumeMl),
+      consumoMedioKmPorLitro: _kmPorLitro(numeros.kmPerLiter), ultimoTrechoKmPorLitro: _kmPorLitro(numeros.lastKmPerLiter),
+      porCombustivel: numeros.byFuel.map(c => ({ combustivel: _label(FUEL.TYPES, c.fuel), kmPorLitro: _kmPorLitro(c.kmPerLiter) })),
+      precoMedioLitroReais: toReais(numeros.avgPricePerLiterCentavos), custoCombustivelPorKmReais: toReais(numeros.costPerKmCentavos),
+      noMesReais: toReais(numeros.monthCentavos), noAnoReais: toReais(numeros.yearCentavos)
+    };
+  }
+
+  function _combustivelResumo(veiculoId) {
+    const numeros = VehicleFuelService.getStats(veiculoId);
+    return { abastecimentos: numeros.count, consumoMedioKmPorLitro: _kmPorLitro(numeros.kmPerLiter), totalReais: toReais(numeros.totalCentavos), noMesReais: toReais(numeros.monthCentavos) };
+  }
+
+  /** Acha o abastecimento; sem veículo informado, procura em todos os veículos. */
+  function _resolveAbastecimento(veiculoValor, abastecimentoId) {
+    if (!abastecimentoId) return { erro: 'Informe abastecimentoId (veja list_fuelings).' };
+    const candidatos = veiculoValor ? [_resolveVeiculo(veiculoValor)] : VehicleService.list().map(veiculo => ({ veiculo }));
+    const erro = candidatos.find(c => c.erro);
+    if (erro) return erro;
+    for (const { veiculo } of candidatos) {
+      const abastecimento = VehicleFuelService.getFueling(veiculo.id, abastecimentoId);
+      if (!abastecimento.erro) return { veiculo, abastecimento };
+    }
+    return { erro: `Abastecimento "${abastecimentoId}" não encontrado (veja list_fuelings).` };
+  }
+
+  /** Abastecimento salvo + o trecho que ele fechou + sugestões de vínculo (nunca lança nada). */
+  function _abastecimentoSalvoSaida(veiculo, a) {
+    const numeros = VehicleFuelService.getStats(veiculo.id);
+    const sugestoes = VehicleFinanceService.suggestLinks({ date: a.date, amountsCentavos: [a.totalCentavos], excludeMaintenanceId: a.id });
+    return {
+      ok: true, abastecimento: _abastecimentoSaida(a, numeros.segments.find(s => s.fuelingId === a.id)),
+      kmAtual: VehicleService.getCurrentKm(veiculo), consumoMedioKmPorLitro: _kmPorLitro(numeros.kmPerLiter),
+      sugestoesDeVinculo: a.transactionIds.length ? [] : sugestoes.map(_sugestaoSaida),
+      ...(!a.transactionIds.length && { aviso: AVISO_POSTO })
+    };
+  }
+
+  function _lancarPagamentoPosto(r, input) {
+    if (r.abastecimento.transactionIds.length && input.adicional !== true) {
+      return { erro: 'Este abastecimento já tem pagamento vinculado. Para lançar outro, confirme com o André e chame de novo com adicional: true.' };
+    }
+    const meio = _resolveMeio(input); if (meio.erro) return meio;
+    let categoriaId;
+    if (input.categoria) { const c = resolveCategoria(input.categoria, 'despesa'); if (c.erro) return c; categoriaId = c.cat.id; }
+    return VehicleFinanceService.launchFuelPayment(r.veiculo.id, r.abastecimento.id, {
+      meio: meio.meio, valorCentavos: _definido(input.valorReais) ? toCentavos(input.valorReais) : r.abastecimento.totalCentavos,
+      parcelas: input.parcelas, categoriaId, data: input.data || r.abastecimento.date, allowAdditional: input.adicional === true
+    });
+  }
+
+  function _aplicarAcaoPosto(r, input) {
+    if (input.acao === 'lancar') return _lancarPagamentoPosto(r, input);
+    if (!input.transacaoId) return { erro: 'Informe transacaoId (veja as sugestões de vínculo ou list_transactions).' };
+    const aplicar = input.acao === 'vincular' ? VehicleFinanceService.linkFueling : VehicleFinanceService.unlinkFueling;
+    return aplicar(r.veiculo.id, r.abastecimento.id, input.transacaoId);
+  }
+
+  function _lancamentosDoPosto(veiculoId, abastecimentoId) {
+    return VehicleFinanceService.getFuelingTransactions(veiculoId, abastecimentoId).map(l => (l.missing
+      ? { transacaoId: l.transactionId, apagado: true }
+      : { transacaoId: l.transactionId, data: l.data, valorReais: toReais(l.valorCentavos), descricao: l.descricao, contaOuCartao: l.contaOuCartao }));
+  }
+
+  const ABASTECIMENTO = {
+
+    list_fuelings: {
+      write: false,
+      schema: {
+        name: 'list_fuelings',
+        description: 'Abastecimentos do veículo (mais recentes primeiro) e os números do consumo: média em km/L medida de tanque cheio a tanque cheio, o último trecho, média por combustível, preço médio por litro, custo de combustível por km e gasto no mês e no ano. Cada abastecimento que fechou um trecho traz os km rodados e o km/L daquele tanque. Use para "quanto o carro está fazendo?", "quanto gastei de gasolina?".',
+        input_schema: { type: 'object', properties: { veiculo: veiculoParam, limite: { type: 'integer', description: 'Quantos abastecimentos listar (padrão 20)' } } }
+      },
+      run({ veiculo, limite }) {
+        const r = _resolveVeiculo(veiculo); if (r.erro) return r;
+        const numeros = VehicleFuelService.getStats(r.veiculo.id);
+        const trechos = new Map(numeros.segments.map(s => [s.fuelingId, s]));
+        const lista = VehicleFuelService.listFuelings(r.veiculo.id).slice(0, Number.isInteger(limite) && limite > 0 ? limite : 20);
+        return { kmAtual: VehicleService.getCurrentKm(r.veiculo), consumo: _consumoSaida(numeros), abastecimentos: lista.map(a => _abastecimentoSaida(a, trechos.get(a.id))) };
+      }
+    },
+
+    register_fueling: {
+      write: true,
+      schema: {
+        name: 'register_fueling',
+        description: 'Registra um abastecimento. Informe dois entre litros, valorReais (total) e precoLitroReais; o km do odômetro é opcional, mas é ele que alimenta o km atual do carro e o cálculo do consumo. NUNCA cria lançamento financeiro: devolve sugestoesDeVinculo (em geral a compra do posto que já entrou pela Carteira) para você perguntar ao André se é o pagamento; só então use link_fueling_payment.',
+        input_schema: { type: 'object', properties: { veiculo: veiculoParam, ...abastecimentoProps } }
+      },
+      run(input) {
+        const r = _resolveVeiculo(input.veiculo); if (r.erro) return r;
+        const dto = _dtoAbastecimento(input); if (dto.erro) return dto;
+        const a = VehicleFuelService.addFueling(r.veiculo.id, { date: Utils.today(), ...dto });
+        return a.erro ? a : _abastecimentoSalvoSaida(r.veiculo, a);
+      }
+    },
+
+    update_fueling: {
+      write: true,
+      schema: {
+        name: 'update_fueling',
+        description: 'Edita um abastecimento. Envie em patch só o que muda (para mudar o valor ou os litros, envie os dois que você sabe entre litros, valorReais e precoLitroReais). km: null apaga o km. Não mexe nos lançamentos vinculados.',
+        input_schema: {
+          type: 'object',
+          properties: { veiculo: veiculoParam, abastecimentoId: { type: 'string' }, patch: { type: 'object', properties: abastecimentoProps } },
+          required: ['abastecimentoId', 'patch']
+        }
+      },
+      run({ veiculo, abastecimentoId, patch }) {
+        const r = _resolveAbastecimento(veiculo, abastecimentoId); if (r.erro) return r;
+        const desconhecido = Object.keys(patch || {}).find(k => !CAMPOS_ABASTECIMENTO.includes(k));
+        if (desconhecido) return { erro: `Campo "${desconhecido}" não existe. Use: ${CAMPOS_ABASTECIMENTO.join(', ')}.` };
+        const dto = _dtoAbastecimento(patch || {}); if (dto.erro) return dto;
+        const a = VehicleFuelService.updateFueling(r.veiculo.id, abastecimentoId, dto);
+        return a.erro ? a : _abastecimentoSalvoSaida(r.veiculo, a);
+      }
+    },
+
+    delete_fueling: {
+      write: true,
+      schema: {
+        name: 'delete_fueling',
+        description: 'Exclui um abastecimento. Os lançamentos vinculados continuam nas Finanças (só o vínculo se perde). Confirme com o André antes.',
+        input_schema: { type: 'object', properties: { veiculo: veiculoParam, abastecimentoId: { type: 'string' } }, required: ['abastecimentoId'] }
+      },
+      run({ veiculo, abastecimentoId }) {
+        const r = _resolveAbastecimento(veiculo, abastecimentoId); if (r.erro) return r;
+        const vinculados = r.abastecimento.transactionIds.length;
+        const feito = VehicleFuelService.removeFueling(r.veiculo.id, abastecimentoId);
+        if (feito.erro) return feito;
+        const aviso = vinculados ? `${vinculados} lançamento(s) vinculado(s) continuam nas Finanças; apague-os por lá se for o caso.` : null;
+        return { ok: true, excluido: { data: feito.date, valorReais: toReais(feito.totalCentavos) }, lancamentosVinculados: vinculados, aviso };
+      }
+    },
+
+    link_fueling_payment: {
+      write: true,
+      schema: {
+        name: 'link_fueling_payment',
+        description: 'Liga um abastecimento ao pagamento nas Finanças. acao "vincular" (o caminho normal: o posto já entrou pela Carteira): usa um lançamento que já existe (transacaoId). acao "lancar": CRIA a despesa (conta ou cartão, valor padrão = total do abastecimento) e vincula; só com o OK do André. acao "desvincular": desfaz o vínculo (o lançamento permanece).',
+        input_schema: {
+          type: 'object',
+          properties: {
+            veiculo: veiculoParam,
+            abastecimentoId: { type: 'string' },
+            acao: { type: 'string', enum: ACOES_VINCULO },
+            transacaoId: { type: 'string', description: 'Obrigatório em vincular e desvincular' },
+            conta: { type: 'string', description: 'Nome ou id da conta (lancar)' },
+            cartao: { type: 'string', description: 'Nome ou id do cartão (lancar); vale sobre conta' },
+            parcelas: { type: 'integer', description: 'Parcelas no cartão (default 1)' },
+            adicional: { type: 'boolean', description: 'lancar: true só quando o André confirmou um pagamento ADICIONAL num abastecimento que já tem pagamento vinculado.' },
+            valorReais: { type: 'number', description: 'lancar: default = total do abastecimento' },
+            categoria: { type: 'string', description: 'lancar: categoria de despesa. Default: a do veículo ou "Transporte".' },
+            data: { type: 'string', description: 'lancar: data do pagamento YYYY-MM-DD. Default: a data do abastecimento.' }
+          },
+          required: ['abastecimentoId', 'acao']
+        }
+      },
+      run(input) {
+        if (!ACOES_VINCULO.includes(input.acao)) return { erro: `acao deve ser: ${ACOES_VINCULO.join(', ')}.` };
+        const r = _resolveAbastecimento(input.veiculo, input.abastecimentoId); if (r.erro) return r;
+        const resultado = _aplicarAcaoPosto(r, input);
+        if (resultado.erro) return resultado;
+        return {
+          ok: true, acao: input.acao, ...(input.acao === 'lancar' && { lancamentoCriado: resultado.id }),
+          lancamentosVinculados: _lancamentosDoPosto(r.veiculo.id, r.abastecimento.id)
+        };
+      }
+    }
+  };
+
+  AiTools.register({ ...LEITURA, ...QUADRO, ...SAUDE, ...ABASTECIMENTO, ...ESCRITA_FICHA, ...MANUTENCOES, ...ESCRITA_QUADRO, ...VINCULO });
 })();

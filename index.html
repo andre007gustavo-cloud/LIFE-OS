@@ -1226,6 +1226,67 @@
   </div>
 </div>
 
+<!-- ========== MODAL: ABASTECIMENTO DO VEÍCULO ========== -->
+<div class="overlay" id="veh-fuel-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="veh-f-heading">
+    <div class="modal-title">
+      <span id="veh-f-heading">Novo abastecimento</span>
+      <button class="modal-close" aria-label="Fechar" onclick="closeModal('veh-fuel-modal')">×</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="veh-f-date">Data</label>
+        <input class="form-input" type="date" id="veh-f-date" onchange="VehicleFuelModal.updatePayment()">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="veh-f-km">Km do odômetro</label>
+        <input class="form-input" type="number" min="0" inputmode="numeric" id="veh-f-km" aria-describedby="veh-f-km-hint">
+      </div>
+    </div>
+    <p class="form-hint veh-plan-hint" id="veh-f-km-hint"></p>
+    <div class="form-row veh-fuel-amounts">
+      <div class="form-group">
+        <label class="form-label" for="veh-f-liters">Litros</label>
+        <input class="form-input" id="veh-f-liters" inputmode="decimal" placeholder="Ex: 32,5" oninput="VehicleFuelModal.onAmount('liters')">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="veh-f-price">Preço por litro (R$)</label>
+        <input class="form-input" id="veh-f-price" inputmode="decimal" placeholder="Ex: 5,899" oninput="VehicleFuelModal.onAmount('price')">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="veh-f-total">Total pago (R$)</label>
+        <input class="form-input" id="veh-f-total" inputmode="decimal" placeholder="Ex: 191,72" oninput="VehicleFuelModal.onAmount('total')">
+      </div>
+    </div>
+    <p class="form-hint veh-plan-hint">Preencha dois dos três: o outro é calculado.</p>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="veh-f-fuel">Combustível</label>
+        <select class="form-select" id="veh-f-fuel"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="veh-f-station">Posto</label>
+        <input class="form-input" id="veh-f-station" list="veh-dl-stations">
+      </div>
+    </div>
+    <label class="orc-toggle veh-plan-toggle">
+      <input type="checkbox" id="veh-f-full">
+      <span>Completei o tanque (o consumo é medido de tanque cheio a tanque cheio)</span>
+    </label>
+    <div class="form-group veh-payment" id="veh-f-payment" hidden></div>
+    <div class="form-group">
+      <label class="form-label" for="veh-f-notes">Observações</label>
+      <textarea class="form-textarea" id="veh-f-notes"></textarea>
+    </div>
+    <div class="veh-modal-actions">
+      <button class="btn btn-ghost" id="veh-f-remove" style="color:var(--red)" onclick="VehicleFuelModal.remove()">Excluir</button>
+      <button class="btn btn-ghost" onclick="closeModal('veh-fuel-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="VehicleFuelModal.save()">Salvar</button>
+    </div>
+    <datalist id="veh-dl-stations"></datalist>
+  </div>
+</div>
+
 <!-- ========== MODAL: ITEM DO PLANO PREVENTIVO DO VEÍCULO ========== -->
 <div class="overlay" id="veh-plan-modal">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="veh-p-heading">
@@ -1492,6 +1553,7 @@
 <script src="js/services/vehicleFinanceService.js"></script>
 <script src="js/services/vehicleBoardService.js"></script>
 <script src="js/services/vehicleHealthService.js"></script>
+<script src="js/services/vehicleFuelService.js"></script>
 <script src="js/services/vehicleSceneService.js"></script>
 <script src="js/services/vehiclePhotoService.js"></script>
 <script src="js/services/vehicleTimelineService.js"></script>
@@ -1531,6 +1593,8 @@
 <script src="js/components/vehicleParts.js"></script>
 <script src="js/components/vehicleHealth.js"></script>
 <script src="js/components/vehiclePlanModal.js"></script>
+<script src="js/components/vehicleFuelModal.js"></script>
+<script src="js/components/vehicleFuel.js"></script>
 <script src="js/components/vehiclePhotoImages.js"></script>
 <script src="js/components/vehiclePhotoUpload.js"></script>
 <script src="js/components/vehiclePhotoForm.js"></script>
