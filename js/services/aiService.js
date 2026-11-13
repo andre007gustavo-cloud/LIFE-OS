@@ -138,7 +138,7 @@ REGRAS:
     update_maintenance: 'Editar manutenção', delete_maintenance: 'Excluir manutenção',
     link_maintenance_payment: 'Ligar manutenção ao pagamento', update_odometer: 'Atualizar km do veículo',
     add_vehicle_card: 'Criar card no quadro do veículo', move_vehicle_card: 'Mover card do veículo',
-    resolve_vehicle_symptom: 'Resolver sintoma do veículo'
+    resolve_vehicle_symptom: 'Resolver sintoma do veículo', update_vehicle_plan: 'Editar plano preventivo do veículo'
   };
 
   function actionPreview(block) {

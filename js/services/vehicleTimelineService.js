@@ -50,9 +50,8 @@ const VehicleTimelineService = (() => {
   }
 
   /** Maior km conhecido até o dia (leituras, manutenções e a compra); null se nenhum. */
-  function _kmAt(vehicle, { history, readings }, date) {
-    const purchase = vehicle.purchaseDate ? [{ date: vehicle.purchaseDate, km: vehicle.purchaseKm }] : [];
-    const kms = _upTo([...readings, ...history, ...purchase], date).map(point => point.km).filter(Number.isInteger);
+  function _kmAt(vehicleId, date) {
+    const kms = _upTo(VehicleService.listKmPoints(vehicleId), date).map(point => point.km);
     return kms.length ? Math.max(...kms) : null;
   }
 
@@ -64,7 +63,7 @@ const VehicleTimelineService = (() => {
     const history = _upTo(records.history, date);
     return {
       date,
-      km: _kmAt(vehicle, records, date),
+      km: _kmAt(vehicleId, date),
       totalCentavos: _sum(history, VehicleService.maintenanceTotal),
       maintenanceCount: history.length,
       photoCount: _upTo(records.photos, date).length

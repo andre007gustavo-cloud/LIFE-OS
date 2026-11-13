@@ -13,7 +13,7 @@
     norm, toCentavos, toReais, resolveCategoria, resolveConta, resolveCartao, resolveProjeto, nomeProjeto
   } = AiTools.helpers;
 
-  const { CATEGORIES, ZONES, RECENT_MAINTENANCES, CARD_PREFIX, CARD_STATUSES, CARD_STATUS, CARD_TYPES, CARD_TYPE, VISUAL } = Constants.VEHICLE;
+  const { CATEGORIES, ZONES, RECENT_MAINTENANCES, CARD_PREFIX, CARD_STATUSES, CARD_STATUS, CARD_TYPES, CARD_TYPE, VISUAL, HEALTH } = Constants.VEHICLE;
   const AVISO_SEM_LANCAMENTO = 'Nenhum lançamento foi criado nas Finanças. Pergunte ao André se alguma sugestão de vínculo é o pagamento, ou se quer lançar agora (link_maintenance_payment).';
 
   const veiculoParam = { type: 'string', description: 'Id do veículo, id ou nome do projeto. Opcional se houver só um veículo.' };
@@ -311,7 +311,7 @@
       write: false,
       schema: {
         name: 'get_vehicle',
-        description: 'Ficha do veículo (apelido, marca, modelo, anos, placa), km atual, resumo de gastos em reais (total, no ano, custo por km e por 1.000 km), oficinas e as últimas manutenções. "quadro" resume os sintomas abertos e os cards (ideias, a fazer, fazendo) com o planejado em reais. "fotos" é só a quantidade de fotos da galeria: você não acessa as imagens.',
+        description: 'Ficha do veículo (apelido, marca, modelo, anos, placa), km atual, resumo de gastos em reais (total, no ano, custo por km e por 1.000 km), oficinas e as últimas manutenções. "quadro" resume os sintomas abertos e os cards (ideias, a fazer, fazendo) com o planejado em reais. "saude" resume o plano preventivo (atrasados, em breve e os alertas; detalhes em get_vehicle_health). "fotos" é só a quantidade de fotos da galeria: você não acessa as imagens.',
         input_schema: { type: 'object', properties: { veiculo: veiculoParam } }
       },
       run({ veiculo }) {
@@ -319,7 +319,7 @@
         const v = r.veiculo;
         const resumo = VehicleService.getSummary(v.id);
         return {
-          ficha: _fichaSaida(v), kmAtual: resumo.currentKm, resumo: _resumoSaida(resumo), quadro: _quadroResumo(v.id), fotos: VehicleService.listPhotos(v.id).length,
+          ficha: _fichaSaida(v), kmAtual: resumo.currentKm, resumo: _resumoSaida(resumo), quadro: _quadroResumo(v.id), saude: _saudeResumo(v.id), fotos: VehicleService.listPhotos(v.id).length,
           oficinas: VehicleService.getShops(v.id).map(o => ({ nome: o.name, visitas: o.visits, ultimaVisita: o.lastVisit, totalReais: toReais(o.totalCentavos) })),
           ultimasManutencoes: VehicleService.listMaintenances(v.id).slice(0, RECENT_MAINTENANCES).map(m => _manutencaoSaida(m, resumo.currentKm))
         };
@@ -779,5 +779,150 @@
     }
   };
 
-  AiTools.register({ ...LEITURA, ...QUADRO, ...ESCRITA_FICHA, ...MANUTENCOES, ...ESCRITA_QUADRO, ...VINCULO });
+  // ===== Saúde (plano preventivo) =====
+
+  const ACOES_PLANO = ['usar_sugerido', 'salvar_item', 'excluir_item', 'marcar_feito'];
+  const CAMPOS_ITEM_PLANO = {
+    titulo: 'title', palavras: 'keywords', intervaloKm: 'intervalKm', intervaloMeses: 'intervalMonths',
+    destaque: 'highlight', ultimaData: 'baseDate', ultimoKm: 'baseKm', obs: 'notes'
+  };
+
+  function _ultimaVezSaida(ultima) {
+    if (!ultima) return null;
+    const origem = ultima.source === 'history' ? 'manutenção registrada' : 'informada à mão';
+    return { data: ultima.date, km: ultima.km, origem, ...(ultima.maintenanceId && { manutencaoId: ultima.maintenanceId, manutencao: ultima.title }) };
+  }
+
+  function _itemPlanoSaida(entrada) {
+    const { item } = entrada;
+    return {
+      id: item.id, titulo: item.title, situacao: HEALTH.STATUS_LABELS[entrada.status], detalhe: entrada.text,
+      intervaloKm: item.intervalKm ?? null, intervaloMeses: item.intervalMonths ?? null,
+      ultimaVez: _ultimaVezSaida(entrada.last), venceComKm: entrada.dueKm, venceEm: entrada.dueDate, previsaoPeloRitmo: entrada.forecastDate,
+      categoria: item.category ? _label(CATEGORIES, item.category) : null, palavras: item.keywords,
+      zonas: item.zones.map(z => _label(ZONES, z)), destaque: Boolean(item.highlight), obs: item.notes || null
+    };
+  }
+
+  const _alertaSaida = alerta => `${alerta.title}: ${alerta.text}`;
+
+  function _saudeResumo(veiculoId) {
+    const saude = VehicleHealthService.getHealth(veiculoId);
+    return { itensNoPlano: saude.items.length, atrasados: saude.counts.overdue, emBreve: saude.counts.soon, alertas: saude.alerts.map(_alertaSaida) };
+  }
+
+  /** Item do plano pelo id ou pelo título (sem acento nem caixa); null se não existe. */
+  function _acharItemPlano(veiculo, { itemId, titulo }) {
+    const plano = veiculo.plan || [];
+    if (itemId) return plano.find(item => item.id === itemId) || null;
+    return titulo ? plano.find(item => norm(item.title) === norm(titulo)) || null : null;
+  }
+
+  function _exigirItemPlano(veiculo, input) {
+    const item = _acharItemPlano(veiculo, input);
+    return item ? { item } : { erro: 'Item do plano não encontrado: informe itemId ou o titulo exato (veja get_vehicle_health).' };
+  }
+
+  /** Só os campos informados; categoria e zonas aceitam id ou nome. */
+  function _dtoItemPlano(input) {
+    const dto = Object.fromEntries(Object.entries(CAMPOS_ITEM_PLANO).filter(([pt]) => _definido(input[pt])).map(([pt, en]) => [en, input[pt]]));
+    if (_definido(input.categoria) && input.categoria) {
+      const categoria = _resolveOpcao(input.categoria, CATEGORIES, 'Categoria'); if (categoria.erro) return categoria;
+      dto.category = categoria.id;
+    } else if (_definido(input.categoria)) dto.category = '';
+    if (input.zonas != null) {
+      const zonas = _resolveZonas(input.zonas); if (zonas.erro) return zonas;
+      dto.zones = zonas.ids;
+    }
+    return dto;
+  }
+
+  function _itemSalvoSaida(veiculoId, item) {
+    if (item.erro) return item;
+    const entrada = VehicleHealthService.getHealth(veiculoId).items.find(e => e.item.id === item.id);
+    return { ok: true, item: _itemPlanoSaida(entrada) };
+  }
+
+  function _salvarItemPlano(veiculo, input) {
+    const dto = _dtoItemPlano(input); if (dto.erro) return dto;
+    const existente = _acharItemPlano(veiculo, input);
+    if (input.itemId && !existente) return _exigirItemPlano(veiculo, input);
+    const salvo = existente ? VehicleHealthService.updateItem(veiculo.id, existente.id, dto) : VehicleHealthService.addItem(veiculo.id, dto);
+    return _itemSalvoSaida(veiculo.id, salvo);
+  }
+
+  const ACAO_PLANO = {
+    usar_sugerido(veiculo) {
+      const r = VehicleHealthService.useSuggestedPlan(veiculo.id);
+      return r.erro ? r : { ok: true, itensAdicionados: r.added, saude: _saudeResumo(veiculo.id) };
+    },
+    salvar_item: _salvarItemPlano,
+    excluir_item(veiculo, input) {
+      const r = _exigirItemPlano(veiculo, input); if (r.erro) return r;
+      const removido = VehicleHealthService.removeItem(veiculo.id, r.item.id);
+      return removido.erro ? removido : { ok: true, excluido: removido.title };
+    },
+    marcar_feito(veiculo, input) {
+      const r = _exigirItemPlano(veiculo, input); if (r.erro) return r;
+      return _itemSalvoSaida(veiculo.id, VehicleHealthService.markDone(veiculo.id, r.item.id, { date: input.data, km: input.km }));
+    }
+  };
+
+  const SAUDE = {
+
+    get_vehicle_health: {
+      write: false,
+      schema: {
+        name: 'get_vehicle_health',
+        description: 'Saúde do veículo: o plano preventivo (cada item com a situação Atrasado / Em breve / Em dia / Sem registro, quando foi feito pela última vez, com que km e em que data vence, e a previsão pelo ritmo de km rodados), os alertas (revisões e garantias de peças vencendo) e a média de km por mês. Use para "o que está para vencer?", "quando troco a correia dentada?" e antes de sugerir manutenção preventiva. Os intervalos do plano sugerido são um ponto de partida: lembre o André de conferir no manual.',
+        input_schema: { type: 'object', properties: { veiculo: veiculoParam } }
+      },
+      run({ veiculo }) {
+        const r = _resolveVeiculo(veiculo); if (r.erro) return r;
+        const saude = VehicleHealthService.getHealth(r.veiculo.id);
+        return {
+          kmAtual: saude.currentKm, kmMediaPorMes: saude.kmPerMonth,
+          resumo: { atrasados: saude.counts.overdue, emBreve: saude.counts.soon, semRegistro: saude.counts.unknown, emDia: saude.counts.ok },
+          alertas: saude.alerts.map(_alertaSaida), itens: saude.items.map(_itemPlanoSaida),
+          ...(!saude.items.length && { dica: 'O plano está vazio. Ofereça ao André update_vehicle_plan com acao "usar_sugerido".' })
+        };
+      }
+    },
+
+    update_vehicle_plan: {
+      write: true,
+      schema: {
+        name: 'update_vehicle_plan',
+        description: 'Edita o plano preventivo do veículo. acao "usar_sugerido": acrescenta os itens sugeridos que faltam (óleo, filtros, velas, correia dentada, fluidos...). acao "salvar_item": cria um item (titulo + intervaloKm e/ou intervaloMeses) ou edita um existente (itemId, ou titulo igual); envie só o que muda. acao "excluir_item": remove o item (confirme com o André). acao "marcar_feito": registra à mão que o item foi feito (data e km; padrão hoje e o km atual) SEM criar manutenção; para um serviço com peças e custo, use register_maintenance, que já conta para o plano. Um item conta como feito quando há manutenção concluída da categoria dele cujo título ou peças contenham uma das palavras.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            veiculo: veiculoParam,
+            acao: { type: 'string', enum: ACOES_PLANO },
+            itemId: { type: 'string', description: 'Id do item (veja get_vehicle_health)' },
+            titulo: { type: 'string' },
+            categoria: { type: 'string', description: `Categoria das manutenções que cumprem o item (id ou nome): ${listaCategorias}. "" = qualquer categoria.` },
+            palavras: { type: 'array', items: { type: 'string' }, description: 'Palavras que identificam o serviço no título ou nas peças (ex.: ["oleo"]). Lista vazia = basta a categoria.' },
+            intervaloKm: { type: ['integer', 'null'], description: 'A cada quantos km. null remove.' },
+            intervaloMeses: { type: ['integer', 'null'], description: 'A cada quantos meses. null remove.' },
+            zonas: manutencaoProps.zonas,
+            destaque: { type: 'boolean', description: 'true = item crítico: avisa mesmo sem registro da última vez (ex.: correia dentada)' },
+            ultimaData: { type: ['string', 'null'], description: 'salvar_item: data YYYY-MM-DD da última vez em que foi feito, quando não há manutenção registrada' },
+            ultimoKm: { type: ['integer', 'null'], description: 'salvar_item: km da última vez em que foi feito' },
+            obs: { type: 'string' },
+            data: { type: 'string', description: 'marcar_feito: data YYYY-MM-DD (padrão hoje)' },
+            km: { type: 'integer', description: 'marcar_feito: km em que foi feito (padrão o km atual)' }
+          },
+          required: ['acao']
+        }
+      },
+      run(input) {
+        if (!ACOES_PLANO.includes(input.acao)) return { erro: `acao deve ser: ${ACOES_PLANO.join(', ')}.` };
+        const r = _resolveVeiculo(input.veiculo); if (r.erro) return r;
+        return ACAO_PLANO[input.acao](r.veiculo, input);
+      }
+    }
+  };
+
+  AiTools.register({ ...LEITURA, ...QUADRO, ...SAUDE, ...ESCRITA_FICHA, ...MANUTENCOES, ...ESCRITA_QUADRO, ...VINCULO });
 })();

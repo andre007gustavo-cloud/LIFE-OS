@@ -157,7 +157,7 @@ const Constants = (() => {
   /** Modelos de projeto: definem quais abas o projeto mostra. */
   const PROJECT_TEMPLATES = {
     generic: { label: 'Genérico', icon: '📁', tabs: ['overview', 'tasks', 'notes', 'files'] },
-    vehicle: { label: 'Veículo', icon: '🚗', tabs: ['garage', 'board', 'maintenances', 'photos', 'parts', 'tasks', 'notes', 'files'] }
+    vehicle: { label: 'Veículo', icon: '🚗', tabs: ['garage', 'board', 'health', 'maintenances', 'photos', 'parts', 'tasks', 'notes', 'files'] }
   };
 
   /** Rótulo (pt-BR) e ícone Tabler de cada aba de projeto. */
@@ -168,10 +168,15 @@ const Constants = (() => {
     files: { label: 'Arquivos', icon: 'file' },
     garage: { label: 'Garagem', icon: 'car' },
     board: { label: 'Quadro', icon: 'layout-kanban' },
+    health: { label: 'Saúde', icon: 'heartbeat' },
     maintenances: { label: 'Manutenções', icon: 'tool' },
     photos: { label: 'Fotos', icon: 'photo' },
     parts: { label: 'Peças e oficinas', icon: 'package' }
   };
+
+  // Observações do plano preventivo sugerido (os intervalos são um ponto de partida, não a palavra final).
+  const PLAN_NOTE = 'Intervalo sugerido: confira no manual do proprietário.';
+  const BELT_NOTE = 'Motor de correia dentada: se ela romper, o motor pode ser danificado. Intervalo sugerido: confira no manual do proprietário.';
 
   /** Modelo Veículo: categorias de manutenção, zonas do carro e vínculo com Finanças. */
   const VEHICLE = {
@@ -238,7 +243,8 @@ const Constants = (() => {
       linkUrl: 'https://creativecommons.org/licenses/by-nc/4.0/',
       after: '), modificado.'
     },
-    ZONE_STATE: { SYMPTOM: 'symptom', PLANNED: 'planned', NEUTRAL: 'neutral' },
+    // DUE: zona com revisão do plano preventivo atrasada ou chegando.
+    ZONE_STATE: { SYMPTOM: 'symptom', DUE: 'due', PLANNED: 'planned', NEUTRAL: 'neutral' },
     SCENE: {
       // A versão fica no nome: o cache de assets do service worker nunca baixa de novo um arquivo que já tem.
       MODEL_URL: '/models/civic-g6-v2.glb',
@@ -257,7 +263,7 @@ const Constants = (() => {
       FLY_MS: 700,
       TAP_MAX_MOVE_PX: 6,
       TAP_MAX_MS: 600,
-      HIGHLIGHT_COLORS: { symptom: '#ef4444', planned: '#3b82f6', neutral: '#ffffff' },
+      HIGHLIGHT_COLORS: { symptom: '#ef4444', due: '#f59e0b', planned: '#3b82f6', neutral: '#ffffff' },
       HIGHLIGHT_OPACITY: 0.26,
       HIGHLIGHT_OPACITY_SELECTED: 0.5,
       PANEL_RECENT: 3,
@@ -307,6 +313,37 @@ const Constants = (() => {
     DIAGNOSIS_TEMPLATE: 'Jarvis, meu carro {nickname} (veículo {vehicleId}) está com um sintoma: {description} — zona {zone}. Card {cardId}. Consulte get_zone_context dessa zona, cruze com o histórico, as peças, o km e a garantia, me diga as causas prováveis e atualize o card.',
     CARD_PREFIX: 'card:',
     LINK: { WINDOW_DAYS: 10, WIDE_WINDOW_DAYS: 45, MAX_SUGGESTIONS: 5 },
+    // Saúde: plano preventivo (o que fazer a cada tantos km ou meses), janelas de aviso e previsão pelo km rodado.
+    HEALTH: {
+      STATUS: { OVERDUE: 'overdue', SOON: 'soon', UNKNOWN: 'unknown', OK: 'ok' },
+      STATUS_LABELS: { overdue: 'Atrasado', soon: 'Em breve', unknown: 'Sem registro', ok: 'Em dia' },
+      // "Em breve": faltando até estes km ou dias.
+      SOON_KM: 1000,
+      SOON_DAYS: 30,
+      WARRANTY_SOON_DAYS: 30,
+      // Média de km por mês: pontos de km dos últimos PACE_WINDOW_DAYS; com menos de PACE_MIN_DAYS entre eles, não estima.
+      PACE_WINDOW_DAYS: 365,
+      PACE_MIN_DAYS: 14,
+      DAYS_PER_MONTH: 30.44,
+      INTERVAL_KM_MAX: 500000,
+      INTERVAL_MONTHS_MAX: 240,
+      KEYWORDS_MAX: 8,
+      GARAGE_UPCOMING: 3,
+      // Um item conta como feito quando há manutenção concluída da categoria (se definida) cujo título ou peças
+      // contenham alguma das palavras (se definidas). Palavras já normalizadas: minúsculas, sem acento.
+      SUGGESTED_PLAN: [
+        { title: 'Óleo do motor e filtro de óleo', category: 'oil-filters', keywords: ['oleo'], intervalKm: 10000, intervalMonths: 12, zones: ['engine'], notes: PLAN_NOTE },
+        { title: 'Filtro de ar', category: 'oil-filters', keywords: ['filtro de ar', 'filtro ar'], intervalKm: 20000, intervalMonths: 24, zones: ['engine'], notes: PLAN_NOTE },
+        { title: 'Filtro de combustível', category: 'oil-filters', keywords: ['filtro de combustivel', 'filtro combustivel'], intervalKm: 40000, intervalMonths: 48, zones: ['engine'], notes: PLAN_NOTE },
+        { title: 'Velas de ignição', keywords: ['vela'], intervalKm: 40000, intervalMonths: 48, zones: ['engine'], notes: PLAN_NOTE },
+        { title: 'Correia dentada, tensor e bomba d\'água', category: 'timing-belt', keywords: [], intervalKm: 100000, intervalMonths: 60, zones: ['engine'], highlight: true, notes: BELT_NOTE },
+        { title: 'Regulagem de válvulas', keywords: ['valvula'], intervalKm: 40000, zones: ['engine'], notes: PLAN_NOTE },
+        { title: 'Líquido de arrefecimento', category: 'cooling', keywords: ['liquido', 'aditivo', 'fluido'], intervalKm: 40000, intervalMonths: 24, zones: ['engine'], notes: PLAN_NOTE },
+        { title: 'Fluido de freio', keywords: ['fluido de freio', 'oleo de freio'], intervalMonths: 24, zones: ['front-axle', 'rear-axle'], notes: PLAN_NOTE },
+        { title: 'Óleo do câmbio', category: 'transmission', keywords: ['oleo', 'fluido'], intervalKm: 40000, intervalMonths: 36, zones: ['engine'], notes: PLAN_NOTE },
+        { title: 'Alinhamento e balanceamento', keywords: ['alinhamento', 'balanceamento'], intervalKm: 10000, intervalMonths: 12, zones: ['front-axle'], notes: PLAN_NOTE }
+      ]
+    },
     // Fotos do veículo: os bytes ficam na subcoleção de imagens; aqui, os limites de compressão e de tela.
     PHOTO: {
       THUMB: { maxDim: 360, quality: 0.7 },
@@ -381,7 +418,7 @@ const Constants = (() => {
     faturaPagamentos: [],
     // Finanças Fase 7e: histórico das revisões financeiras mensais
     revisoesFinanceiras: [],
-    // Modelo Veículo: fichas, odômetro e manutenções (um item por projeto Veículo)
+    // Modelo Veículo: fichas, odômetro, manutenções, fotos e plano preventivo (um item por projeto Veículo)
     vehicles: []
   };
 

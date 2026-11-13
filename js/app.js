@@ -358,6 +358,8 @@
     window.VehicleVisualFields     = VehicleVisualFields;
     window.VehicleSimulator        = VehicleSimulator;
     window.VehicleTimeMachine      = VehicleTimeMachine;
+    window.VehicleHealth           = VehicleHealth;
+    window.VehiclePlanModal        = VehiclePlanModal;
     window.openProject         = AreasView.openProject;
     window.setProjTab          = AreasView.setProjTab;
     window.pSaveField          = AreasView.saveField;

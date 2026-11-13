@@ -1,8 +1,8 @@
 /**
  * ===================== VEHICLE VIEW =====================
  * Abas do modelo de projeto Veículo. A Garagem mostra a ficha, os números e
- * as últimas manutenções; Quadro, Manutenções e Peças delegam a VehicleBoard,
- * VehicleHistory e VehicleParts.
+ * as últimas manutenções; Quadro, Saúde, Manutenções e Peças delegam a
+ * VehicleBoard, VehicleHealth, VehicleHistory e VehicleParts.
  * Só lê dos services; qualquer gravação vem de um clique do usuário.
  */
 
@@ -214,16 +214,18 @@ const VehicleView = (() => {
     }));
   }
 
-  /** Sintoma primeiro, depois planejadas, depois com histórico, depois o resto; em cada grupo, as mais mexidas antes (a ordem das zonas desempata). */
+  /** Sintoma primeiro, depois revisão vencendo, depois planejadas, depois com histórico, depois o resto; em cada grupo, as mais mexidas antes (a ordem das zonas desempata). */
   function zoneChipRank(zone) {
-    if (zone.state === ZONE_STATE.SYMPTOM) return 0;
-    if (zone.state === ZONE_STATE.PLANNED) return 1;
-    return zone.count ? 2 : 3;
+    const rank = [ZONE_STATE.SYMPTOM, ZONE_STATE.DUE, ZONE_STATE.PLANNED].indexOf(zone.state);
+    if (rank >= 0) return rank;
+    return zone.count ? 3 : 4;
   }
 
   function sortZoneChips(zones) {
     return [...zones].sort((a, b) => zoneChipRank(a) - zoneChipRank(b) || b.count - a.count);
   }
+
+  const ZONE_CHIP_SUFFIX = { [ZONE_STATE.DUE]: ' · revisão', [ZONE_STATE.PLANNED]: ' · planejada' };
 
   function zoneChipLabel(zone) {
     const history = zone.count ? ` · ${zone.count}` : '';
@@ -231,10 +233,10 @@ const VehicleView = (() => {
       const noun = zone.symptoms === 1 ? 'sintoma aberto' : 'sintomas abertos';
       return `<i class="ti ti-alert-triangle" aria-hidden="true"></i> ${esc(zone.label)}${history} · ${zone.symptoms} ${noun}`;
     }
-    return `${esc(zone.label)}${history}${zone.state === ZONE_STATE.PLANNED ? ' · planejada' : ''}`;
+    return `${esc(zone.label)}${history}${ZONE_CHIP_SUFFIX[zone.state] || ''}`;
   }
 
-  const ZONE_CHIP_CLASS = { [ZONE_STATE.SYMPTOM]: ' veh-chip-alert', [ZONE_STATE.PLANNED]: ' veh-chip-planned', [ZONE_STATE.NEUTRAL]: '' };
+  const ZONE_CHIP_CLASS = { [ZONE_STATE.SYMPTOM]: ' veh-chip-alert', [ZONE_STATE.DUE]: ' veh-chip-due', [ZONE_STATE.PLANNED]: ' veh-chip-planned', [ZONE_STATE.NEUTRAL]: '' };
 
   function zoneChipHtml(vehicle, zone, selectedZone) {
     return `<button type="button" class="proj-meta-chip${ZONE_CHIP_CLASS[zone.state]}" data-zone="${attr(zone.id)}"
@@ -458,7 +460,7 @@ const VehicleView = (() => {
   function renderGarage(project) {
     const vehicle = VehicleService.getByProject(project.id);
     document.getElementById('proj-tab-content').innerHTML = vehicle
-      ? garageHeaderHtml(vehicle) + garageStatsHtml(vehicle, project.id) + garagePhotosRegionHtml(vehicle.id) + garageRecentHtml(vehicle) + garageSheetHtml(vehicle, project.id)
+      ? garageHeaderHtml(vehicle) + garageStatsHtml(vehicle, project.id) + VehicleHealth.garageHtml(vehicle) + garagePhotosRegionHtml(vehicle.id) + garageRecentHtml(vehicle) + garageSheetHtml(vehicle, project.id)
       : `<div class="card">
           <div class="card-title">Preencha a ficha do seu veículo</div>
           ${sheetFormHtml(null, project.id)}
@@ -484,6 +486,12 @@ const VehicleView = (() => {
     else renderEmptyTab(Constants.PROJECT_TABS.board.icon, NO_SHEET_MESSAGE);
   }
 
+  function renderHealth(project) {
+    const vehicle = VehicleService.getByProject(project.id);
+    if (vehicle) VehicleHealth.render(vehicle);
+    else renderEmptyTab(Constants.PROJECT_TABS.health.icon, NO_SHEET_MESSAGE);
+  }
+
   function renderMaintenances(project) {
     const vehicle = VehicleService.getByProject(project.id);
     if (vehicle) VehicleHistory.render(vehicle);
@@ -506,7 +514,7 @@ const VehicleView = (() => {
   }
 
   return {
-    renderGarage, renderBoard, renderMaintenances, renderPhotos, renderParts, refresh,
+    renderGarage, renderBoard, renderHealth, renderMaintenances, renderPhotos, renderParts, refresh,
     photosChanged, saveSheet, clearSheetColor, setFinanceCategory, updateKm, removeReading, selectZone, clearZone
   };
 })();

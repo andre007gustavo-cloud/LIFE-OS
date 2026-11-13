@@ -212,7 +212,8 @@ const VehicleMaintenanceModal = (() => {
     else VehiclePhotoSection.clear('veh-m-photos');
   }
 
-  function show(vehicle, maintenance, { retryPayment = false, complete = false } = {}) {
+  /** `draft` preenche uma manutenção NOVA (título, categoria, zonas) sem transformá-la em edição. */
+  function show(vehicle, maintenance, { retryPayment = false, complete = false, draft = null } = {}) {
     vehicleId = vehicle;
     completing = complete;
     editId = maintenance ? maintenance.id : null;
@@ -220,15 +221,15 @@ const VehicleMaintenanceModal = (() => {
     fillCategoryOptions();
     fillDatalists();
     VehiclePayment.start(vehicle, editId, retryPayment || complete ? { adding: true } : undefined);
-    fillForm(complete ? { ...maintenance, date: Utils.today() } : maintenance);
+    fillForm(complete ? { ...maintenance, date: Utils.today() } : maintenance || draft);
     applyMode(maintenance);
     applyPhotos(maintenance);
     Modal.open(MODAL_ID);
     el('veh-m-title').focus();
   }
 
-  function openNew(id) {
-    if (VehicleService.getById(id)) show(id, null);
+  function openNew(id, draft) {
+    if (VehicleService.getById(id)) show(id, null, { draft });
   }
 
   function open(id, maintenanceId) {

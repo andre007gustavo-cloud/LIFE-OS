@@ -184,6 +184,10 @@
         <div class="card" id="dash-alertas-card" style="display:none;padding:0;background:transparent;border:none;box-shadow:none">
           <div id="dash-alertas"></div>
         </div>
+        <div class="card" data-d="projects" id="dash-vehicle-card" style="display:none">
+          <div class="card-title"><i class="ti ti-car"></i> Veículo</div>
+          <div id="dash-vehicle"></div>
+        </div>
         <div class="card" data-d="finance" id="dash-budget-card" style="display:none">
           <div class="card-title fin-dash-link" onclick="finGoto('orcamento')"><span><i class="ti ti-target-arrow"></i> Orçamento por categoria</span><i class="ti ti-chevron-right"></i></div>
           <div id="dash-budget"></div>
@@ -1222,6 +1226,70 @@
   </div>
 </div>
 
+<!-- ========== MODAL: ITEM DO PLANO PREVENTIVO DO VEÍCULO ========== -->
+<div class="overlay" id="veh-plan-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="veh-p-heading">
+    <div class="modal-title">
+      <span id="veh-p-heading">Novo item do plano</span>
+      <button class="modal-close" aria-label="Fechar" onclick="closeModal('veh-plan-modal')">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="veh-p-title">O que fazer</label>
+      <input class="form-input" id="veh-p-title" placeholder="Ex: Óleo do motor e filtro de óleo">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="veh-p-interval-km">A cada quantos km</label>
+        <input class="form-input" type="number" min="1" inputmode="numeric" id="veh-p-interval-km" placeholder="Ex: 10000">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="veh-p-interval-months">A cada quantos meses</label>
+        <input class="form-input" type="number" min="1" inputmode="numeric" id="veh-p-interval-months" placeholder="Ex: 12">
+      </div>
+    </div>
+    <p class="form-hint veh-plan-hint">Preencha um dos dois ou os dois: vence pelo que chegar primeiro.</p>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="veh-p-category">Categoria da manutenção</label>
+        <select class="form-select" id="veh-p-category"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="veh-p-keywords">Palavras do serviço</label>
+        <input class="form-input" id="veh-p-keywords" placeholder="Ex: oleo, filtro de oleo" aria-describedby="veh-p-match-hint">
+      </div>
+    </div>
+    <p class="form-hint veh-plan-hint" id="veh-p-match-hint">Conta como feito quando você registra uma manutenção dessa categoria com uma das palavras no título ou nas peças (separe por vírgula). Sem palavras, basta a categoria.</p>
+    <div class="form-group">
+      <span class="form-label" id="veh-p-zones-label">Zonas do carro</span>
+      <div class="veh-zone-toggles" id="veh-p-zones" role="group" aria-labelledby="veh-p-zones-label"></div>
+    </div>
+    <label class="orc-toggle veh-plan-toggle">
+      <input type="checkbox" id="veh-p-highlight">
+      <span>Item crítico: avisar mesmo sem registro da última vez</span>
+    </label>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="veh-p-base-date">Última vez: data</label>
+        <input class="form-input" type="date" id="veh-p-base-date">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="veh-p-base-km">Última vez: km</label>
+        <input class="form-input" type="number" min="0" inputmode="numeric" id="veh-p-base-km">
+      </div>
+    </div>
+    <p class="form-hint veh-plan-hint">Use a "última vez" quando o serviço foi feito antes de você começar a registrar as manutenções aqui.</p>
+    <div class="form-group">
+      <label class="form-label" for="veh-p-notes">Observações</label>
+      <textarea class="form-textarea" id="veh-p-notes"></textarea>
+    </div>
+    <div class="veh-modal-actions">
+      <button class="btn btn-ghost" id="veh-p-remove" style="color:var(--red)" onclick="VehiclePlanModal.remove()">Excluir</button>
+      <button class="btn btn-ghost" onclick="closeModal('veh-plan-modal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="VehiclePlanModal.save()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ========== MODAL: NEW/EDIT PROJECT ========== -->
 <div class="overlay" id="new-proj-modal">
   <div class="modal">
@@ -1423,6 +1491,7 @@
 <script src="js/services/vehicleService.js"></script>
 <script src="js/services/vehicleFinanceService.js"></script>
 <script src="js/services/vehicleBoardService.js"></script>
+<script src="js/services/vehicleHealthService.js"></script>
 <script src="js/services/vehicleSceneService.js"></script>
 <script src="js/services/vehiclePhotoService.js"></script>
 <script src="js/services/vehicleTimelineService.js"></script>
@@ -1460,6 +1529,8 @@
 <script src="js/components/vehicleBoard.js"></script>
 <script src="js/components/vehicleHistory.js"></script>
 <script src="js/components/vehicleParts.js"></script>
+<script src="js/components/vehicleHealth.js"></script>
+<script src="js/components/vehiclePlanModal.js"></script>
 <script src="js/components/vehiclePhotoImages.js"></script>
 <script src="js/components/vehiclePhotoUpload.js"></script>
 <script src="js/components/vehiclePhotoForm.js"></script>

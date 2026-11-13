@@ -30,6 +30,17 @@ const DashboardView = (() => {
     renderProjecao();
     renderPossoGastar();
     renderAlertas();
+    renderVehicle();
+  }
+
+  // ===== Card: revisões e garantias do veículo vencendo =====
+
+  function renderVehicle() {
+    const card = document.getElementById('dash-vehicle-card');
+    if (!card || typeof VehicleHealth === 'undefined') return;
+    const html = VehicleHealth.dashHtml();
+    card.style.display = html ? '' : 'none';
+    document.getElementById('dash-vehicle').innerHTML = html;
   }
 
   // ===== Card: alertas críticos (Fase 7d) =====

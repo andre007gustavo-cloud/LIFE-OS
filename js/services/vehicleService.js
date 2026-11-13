@@ -779,7 +779,22 @@ const VehicleService = (() => {
     });
   }
 
+  /** Pontos de km conhecidos ({ date, km }), do mais antigo ao mais recente. */
+  function listKmPoints(vehicleId) {
+    return _query(vehicleId, vehicle => _kmPoints(vehicle, vehicle.odometer)
+      .map(({ date, km }) => ({ date, km }))
+      .sort((a, b) => a.date.localeCompare(b.date) || a.km - b.km));
+  }
+
+  /** Validações e acesso compartilhados com os outros services que gravam no veículo (Saúde). */
+  const rules = {
+    fail: _fail, guard: _guard, isBlank: _isBlank, compact: _compact,
+    text: _text, date: _date, requiredDate: _requiredDate, int: _int, km: _km, oneOf: _oneOf, zones: _normalizeZones,
+    requireVehicle: _requireVehicle, touch: _touch
+  };
+
   return {
+    rules,
     list,
     getById,
     getByProject,
@@ -788,6 +803,7 @@ const VehicleService = (() => {
     addOdometer,
     removeOdometer,
     getCurrentKm,
+    listKmPoints,
     statusOf,
     typeOf,
     isDone,

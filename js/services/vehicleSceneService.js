@@ -19,19 +19,25 @@ const VehicleSceneService = (() => {
     return PLANNED_STATUSES.includes(VehicleService.statusOf(card)) ? ZONE_STATE.PLANNED : ZONE_STATE.NEUTRAL;
   }
 
-  const _weight = state => [ZONE_STATE.NEUTRAL, ZONE_STATE.PLANNED, ZONE_STATE.SYMPTOM].indexOf(state);
+  const _weight = state => [ZONE_STATE.NEUTRAL, ZONE_STATE.PLANNED, ZONE_STATE.DUE, ZONE_STATE.SYMPTOM].indexOf(state);
 
-  /** { [zoneId]: 'symptom' | 'planned' | 'neutral' } para todas as zonas; veículo inexistente → tudo neutro. */
+  /** A zona fica com o estado mais grave que recebeu. */
+  function _raise(states, zones, state) {
+    zones.filter(zone => zone in states).forEach(zone => {
+      if (_weight(state) > _weight(states[zone])) states[zone] = state;
+    });
+  }
+
+  /**
+   * { [zoneId]: 'symptom' | 'due' | 'planned' | 'neutral' } para todas as zonas; veículo inexistente → tudo neutro.
+   * 'due' = revisão do plano preventivo atrasada ou chegando naquela zona.
+   */
   function getZoneStates(vehicleId) {
     const states = _allNeutral();
     const cards = VehicleBoardService.listOpenCards(vehicleId);
     if (cards.erro) return states;
-    cards.forEach(card => {
-      const state = _stateOf(card);
-      card.zones.filter(zone => zone in states).forEach(zone => {
-        if (_weight(state) > _weight(states[zone])) states[zone] = state;
-      });
-    });
+    cards.forEach(card => _raise(states, card.zones, _stateOf(card)));
+    _raise(states, VehicleHealthService.getAlertZones(vehicleId), ZONE_STATE.DUE);
     return states;
   }
 

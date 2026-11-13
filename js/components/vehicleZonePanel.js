@@ -54,6 +54,19 @@ const VehicleZonePanel = (() => {
     return sectionHtml('Últimas manutenções', recent.map(m => historyItem(vehicleId, m)).join('') + rest);
   }
 
+  /** Itens do plano preventivo desta zona, do mais urgente ao que está em dia. */
+  function planHtml(vehicleId, zoneId) {
+    const health = VehicleHealthService.getHealth(vehicleId);
+    if (health.erro) return '';
+    const rows = health.items.filter(entry => entry.item.zones.includes(zoneId)).map(entry => itemHtml({
+      onclick: `VehiclePlanModal.open('${attr(vehicleId)}','${attr(entry.item.id)}')`,
+      title: entry.item.title,
+      meta: Constants.VEHICLE.HEALTH.STATUS_LABELS[entry.status],
+      alert: entry.status === Constants.VEHICLE.HEALTH.STATUS.OVERDUE
+    }));
+    return sectionHtml('Revisões do plano', rows.join(''));
+  }
+
   /**
    * Fotos da zona (conteúdo da região que photosChanged troca) e, quando a zona não tem nada
    * (nem registros nem fotos), o aviso de vazio.
@@ -94,6 +107,7 @@ const VehicleZonePanel = (() => {
         </button>
       </div>
       ${openCardsHtml(vehicleId, context.openCards)}
+      ${planHtml(vehicleId, zoneId)}
       ${historyHtml(vehicleId, context.history)}
       ${photosRegionHtml(vehicleId, zoneId)}
       ${actionsHtml(vehicleId, zoneId)}
